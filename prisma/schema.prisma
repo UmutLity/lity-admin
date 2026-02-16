@@ -1,0 +1,604 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Role & Permission ──────────────────────────────────
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  label       String
+  permissions String // JSON array
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users User[]
+}
+
+// ─── User (Admin Panel) ─────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      String   @default("EDITOR")
+  roleId    String?
+  roleRef   Role?    @relation(fields: [roleId], references: [id])
+  avatar    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  twoFactorEnabled Boolean @default(false)
+  twoFactorSecret  String?
+  recoveryCodes    String?
+
+  auditLogs      AuditLog[]
+  loginAttempts  LoginAttempt[]
+  accountLocks   AccountLock[]
+  allowedIps     UserAllowedIp[]
+  adminSessions  AdminSession[]
+  notifications  AdminNotification[]
+}
+
+// ─── Customer (Public Site Users) ───────────────────────
+
+model Customer {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  username    String    @unique
+  password    String
+  avatar      String?
+  role        String    @default("MEMBER") // MEMBER | VIP | BANNED
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  twoFactorEnabled Boolean @default(false)
+  twoFactorSecret  String?
+  recoveryCodes    String? // JSON array of hashed codes
+
+  // Admin-created accounts
+  createdByAdminId   String?
+  mustChangePassword Boolean @default(false)
+
+  cartItems CartItem[]
+  licenses  License[]
+}
+
+// ─── Cart Item ──────────────────────────────────────────
+
+model CartItem {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  plan       String // DAILY | WEEKLY | MONTHLY | LIFETIME
+  createdAt  DateTime @default(now())
+
+  @@unique([customerId, productId, plan])
+  @@index([customerId])
+}
+
+// ─── Login Attempt ──────────────────────────────────────
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  ip        String
+  userAgent String?
+  success   Boolean
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([ip])
+  @@index([createdAt])
+}
+
+// ─── Account Lock ───────────────────────────────────────
+
+model AccountLock {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  lockedUntil DateTime
+  reason      String
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([lockedUntil])
+}
+
+// ─── Security Alert ─────────────────────────────────────
+
+model SecurityAlert {
+  id         String    @id @default(cuid())
+  type       String
+  severity   String
+  message    String
+  userId     String?
+  meta       String?
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  @@index([type])
+  @@index([severity])
+  @@index([createdAt])
+}
+
+// ─── User Allowed IP ────────────────────────────────────
+
+model UserAllowedIp {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cidr   String
+
+  @@index([userId])
+}
+
+// ─── Admin Session (for session monitoring) ─────────────
+
+model AdminSession {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId  String    @unique
+  ipHash     String?
+  userAgent  String?
+  lastSeenAt DateTime  @default(now())
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([lastSeenAt])
+}
+
+// ─── Admin Notification ─────────────────────────────────
+
+model AdminNotification {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // SECURITY | WEBHOOK | TRAFFIC | STATUS | SYSTEM
+  severity  String // INFO | WARNING | CRITICAL
+  title     String
+  message   String
+  meta      String? // JSON
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// ─── Category ────────────────────────────────────────────
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  icon      String?
+  color     String?  @default("#7c3aed")
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Product ─────────────────────────────────────────────
+
+model Product {
+  id                   String   @id @default(cuid())
+  name                 String
+  slug                 String   @unique
+  shortDescription     String?
+  description          String?
+  longDescription      String? // Markdown - detailed product page
+  technicalDescription String? // Markdown - optional technical info
+  featureSectionTitle  String? // Custom title for features section
+  category             String   @default("OTHER")
+  status               String   @default("UNDETECTED")
+  statusNote           String?
+  lastStatusChangeAt   DateTime @default(now())
+  isFeatured           Boolean  @default(false)
+  isActive             Boolean  @default(true)
+  currency             String   @default("USD")
+  buyUrl               String?
+  sortOrder            Int      @default(0)
+  displayOrder         Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  lastUpdateAt          DateTime?
+  lastUpdateChangelogId String?
+
+  prices         ProductPrice[]
+  images         ProductImage[]
+  features       ProductFeature[]
+  specifications ProductSpecification[]
+  gallery        ProductGalleryImage[]
+  changelogs     ChangelogProduct[]
+  cartItems      CartItem[]
+  statusHistory  StatusHistory[]
+  environments   ProductEnvironment[]
+  orderItems     OrderItem[]
+  licenses       License[]
+}
+
+model ProductPrice {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  plan      String
+  price     Float
+
+  @@unique([productId, plan])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     Media   @relation(fields: [mediaId], references: [id])
+  order     Int     @default(0)
+
+  @@index([productId])
+}
+
+// ─── Product Feature ─────────────────────────────────────
+
+model ProductFeature {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  icon        String?  // lucide icon name or FA class
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([productId])
+}
+
+// ─── Product Gallery Image ───────────────────────────────
+
+model ProductGalleryImage {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url         String
+  altText     String?
+  order       Int      @default(0)
+  isThumbnail Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([productId])
+}
+
+// ─── Product Specification ───────────────────────────────
+
+model ProductSpecification {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label     String
+  value     String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+}
+
+// ─── Product Environment ────────────────────────────────
+
+model ProductEnvironment {
+  id                 String   @id @default(cuid())
+  productId          String
+  product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  environment        String // PRODUCTION | BETA | EXPERIMENTAL
+  status             String   @default("UNDETECTED")
+  statusNote         String?
+  lastStatusChangeAt DateTime @default(now())
+  lastUpdateAt       DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([productId, environment])
+  @@index([productId])
+  @@index([environment])
+}
+
+// ─── Status History ─────────────────────────────────────
+
+model StatusHistory {
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  fromStatus String?
+  toStatus   String
+  note       String?
+  createdAt  DateTime @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
+}
+
+// ─── Changelog ───────────────────────────────────────────
+
+model Changelog {
+  id          String    @id @default(cuid())
+  title       String
+  body        String
+  type        String    @default("UPDATE")
+  isDraft     Boolean   @default(true)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  products          ChangelogProduct[]
+  webhookDeliveries WebhookDelivery[]
+}
+
+model ChangelogProduct {
+  id          String    @id @default(cuid())
+  changelogId String
+  changelog   Changelog @relation(fields: [changelogId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([changelogId, productId])
+}
+
+// ─── Site Settings ───────────────────────────────────────
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  type      String   @default("string")
+  group     String   @default("general")
+  label     String?
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Media ───────────────────────────────────────────────
+
+model Media {
+  id        String   @id @default(cuid())
+  filename  String
+  url       String
+  mimeType  String
+  size      Int
+  width     Int?
+  height    Int?
+  createdAt DateTime @default(now())
+
+  productImages ProductImage[]
+}
+
+// ─── Audit Log ───────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  before    String?
+  after     String?
+  diff      String?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([action])
+}
+
+// ─── Analytics: Session ──────────────────────────────────
+
+model AnalyticsSession {
+  id          String    @id @default(cuid())
+  sessionId   String    @unique
+  firstSeenAt DateTime  @default(now())
+  lastSeenAt  DateTime  @default(now())
+  entryPath   String
+  exitPath    String?
+  referrer    String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  deviceType  String?   @default("desktop") // desktop | mobile | tablet
+  country     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  pageViews PageView[]
+  events    AnalyticsEvent[]
+
+  @@index([sessionId])
+  @@index([firstSeenAt])
+  @@index([lastSeenAt])
+  @@index([deviceType])
+}
+
+// ─── Page View (Analytics) ──────────────────────────────
+
+model PageView {
+  id        String   @id @default(cuid())
+  path      String
+  ipHash    String
+  userAgent String?
+  referrer  String?
+  title     String?
+  sessionId String?
+  session   AnalyticsSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([path])
+  @@index([createdAt])
+  @@index([ipHash])
+  @@index([sessionId])
+}
+
+// ─── Analytics Event ────────────────────────────────────
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  sessionId String?
+  session   AnalyticsSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  name      String // CTA_CLICK | VIEW_PRODUCT | CHECKOUT_CLICK | SEARCH | ADD_TO_CART etc.
+  meta      String? // JSON
+  createdAt DateTime @default(now())
+
+  @@index([name])
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+// ─── Order (Future-ready) ───────────────────────────────
+
+model Order {
+  id         String   @id @default(cuid())
+  customerId String?
+  status     String   @default("PENDING") // PENDING | PAID | REFUNDED | CANCELED
+  currency   String   @default("USD")
+  totalAmount Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  items OrderItem[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  order     Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  plan      String
+  amount    Float
+
+  @@index([orderId])
+}
+
+// ─── License (Future-ready) ─────────────────────────────
+
+model License {
+  id         String    @id @default(cuid())
+  customerId String
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product   @relation(fields: [productId], references: [id])
+  plan       String
+  key        String    @unique
+  status     String    @default("ACTIVE") // ACTIVE | EXPIRED | REVOKED
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([customerId])
+  @@index([productId])
+  @@index([key])
+  @@index([status])
+}
+
+// ─── Webhook Delivery ───────────────────────────────────
+
+model WebhookDelivery {
+  id           String     @id @default(cuid())
+  provider     String
+  event        String
+  entityId     String
+  changelog    Changelog? @relation(fields: [entityId], references: [id])
+  success      Boolean
+  responseCode Int?
+  responseBody String?
+  attempts     Int        @default(1)
+  createdAt    DateTime   @default(now())
+
+  @@index([entityId])
+  @@index([event])
+  @@index([createdAt])
+}
+
+// ─── Insight Event (AI Anomaly Detection) ───────────────
+
+model InsightEvent {
+  id            String    @id @default(cuid())
+  type          String // TRAFFIC_SPIKE | TRAFFIC_DROP | STATUS_INSTABILITY | LONG_UPDATING | WEBHOOK_FAILURE | SECURITY_ANOMALY
+  severity      String // INFO | WARNING | CRITICAL
+  message       String
+  relatedEntity String?
+  meta          String? // JSON
+  resolvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([type])
+  @@index([severity])
+  @@index([createdAt])
+}
+
+// ─── Performance Metric ─────────────────────────────────
+
+model PerformanceMetric {
+  id        String   @id @default(cuid())
+  type      String // API | DB | PAGE_LOAD
+  path      String?
+  duration  Float // ms
+  meta      String? // JSON
+  createdAt DateTime @default(now())
+
+  @@index([type])
+  @@index([path])
+  @@index([createdAt])
+}
+
+// ─── Reseller (Partner System) ──────────────────────────
+
+model Reseller {
+  id              String   @id @default(cuid())
+  name            String
+  email           String?  @unique
+  discountPercent Float    @default(0)
+  apiKey          String   @unique
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  sales ResellerSale[]
+}
+
+model ResellerSale {
+  id         String   @id @default(cuid())
+  resellerId String
+  reseller   Reseller @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+  productId  String?
+  amount     Float
+  createdAt  DateTime @default(now())
+
+  @@index([resellerId])
+  @@index([createdAt])
+}
