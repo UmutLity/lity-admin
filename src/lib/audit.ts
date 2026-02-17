@@ -19,7 +19,8 @@ export type AuditAction =
   | "SETTINGS_UPDATE"
   | "MEDIA_UPLOAD"
   | "MEDIA_DELETE"
-  | "ROLE_CHANGE";
+  | "ROLE_CHANGE"
+  | "PASSWORD_RESET";
 
 export type AuditEntity =
   | "Product"
@@ -29,7 +30,11 @@ export type AuditEntity =
   | "Media"
   | "Role"
   | "Security"
-  | "Webhook";
+  | "Webhook"
+  | "Category"
+  | "Customer"
+  | "ProductEnvironment"
+  | "AdminSession";
 
 // ─── Enhanced Audit Log Input ───────────────────────────
 

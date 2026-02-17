@@ -118,6 +118,7 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
     try {
       const body: ProductFormData = {
         ...form,
+        displayOrder: Number((form as any).displayOrder ?? form.sortOrder ?? 0),
         sortOrder: Number(form.sortOrder),
         prices: prices.map((p) => ({ plan: p.plan as any, price: Number(p.price) })),
       };
