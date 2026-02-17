@@ -55,31 +55,46 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 // DELETE /api/admin/users/[id]
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const session = await requireAdmin();
-    const userId = (session.user as any).id;
+    const currentUserId = (session.user as any).id;
 
-    if (userId === params.id) {
-      return NextResponse.json({ error: "Kendinizi silemezsiniz" }, { status: 400 });
+    if (currentUserId === params.id) {
+      return NextResponse.json(
+        { error: "Kendinizi silemezsiniz" },
+        { status: 400 }
+      );
     }
 
-    const existing = await prisma.user.findUnique({ where: { id: params.id } });
-    if (!existing) return NextResponse.json({ error: "User not found" }, { status: 404 });
-
-    await prisma.user.delete({ where: { id: params.id } });
-
-    await createAuditLog({
-      userId,
-      action: "DELETE",
-      entity: "User",
-      entityId: params.id,
-      before: { email: existing.email, name: existing.name },
+    const existing = await prisma.user.findUnique({
+      where: { id: params.id },
     });
+
+    if (!existing) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    await prisma.$transaction([
+      // bağlı kayıtları temizle
+      prisma.auditLog.deleteMany({ where: { userId: params.id } }),
+      prisma.adminSession.deleteMany({ where: { userId: params.id } }),
+      prisma.loginAttempt.deleteMany({ where: { userId: params.id } }),
+      prisma.accountLock.deleteMany({ where: { userId: params.id } }),
+
+      // en son user sil
+      prisma.user.delete({ where: { id: params.id } }),
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    if (error.message === "Unauthorized") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("DELETE user error:", error);
+    return NextResponse.json(
+      { error: error?.message || "Internal server error" },
+      { status: 500 }
+    );
   }
 }
