@@ -97,10 +97,10 @@ async function main() {
   // ─── Admin User ──────────────────────────────────
   const adminPassword = await hash("admin123", 12);
   const admin = await prisma.user.upsert({
-    where: { email: "admin@litysoftware.shop" },
+    where: { email: "admin@litysoftware.com" },
     update: { roleId: adminRole.id },
     create: {
-      email: "admin@litysoftware.shop",
+      email: "admin@litysoftware.com",
       name: "Admin",
       password: adminPassword,
       role: "ADMIN",
@@ -112,10 +112,10 @@ async function main() {
   // ─── Editor User ─────────────────────────────────
   const editorPassword = await hash("editor123", 12);
   const editor = await prisma.user.upsert({
-    where: { email: "editor@litysoftware.shop" },
+    where: { email: "editor@litysoftware.com" },
     update: { roleId: editorRole.id },
     create: {
-      email: "editor@litysoftware.shop",
+      email: "editor@litysoftware.com",
       name: "Editor",
       password: editorPassword,
       role: "EDITOR",
@@ -285,8 +285,8 @@ async function main() {
 
   console.log("\n🎉 Seed completed!");
   console.log("──────────────────────────────────────");
-  console.log("Admin:  admin@litysoftware.shop / admin123");
-  console.log("Editor: editor@litysoftware.shop / editor123");
+  console.log("Admin:  admin@litysoftware.com / admin123");
+  console.log("Editor: editor@litysoftware.com / editor123");
   console.log("──────────────────────────────────────");
 }
 
