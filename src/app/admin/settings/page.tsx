@@ -86,27 +86,43 @@ export default function SettingsPage() {
     }
   };
 
-  const handleTestWebhook = async () => {
-    setTestingWebhook(true);
-    try {
-      const res = await fetch("/api/admin/discord/test", { method: "POST" });
-      const data = await res.json();
-      if (data.success) {
-        setLastTestResult(data.data);
-        addToast({
-          type: data.data.success ? "success" : "error",
-          title: data.data.success ? "Test successful!" : "Test failed",
-          description: data.data.success ? "Discord message sent" : `Error: ${data.data.responseBody}`,
-        });
-      } else {
-        addToast({ type: "error", title: "Error", description: data.error });
-      }
-    } catch (error) {
-      addToast({ type: "error", title: "Connection error" });
-    } finally {
-      setTestingWebhook(false);
+const handleTestWebhook = async () => {
+  setTestingWebhook(true);
+  try {
+    const res = await fetch("/api/admin/discord/test", { 
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json", // 415 hatasını bu satır çözer
+      },
+      body: JSON.stringify({
+        webhookUrl: discordSettings.webhookUrl,
+        username: discordSettings.botUsername,
+        avatarUrl: discordSettings.botAvatarUrl,
+        // Eğer varsa son embed verisini de ekleyebilirsin
+      }),
+    });
+    
+    const data = await res.json();
+    
+    if (res.ok && data.success) {
+      addToast({
+        type: "success",
+        title: "Test successful!",
+        description: "Discord message sent",
+      });
+    } else {
+      addToast({ 
+        type: "error", 
+        title: "Test failed", 
+        description: data.error || data.responseBody || "Unknown error" 
+      });
     }
-  };
+  } catch (error) {
+    addToast({ type: "error", title: "Connection error", description: "Could not reach the server" });
+  } finally {
+    setTestingWebhook(false);
+  }
+};
 
   const getSettingsByGroup = (group: string) => settings.filter((s) => s.group === group);
 
