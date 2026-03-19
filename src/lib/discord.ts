@@ -95,6 +95,8 @@ export function buildChangelogEmbed(changelog: ChangelogEmbed): object {
   const convertedBody = markdownToDiscord(changelog.body);
   const description = headerLine + "✨ Updates have been made to the product:\n\n" + convertedBody;
 
+  // Note about auto-update
+  const autoUpdateNote = "\n\n⚠ You do **NOT** need to download a new loader.\n🔄 The current one will update automatically.";
 
   const fields: object[] = [
     {
@@ -113,6 +115,12 @@ export function buildChangelogEmbed(changelog: ChangelogEmbed): object {
       value: productList,
       inline: false,
     });
+  }
+
+  // Truncate safely
+  let finalDesc = description + autoUpdateNote;
+  if (finalDesc.length > 4000) {
+    finalDesc = finalDesc.slice(0, 3990) + "\n\n*...truncated*";
   }
 
   return {
