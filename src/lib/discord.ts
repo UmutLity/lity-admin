@@ -146,12 +146,11 @@ export function buildWebhookPayload(
   username?: string,
   avatarUrl?: string
 ): object {
-  // Sadece embed içeriğini temel al
   const payload: any = {
     ...(embed as any),
   };
 
-  // SADECE değer varsa ve boşluktan ibaret değilse ekle
+  // Sadece boş değilse ekle
   if (username && username.trim() !== "") {
     payload.username = username;
   }
