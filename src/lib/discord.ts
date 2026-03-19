@@ -147,11 +147,22 @@ export function buildWebhookPayload(
   username?: string,
   avatarUrl?: string
 ): object {
-  return {
-    username: username || "Lity Software",
+  // Temel paket (sadece embed içeriği)
+  const payload: any = {
     ...(embed as any),
-    // avatar_url satırını tamamen sildik/yorum satırı yaptık
   };
+
+  // Kullanıcı adı boş değilse ekle
+  if (username && username.trim() !== "") {
+    payload.username = username;
+  }
+
+  // Avatar URL boş değilse ekle
+  if (avatarUrl && avatarUrl.trim() !== "") {
+    payload.avatar_url = avatarUrl;
+  }
+
+  return payload;
 }
 
 // ─── Send Discord Webhook ───────────────────────────────
@@ -173,12 +184,11 @@ export async function sendDiscordWebhook(
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetch(webhookUrl, {
-      method: "POST",
+        method: "POST",
         headers: { 
-          "Content-Type": "application/json",
-          "Accept": "application/json" 
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload), // Verinin JSON formatına dönüştüğünden emin olun
       });
 
       const bodyText = await response.text().catch(() => "");
