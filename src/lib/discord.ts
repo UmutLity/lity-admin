@@ -142,12 +142,25 @@ export function buildChangelogEmbed(changelog: ChangelogEmbed): object {
 
 // ─── Build Full Webhook Payload ─────────────────────────
 
-export function buildWebhookPayload(embed: object, username?: string, avatarUrl?: string): object {
-  const payload: any = { ... (embed as any) };
+// src/lib/discord.ts içindeki ilgili fonksiyon
+export function buildWebhookPayload(
+  embed: object,
+  username?: string,
+  avatarUrl?: string
+): object {
+  const payload: any = {
+    ...(embed as any),
+  };
+
+  // Sadece değerler gerçekten varsa ve boş değilse ekle
+  if (username && username.trim() !== "") {
+    payload.username = username;
+  }
   
-  if (username?.trim()) payload.username = username;
-  if (avatarUrl?.trim()) payload.avatar_url = avatarUrl;
-  
+  if (avatarUrl && avatarUrl.trim() !== "") {
+    payload.avatar_url = avatarUrl;
+  }
+
   return payload;
 }
 
@@ -172,9 +185,10 @@ export async function sendDiscordWebhook(
       const response = await fetch(webhookUrl, {
         method: "POST",
         headers: { 
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Accept": "application/json"
         },
-        body: JSON.stringify(payload), // Verinin JSON formatına dönüştüğünden emin olun
+        body: JSON.stringify(payload),
       });
 
       const bodyText = await response.text().catch(() => "");
