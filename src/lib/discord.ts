@@ -132,7 +132,6 @@ export function buildChangelogEmbed(changelog: ChangelogEmbed): object {
         fields,
         footer: {
           text: "Lity Software • Official Update",
-          icon_url: "", // will be overridden by avatar setting
         },
         timestamp: changelog.publishedAt || new Date().toISOString(),
       },
@@ -142,17 +141,17 @@ export function buildChangelogEmbed(changelog: ChangelogEmbed): object {
 
 // ─── Build Full Webhook Payload ─────────────────────────
 
-// src/lib/discord.ts içindeki ilgili fonksiyon
 export function buildWebhookPayload(
   embed: object,
   username?: string,
   avatarUrl?: string
 ): object {
+  // Sadece embed içeriğini temel al
   const payload: any = {
     ...(embed as any),
   };
 
-  // Sadece değerler gerçekten varsa ve boş değilse ekle
+  // SADECE değer varsa ve boşluktan ibaret değilse ekle
   if (username && username.trim() !== "") {
     payload.username = username;
   }
