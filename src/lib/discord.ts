@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 // ─── Discord Embed Colors ───────────────────────────────
 
 const TYPE_COLORS: Record<string, number> = {
-  UPDATE: 0x7c3aed,  // Purple
+  UPDATE: 0x8470ff,  // Purple
   FIX: 0x22c55e,     // Green
   INFO: 0x3b82f6,    // Blue
   WARNING: 0xf59e0b, // Yellow
