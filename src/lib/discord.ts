@@ -36,7 +36,7 @@ const STATUS_EMOJIS: Record<string, string> = {
 function markdownToDiscord(md: string): string {
   let result = md;
   // Convert headings (## Title → **Title**)
-  result = result.replace(/^#{1,6}\s+(.+)$/gm, "**$1**");
+  result = result.replace(/^#{1,6}\s+(.+)$/gm, "$1"); // Kareleri kaldır, yıldız ekleme
   // Convert list items to emoji bullet style
   result = result.replace(/^[-*]\s+(.+)$/gm, (_, content) => {
     // Auto-assign emojis based on keywords
@@ -142,26 +142,12 @@ export function buildChangelogEmbed(changelog: ChangelogEmbed): object {
 
 // ─── Build Full Webhook Payload ─────────────────────────
 
-export function buildWebhookPayload(
-  embed: object,
-  username?: string,
-  avatarUrl?: string
-): object {
-  // Temel paket (sadece embed içeriği)
-  const payload: any = {
-    ...(embed as any),
-  };
-
-  // Kullanıcı adı boş değilse ekle
-  if (username && username.trim() !== "") {
-    payload.username = username;
-  }
-
-  // Avatar URL boş değilse ekle
-  if (avatarUrl && avatarUrl.trim() !== "") {
-    payload.avatar_url = avatarUrl;
-  }
-
+export function buildWebhookPayload(embed: object, username?: string, avatarUrl?: string): object {
+  const payload: any = { ... (embed as any) };
+  
+  if (username?.trim()) payload.username = username;
+  if (avatarUrl?.trim()) payload.avatar_url = avatarUrl;
+  
   return payload;
 }
 
