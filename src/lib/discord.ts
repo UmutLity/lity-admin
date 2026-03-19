@@ -147,17 +147,11 @@ export function buildWebhookPayload(
   username?: string,
   avatarUrl?: string
 ): object {
-  const payload: any = {
+  return {
     username: username || "Lity Software",
     ...(embed as any),
+    // avatar_url satırını tamamen sildik/yorum satırı yaptık
   };
-
-  // Sadece avatarUrl gerçekten varsa ve boş değilse ekle
-  if (avatarUrl && avatarUrl.trim() !== "") {
-    payload.avatar_url = avatarUrl;
-  }
-
-  return payload;
 }
 
 // ─── Send Discord Webhook ───────────────────────────────
