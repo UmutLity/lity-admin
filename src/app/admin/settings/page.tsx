@@ -89,16 +89,18 @@ export default function SettingsPage() {
 const handleTestWebhook = async () => {
   setTestingWebhook(true);
   try {
+    // Liste içinden ilgili ayarları bulalım
+    const getSetting = (key: string) => settings?.find((s: any) => s.key === key)?.value || "";
+
     const res = await fetch("/api/admin/discord/test", { 
       method: "POST",
       headers: {
-        "Content-Type": "application/json", // 415 hatasını bu satır çözer
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        webhookUrl: settings?.discordWebhookUrl || "", 
-        username: settings?.discordUsername || "",
-        avatarUrl: settings?.discordAvatarUrl || "",
-        // Eğer varsa son embed verisini de ekleyebilirsin
+        webhookUrl: getSetting("discordWebhookUrl"), 
+        username: getSetting("discordUsername"),
+        avatarUrl: getSetting("discordAvatarUrl"),
       }),
     });
     
