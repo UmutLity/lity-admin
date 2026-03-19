@@ -95,9 +95,9 @@ const handleTestWebhook = async () => {
         "Content-Type": "application/json", // 415 hatasını bu satır çözer
       },
       body: JSON.stringify({
-        webhookUrl: discordSettings.webhookUrl,
-        username: discordSettings.botUsername,
-        avatarUrl: discordSettings.botAvatarUrl,
+        webhookUrl: settings?.discordWebhookUrl || "", 
+        username: settings?.discordUsername || "",
+        avatarUrl: settings?.discordAvatarUrl || "",
         // Eğer varsa son embed verisini de ekleyebilirsin
       }),
     });
