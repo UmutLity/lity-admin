@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Validation failed", errors }, { status: 400 });
     }
 
-    const { prices, ...productData } = validation.data;
+    const { prices, features, ...productData } = validation.data;
 
     // Check slug uniqueness
     const existing = await prisma.product.findUnique({ where: { slug: productData.slug } });
@@ -73,8 +73,18 @@ export async function POST(req: NextRequest) {
         prices: prices?.length
           ? { create: prices.map((p) => ({ plan: p.plan, price: p.price })) }
           : undefined,
+        features: features?.length
+          ? {
+              create: features.map((feature, index) => ({
+                title: feature.title,
+                description: feature.description || null,
+                icon: feature.icon || null,
+                order: feature.order ?? index,
+              })),
+            }
+          : undefined,
       },
-      include: { prices: true },
+      include: { prices: true, features: { orderBy: { order: "asc" } } },
     });
 
     await createAuditLog({

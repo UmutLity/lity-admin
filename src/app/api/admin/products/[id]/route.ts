@@ -48,14 +48,14 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     const existing = await prisma.product.findUnique({
       where: { id: params.id },
-      include: { prices: true },
+      include: { prices: true, features: true },
     });
 
     if (!existing) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    const { prices, ...productData } = validation.data;
+    const { prices, features, ...productData } = validation.data;
 
     // Check slug uniqueness if changed
     if (productData.slug !== existing.slug) {
@@ -78,8 +78,21 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
           deleteMany: {},
           create: prices?.map((p) => ({ plan: p.plan, price: p.price })) || [],
         },
+        ...(features
+          ? {
+              features: {
+                deleteMany: {},
+                create: features.map((feature, index) => ({
+                  title: feature.title,
+                  description: feature.description || null,
+                  icon: feature.icon || null,
+                  order: feature.order ?? index,
+                })),
+              },
+            }
+          : {}),
       },
-      include: { prices: true },
+      include: { prices: true, features: { orderBy: { order: "asc" } } },
     });
 
     const diff = diffObjects(

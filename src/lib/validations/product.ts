@@ -21,6 +21,12 @@ export const productSchema = z.object({
     plan: z.enum(["DAILY", "WEEKLY", "MONTHLY", "LIFETIME"]),
     price: z.number().min(0, "Price must be 0 or greater"),
   })).optional(),
+  features: z.array(z.object({
+    title: z.string().min(1, "Feature title is required").max(200),
+    description: z.string().max(500).optional().nullable(),
+    icon: z.string().max(100).optional().nullable(),
+    order: z.number().int().default(0),
+  })).optional(),
 });
 
 export const productStatusSchema = z.object({

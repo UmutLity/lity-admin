@@ -19,6 +19,13 @@ interface PriceEntry {
   price: number;
 }
 
+interface FeatureEntry {
+  title: string;
+  description: string;
+  icon: string;
+  order: number;
+}
+
 interface ProductFormProps {
   initialData?: any;
   isEditing?: boolean;
@@ -77,6 +84,15 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
   const [prices, setPrices] = useState<PriceEntry[]>(
     initialData?.prices?.map((p: any) => ({ plan: p.plan, price: p.price })) || []
   );
+  const [features, setFeatures] = useState<FeatureEntry[]>(
+    initialData?.features?.map((feature: any, index: number) => ({
+      title: feature.title || "",
+      description: feature.description || "",
+      icon: feature.icon || "",
+      order: feature.order ?? index,
+    })) || []
+  );
+  const [bulkFeatures, setBulkFeatures] = useState("");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -110,6 +126,64 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
     setPrices(updated);
   };
 
+  const addFeature = () => {
+    setFeatures((prev) => [
+      ...prev,
+      { title: "", description: "", icon: "", order: prev.length },
+    ]);
+  };
+
+  const removeFeature = (index: number) => {
+    setFeatures((prev) =>
+      prev
+        .filter((_, i) => i !== index)
+        .map((feature, nextIndex) => ({ ...feature, order: nextIndex }))
+    );
+  };
+
+  const updateFeature = (index: number, key: keyof FeatureEntry, value: string | number) => {
+    setFeatures((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [key]: value };
+      return updated;
+    });
+  };
+
+  const applyBulkFeatures = () => {
+    const parsed = bulkFeatures
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [title = "", description = "", icon = ""] = line.split("|").map((part) => part.trim());
+        return { title, description, icon };
+      })
+      .filter((feature) => feature.title);
+
+    if (!parsed.length) {
+      addToast({
+        type: "warning",
+        title: "Uyari",
+        description: "Toplu ekleme icin en az bir gecerli satir girin",
+      });
+      return;
+    }
+
+    setFeatures((prev) => [
+      ...prev,
+      ...parsed.map((feature, index) => ({
+        ...feature,
+        order: prev.length + index,
+      })),
+    ]);
+    setBulkFeatures("");
+    addToast({
+      type: "success",
+      title: "Eklendi",
+      description: `${parsed.length} ozellik listeye eklendi`,
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -121,6 +195,14 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
         displayOrder: Number((form as any).displayOrder ?? form.sortOrder ?? 0),
         sortOrder: Number(form.sortOrder),
         prices: prices.map((p) => ({ plan: p.plan as any, price: Number(p.price) })),
+        features: features
+          .filter((feature) => feature.title.trim())
+          .map((feature, index) => ({
+            title: feature.title.trim(),
+            description: feature.description.trim() || null,
+            icon: feature.icon.trim() || null,
+            order: Number(feature.order ?? index),
+          })),
       };
 
       const url = isEditing
@@ -228,6 +310,94 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                       <Button type="button" variant="ghost" size="icon" onClick={() => removePrice(idx)} className="text-destructive hover:text-destructive">
                         <Trash2 className="h-4 w-4" />
                       </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Ã–zellikler</CardTitle>
+                <Button type="button" variant="outline" size="sm" onClick={addFeature}>
+                  <Plus className="h-4 w-4" /> Ã–zellik Ekle
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="bulkFeatures">Toplu Ekle</Label>
+                <Textarea
+                  id="bulkFeatures"
+                  value={bulkFeatures}
+                  onChange={(e) => setBulkFeatures(e.target.value)}
+                  placeholder={"Aim Assist|Smooth lock and FOV settings|crosshair\nESP|Player, loot and distance info|radar"}
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Her satÄ±rÄ± <code>baÅŸlÄ±k|aÃ§Ä±klama|ikon</code> formatÄ±nda girin. AÃ§Ä±klama ve ikon opsiyoneldir.
+                </p>
+                <Button type="button" variant="secondary" size="sm" onClick={applyBulkFeatures}>
+                  Toplu Listeye Ekle
+                </Button>
+              </div>
+
+              {features.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  HenÃ¼z Ã¶zellik eklenmedi. Elle ekleyebilir veya toplu yapÄ±ÅŸtÄ±rabilirsiniz.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {features.map((feature, idx) => (
+                    <div key={`${feature.title}-${idx}`} className="rounded-lg border p-4 space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label>BaÅŸlÄ±k *</Label>
+                          <Input
+                            value={feature.title}
+                            onChange={(e) => updateFeature(idx, "title", e.target.value)}
+                            placeholder="Aim Assist"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Ä°kon</Label>
+                          <Input
+                            value={feature.icon}
+                            onChange={(e) => updateFeature(idx, "icon", e.target.value)}
+                            placeholder="crosshair"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-3">
+                        <div className="space-y-2">
+                          <Label>AÃ§Ä±klama</Label>
+                          <Input
+                            value={feature.description}
+                            onChange={(e) => updateFeature(idx, "description", e.target.value)}
+                            placeholder="Smooth lock and FOV settings"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>SÄ±ra</Label>
+                          <Input
+                            type="number"
+                            value={feature.order}
+                            onChange={(e) => updateFeature(idx, "order", Number(e.target.value))}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFeature(idx)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" /> KaldÄ±r
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
