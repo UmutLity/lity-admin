@@ -75,6 +75,7 @@ const planOptions = [
   { value: "WEEKLY", label: "Weekly" },
   { value: "MONTHLY", label: "Monthly" },
   { value: "3_MONTHS", label: "3 Months" },
+  { value: "ONETIME", label: "One Time" },
   { value: "LIFETIME", label: "Lifetime" },
 ];
 

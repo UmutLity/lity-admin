@@ -29,10 +29,10 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   // Loading state
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.12),transparent_32%),linear-gradient(180deg,#040814,#08101f)]">
+      <div className="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.14),transparent_30%),linear-gradient(180deg,#0b0b12,#13131b)]">
         <div className="flex flex-col items-center gap-4">
           <div className="relative">
-            <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-white/[0.08] border-t-sky-400" />
+            <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-white/[0.08] border-t-violet-400" />
           </div>
           <p className="text-xs text-zinc-600 font-medium">Loading...</p>
         </div>

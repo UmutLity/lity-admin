@@ -18,7 +18,7 @@ export const productSchema = z.object({
   sortOrder: z.number().int().default(0),
   displayOrder: z.number().int().default(0),
   prices: z.array(z.object({
-    plan: z.enum(["DAILY", "3_DAYS", "WEEKLY", "MONTHLY", "3_MONTHS", "LIFETIME"]),
+    plan: z.enum(["DAILY", "3_DAYS", "WEEKLY", "MONTHLY", "3_MONTHS", "LIFETIME", "ONETIME"]),
     price: z.number().min(0, "Price must be 0 or greater"),
   })).optional(),
   features: z.array(z.object({

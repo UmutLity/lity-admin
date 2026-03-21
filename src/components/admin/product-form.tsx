@@ -53,6 +53,7 @@ const planOptions = [
   { value: "WEEKLY", label: "Weekly" },
   { value: "MONTHLY", label: "Monthly" },
   { value: "3_MONTHS", label: "3 Months" },
+  { value: "ONETIME", label: "One Time" },
   { value: "LIFETIME", label: "Lifetime" },
 ];
 
@@ -63,10 +64,10 @@ const currencyOptions = [
 ];
 
 const cardClassName =
-  "border-slate-800/80 bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(7,12,24,0.98))] shadow-[0_18px_60px_rgba(2,6,23,0.45)]";
+  "border-violet-500/10 bg-[linear-gradient(180deg,rgba(23,23,31,0.98),rgba(14,14,20,0.98))] shadow-[0_18px_60px_rgba(7,7,12,0.42)]";
 
 const inputClassName =
-  "border-slate-700/70 bg-slate-950/70 text-slate-100 placeholder:text-slate-500 focus-visible:ring-sky-500/70";
+  "border-zinc-700/70 bg-[#14141c] text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-violet-400/50";
 
 export function ProductForm({ initialData, isEditing }: ProductFormProps) {
   const router = useRouter();
@@ -259,9 +260,9 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
         <div className="space-y-6 lg:col-span-2">
           <Card className={cardClassName}>
             <CardHeader className="space-y-3">
-              <div className="flex items-center gap-3 text-sky-300">
+              <div className="flex items-center gap-3 text-violet-300">
                 <Package2 className="h-5 w-5" />
-                <span className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300/80">
+                <span className="text-xs font-semibold uppercase tracking-[0.24em] text-violet-300/80">
                   Product Setup
                 </span>
               </div>
@@ -589,7 +590,7 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
 
           <Card className={cardClassName}>
             <CardHeader className="space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
+              <span className="text-xs font-semibold uppercase tracking-[0.24em] text-violet-300/80">
                 Visibility
               </span>
               <CardTitle className="text-white">Gorunurluk</CardTitle>
@@ -615,7 +616,7 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
           <div className="flex gap-2">
             <Button
               type="submit"
-              className="flex-1 bg-sky-500 text-slate-950 hover:bg-sky-400"
+              className="flex-1 bg-violet-500 text-white hover:bg-violet-400"
               loading={loading}
             >
               {isEditing ? "Guncelle" : "Olustur"}

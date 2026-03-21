@@ -67,9 +67,9 @@
 
 body {
   background:
-    radial-gradient(circle at top, rgba(56, 189, 248, 0.08), transparent 24%),
-    radial-gradient(circle at 85% 12%, rgba(16, 185, 129, 0.07), transparent 18%),
-    linear-gradient(180deg, #050913 0%, #09111f 44%, #0a1220 100%);
+    radial-gradient(circle at top, rgba(168, 85, 247, 0.08), transparent 24%),
+    radial-gradient(circle at 85% 12%, rgba(161, 161, 170, 0.06), transparent 18%),
+    linear-gradient(180deg, #0c0c12 0%, #13131a 44%, #16161e 100%);
 }
 
 /* ━━━ Premium Scrollbar ━━━ */
@@ -131,9 +131,9 @@ body {
   inset: 0;
   z-index: -2;
   background:
-    radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.11), transparent 20%),
-    radial-gradient(circle at 85% 18%, rgba(14, 165, 233, 0.09), transparent 18%),
-    linear-gradient(180deg, rgba(2, 6, 23, 0.98), rgba(8, 15, 30, 0.96));
+    radial-gradient(circle at 10% 10%, rgba(168, 85, 247, 0.11), transparent 20%),
+    radial-gradient(circle at 85% 18%, rgba(161, 161, 170, 0.08), transparent 18%),
+    linear-gradient(180deg, rgba(10, 10, 16, 0.98), rgba(18, 18, 26, 0.96));
 }
 
 .admin-shell::after {
@@ -186,7 +186,7 @@ body {
   transition: all 0.25s ease;
 }
 .premium-card:hover {
-  border-color: rgba(56, 189, 248, 0.18);
+  border-color: rgba(168, 85, 247, 0.18);
   transform: translateY(-2px);
   box-shadow: 0 28px 70px rgba(2, 6, 23, 0.34);
 }
@@ -209,13 +209,13 @@ body {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.9), transparent);
+  background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.85), transparent);
   opacity: 0;
   transition: opacity 0.3s;
 }
 .kpi-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(56, 189, 248, 0.18);
+  border-color: rgba(168, 85, 247, 0.18);
   box-shadow: 0 24px 52px rgba(2, 6, 23, 0.32);
 }
 .kpi-card:hover::before {
