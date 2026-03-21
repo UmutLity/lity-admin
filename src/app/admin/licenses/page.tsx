@@ -44,12 +44,9 @@ type LicenseRecord = {
 };
 
 const emptyForm = {
-  customerId: "",
   productId: "",
   plan: "LIFETIME",
   keyInput: "",
-  status: "ACTIVE",
-  expiresAt: "",
   note: "",
 };
 
@@ -64,10 +61,15 @@ function truncateLink(url: string | null) {
   return url.length > 44 ? `${url.slice(0, 44)}...` : url;
 }
 
+function getDisplayStatus(license: LicenseRecord) {
+  if (license.status === "REVOKED") return "REVOKED" as const;
+  if (license.expiresAt && new Date(license.expiresAt).getTime() < Date.now()) return "EXPIRED" as const;
+  return "ACTIVE" as const;
+}
+
 export default function LicensesPage() {
   const { addToast } = useToast();
   const [licenses, setLicenses] = useState<LicenseRecord[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -83,20 +85,17 @@ export default function LicensesPage() {
       const params = new URLSearchParams();
       if (search) params.set("search", search);
 
-      const [licenseRes, customerRes, productRes] = await Promise.all([
+      const [licenseRes, productRes] = await Promise.all([
         fetch(`/api/admin/licenses?${params.toString()}`, { credentials: "include" }),
-        fetch("/api/admin/customers", { credentials: "include" }),
         fetch("/api/admin/products", { credentials: "include" }),
       ]);
 
-      const [licenseData, customerData, productData] = await Promise.all([
+      const [licenseData, productData] = await Promise.all([
         licenseRes.json(),
-        customerRes.json(),
         productRes.json(),
       ]);
 
       setLicenses(licenseData.data || []);
-      setCustomers(customerData.data || []);
       setProducts(productData.data || []);
     } catch (error) {
       console.error(error);
@@ -112,14 +111,11 @@ export default function LicensesPage() {
 
   const stats = useMemo(() => ({
     total: licenses.length,
-    active: licenses.filter((item) => item.status === "ACTIVE").length,
+    active: licenses.filter((item) => getDisplayStatus(item) === "ACTIVE").length,
     downloads: licenses.reduce((sum, item) => sum + item.downloadCount, 0),
   }), [licenses]);
 
-  const selectedProduct = useMemo(
-    () => products.find((product) => product.id === form.productId) || null,
-    [products, form.productId]
-  );
+  const selectedProduct = useMemo(() => products.find((product) => product.id === form.productId) || null, [products, form.productId]);
 
   const resetForm = () => {
     setForm(emptyForm);
@@ -146,12 +142,9 @@ export default function LicensesPage() {
   const openEdit = (license: LicenseRecord) => {
     setEditing(license);
     setForm({
-      customerId: license.customer?.id || "",
       productId: license.product.id,
       plan: license.plan,
       keyInput: license.key,
-      status: license.status,
-      expiresAt: license.expiresAt ? new Date(license.expiresAt).toISOString().slice(0, 16) : "",
       note: license.note || "",
     });
     setShowDialog(true);
@@ -177,13 +170,10 @@ export default function LicensesPage() {
     setSaving(true);
     try {
       const payload = {
-        customerId: form.customerId || null,
         productId: form.productId,
         plan: form.plan,
         key: parsedKeys[0],
         keys: !editing ? parsedKeys : undefined,
-        status: form.status,
-        expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : null,
         note: form.note.trim() || null,
       };
 
@@ -328,7 +318,9 @@ export default function LicensesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
-                {licenses.map((license) => (
+                {licenses.map((license) => {
+                  const displayStatus = getDisplayStatus(license);
+                  return (
                   <tr key={license.id}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
@@ -343,8 +335,10 @@ export default function LicensesPage() {
                             </button>
                           </div>
                           <div className="mt-1 flex items-center gap-2">
-                            <Badge variant="outline" className={cn("border text-[10px] tracking-[0.18em]", statusStyles[license.status])}>{license.status}</Badge>
-                            <span className="text-xs uppercase tracking-[0.18em] text-zinc-500">{license.plan}</span>
+                            <Badge variant="outline" className={cn("border text-[10px] tracking-[0.18em]", statusStyles[displayStatus])}>
+                              {displayStatus === "ACTIVE" ? "AVAILABLE" : displayStatus}
+                            </Badge>
+                            <span className="text-xs uppercase tracking-[0.18em] text-zinc-500">{license.plan === "DAILY" ? "1 DAY" : "LIFETIME"}</span>
                           </div>
                         </div>
                       </div>
@@ -365,14 +359,7 @@ export default function LicensesPage() {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      {license.customer ? (
-                        <>
-                          <p className="text-sm font-medium text-zinc-200">{license.customer.username}</p>
-                          <p className="mt-1 text-xs text-zinc-500">{license.customer.email}</p>
-                        </>
-                      ) : (
-                        <span className="text-sm text-zinc-600">Unassigned</span>
-                      )}
+                      <span className="text-sm text-zinc-600">Not assigned</span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="inline-flex min-w-[48px] items-center justify-center rounded-xl bg-[#151a2a] px-3 py-1.5 text-sm font-semibold text-slate-200">
@@ -413,7 +400,8 @@ export default function LicensesPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -463,50 +451,25 @@ export default function LicensesPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Plan</Label>
+                <Label>Duration</Label>
                 <Select
                   value={form.plan}
                   onChange={(e) => setForm((prev) => ({ ...prev, plan: e.target.value }))}
                   options={[
-                    { value: "DAILY", label: "Daily" },
-                    { value: "WEEKLY", label: "Weekly" },
-                    { value: "MONTHLY", label: "Monthly" },
                     { value: "LIFETIME", label: "Lifetime" },
+                    { value: "DAILY", label: "1 Day" },
                   ]}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label>Status</Label>
-                <Select
-                  value={form.status}
-                  onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}
-                  options={[
-                    { value: "ACTIVE", label: "Active" },
-                    { value: "EXPIRED", label: "Expired" },
-                    { value: "REVOKED", label: "Revoked" },
-                  ]}
-                />
+                <div className="flex h-10 items-center rounded-md border border-white/[0.08] bg-[#111827] px-3 text-sm text-zinc-400">
+                  Available when created
+                </div>
               </div>
 
               <div className="space-y-2 sm:col-span-2">
-                <Label>Customer</Label>
-                <Select
-                  value={form.customerId}
-                  onChange={(e) => setForm((prev) => ({ ...prev, customerId: e.target.value }))}
-                  options={[
-                    { value: "", label: "No customer assigned" },
-                    ...customers.map((customer) => ({ value: customer.id, label: `${customer.username} (${customer.email})` })),
-                  ]}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Expires At</Label>
-                <Input type="datetime-local" value={form.expiresAt} onChange={(e) => setForm((prev) => ({ ...prev, expiresAt: e.target.value }))} />
-              </div>
-
-              <div className="space-y-2">
                 <Label>Notes</Label>
                 <Input value={form.note} onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))} placeholder="Internal note" />
               </div>

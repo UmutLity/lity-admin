@@ -5,12 +5,9 @@ import { requireAdmin } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
 
 const updateLicenseSchema = z.object({
-  customerId: z.string().cuid().optional().nullable(),
   productId: z.string().cuid(),
-  plan: z.string().min(1).max(40),
+  plan: z.enum(["DAILY", "LIFETIME"]).default("LIFETIME"),
   key: z.string().min(3).max(120).regex(/^[a-zA-Z0-9_.-]+$/),
-  status: z.enum(["ACTIVE", "EXPIRED", "REVOKED"]),
-  expiresAt: z.string().datetime().optional().nullable(),
   note: z.string().max(500).optional().nullable(),
 });
 
@@ -41,6 +38,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     const data = validation.data;
+    const expiresAt = data.plan === "DAILY"
+      ? new Date(Date.now() + 24 * 60 * 60 * 1000)
+      : null;
     const product = await prisma.product.findUnique({
       where: { id: data.productId },
       select: { id: true, defaultLoaderUrl: true },
@@ -70,14 +70,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const updated = await prisma.license.update({
       where: { id: params.id },
       data: {
-        customerId: data.customerId || null,
+        customerId: current.customerId || null,
         productId: data.productId,
         plan: data.plan.toUpperCase(),
         key: normalizedKey,
-        status: data.status,
+        status: expiresAt && expiresAt.getTime() < Date.now() ? "EXPIRED" : "ACTIVE",
         downloadUrl: product.defaultLoaderUrl,
         note: data.note || null,
-        expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+        expiresAt,
       },
       include: {
         product: { select: { id: true, name: true, slug: true } },

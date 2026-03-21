@@ -5,13 +5,10 @@ import { requireAdmin } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
 
 const licenseSchema = z.object({
-  customerId: z.string().cuid().optional().nullable(),
   productId: z.string().cuid(),
-  plan: z.string().min(1).max(40),
+  plan: z.enum(["DAILY", "LIFETIME"]).default("LIFETIME"),
   key: z.string().min(3).max(120).regex(/^[a-zA-Z0-9_.-]+$/, "License key can only contain letters, numbers, dot, underscore and dash").optional(),
   keys: z.array(z.string().min(3).max(120).regex(/^[a-zA-Z0-9_.-]+$/)).optional(),
-  status: z.enum(["ACTIVE", "EXPIRED", "REVOKED"]).default("ACTIVE"),
-  expiresAt: z.string().datetime().optional().nullable(),
   note: z.string().max(500).optional().nullable(),
 }).refine((value) => Boolean(value.key || (value.keys && value.keys.length > 0)), {
   message: "At least one license key is required",
@@ -85,6 +82,9 @@ export async function POST(req: NextRequest) {
     }
 
     const inputKeys = Array.from(new Set((data.keys?.length ? data.keys : [data.key!]).map((item) => item.trim()).filter(Boolean)));
+    const expiresAt = data.plan === "DAILY"
+      ? new Date(Date.now() + 24 * 60 * 60 * 1000)
+      : null;
     const duplicates = await prisma.license.findMany({
       where: { key: { in: inputKeys } },
       select: { key: true },
@@ -99,14 +99,14 @@ export async function POST(req: NextRequest) {
     const created = await prisma.$transaction(
       inputKeys.map((licenseKey) => prisma.license.create({
         data: {
-          customerId: data.customerId || null,
+          customerId: null,
           productId: data.productId,
           plan: data.plan.toUpperCase(),
           key: licenseKey,
-          status: data.status,
+          status: "ACTIVE",
           downloadUrl: product.defaultLoaderUrl,
           note: data.note || null,
-          expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+          expiresAt,
         },
         include: {
           product: { select: { id: true, name: true, slug: true } },
