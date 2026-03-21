@@ -65,6 +65,13 @@
   }
 }
 
+body {
+  background:
+    radial-gradient(circle at top, rgba(56, 189, 248, 0.08), transparent 24%),
+    radial-gradient(circle at 85% 12%, rgba(16, 185, 129, 0.07), transparent 18%),
+    linear-gradient(180deg, #050913 0%, #09111f 44%, #0a1220 100%);
+}
+
 /* ━━━ Premium Scrollbar ━━━ */
 ::-webkit-scrollbar {
   width: 6px;
@@ -112,6 +119,37 @@
   animation: fade-in-up 0.35s ease-out;
 }
 
+.admin-shell {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+}
+
+.admin-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.11), transparent 20%),
+    radial-gradient(circle at 85% 18%, rgba(14, 165, 233, 0.09), transparent 18%),
+    linear-gradient(180deg, rgba(2, 6, 23, 0.98), rgba(8, 15, 30, 0.96));
+}
+
+.admin-shell::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.04) 1px, transparent 1px);
+  background-size: 38px 38px;
+  mask-image: radial-gradient(circle at center, black 35%, transparent 85%);
+  opacity: 0.35;
+}
+
 /* ━━━ Glass Morphism Utilities ━━━ */
 .glass {
   background: rgba(255, 255, 255, 0.03);
@@ -141,26 +179,28 @@
 
 /* ━━━ Premium Card ━━━ */
 .premium-card {
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
-  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(8, 15, 30, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 1.25rem;
+  box-shadow: 0 22px 60px rgba(2, 6, 23, 0.24);
   transition: all 0.25s ease;
 }
 .premium-card:hover {
-  border-color: hsl(var(--border) / 1.5);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border-color: rgba(56, 189, 248, 0.18);
+  transform: translateY(-2px);
+  box-shadow: 0 28px 70px rgba(2, 6, 23, 0.34);
 }
 
 /* ━━━ KPI Card ━━━ */
 .kpi-card {
   position: relative;
   overflow: hidden;
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
-  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(8, 15, 30, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 1.25rem;
   padding: 1.25rem 1.5rem;
   transition: all 0.25s ease;
+  box-shadow: 0 18px 48px rgba(2, 6, 23, 0.2);
 }
 .kpi-card::before {
   content: '';
@@ -169,13 +209,14 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, hsl(var(--primary)), transparent);
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.9), transparent);
   opacity: 0;
   transition: opacity 0.3s;
 }
 .kpi-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: rgba(56, 189, 248, 0.18);
+  box-shadow: 0 24px 52px rgba(2, 6, 23, 0.32);
 }
 .kpi-card:hover::before {
   opacity: 1;

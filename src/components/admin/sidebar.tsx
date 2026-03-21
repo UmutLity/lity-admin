@@ -128,22 +128,22 @@ export function Sidebar() {
         href={item.href}
         onClick={() => setMobileOpen(false)}
         className={cn(
-          "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all duration-200",
+          "group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200",
           active
-            ? "bg-gradient-to-r from-purple-600/20 to-violet-600/10 text-white shadow-sm"
-            : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
+            ? "bg-[linear-gradient(135deg,rgba(56,189,248,0.18),rgba(14,165,233,0.08))] text-white shadow-[0_14px_34px_rgba(8,47,73,0.28)] ring-1 ring-sky-400/15"
+            : "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.04]"
         )}
         title={collapsed ? item.label : undefined}
       >
         {/* Active indicator */}
         {active && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-gradient-to-b from-purple-500 to-violet-500" />
+          <div className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-gradient-to-b from-sky-400 to-cyan-300" />
         )}
         <div className={cn(
-          "flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 flex-shrink-0",
+          "flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl transition-all duration-200",
           active
-            ? "bg-gradient-to-br from-purple-500/20 to-violet-500/20 text-purple-400"
-            : "text-zinc-500 group-hover:text-zinc-300 group-hover:bg-white/[0.04]"
+            ? "bg-[linear-gradient(135deg,rgba(56,189,248,0.16),rgba(34,211,238,0.12))] text-sky-300"
+            : "text-zinc-500 group-hover:bg-white/[0.04] group-hover:text-zinc-200"
         )}>
           <item.icon className="h-[18px] w-[18px]" />
         </div>
@@ -166,22 +166,22 @@ export function Sidebar() {
     <>
       {/* Logo */}
       <div className={cn(
-        "flex items-center h-16 border-b border-white/[0.06] px-4 flex-shrink-0",
+        "flex h-20 flex-shrink-0 items-center border-b border-white/[0.06] px-4",
         collapsed ? "justify-center" : "justify-between"
       )}>
         {!collapsed ? (
           <Link href="/admin" className="flex items-center gap-2.5 group">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 shadow-glow">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#38bdf8,#0ea5e9)] shadow-[0_16px_34px_rgba(14,165,233,0.35)]">
               <Shield className="h-4 w-4 text-white" />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-bold text-white tracking-tight">Lity Admin</span>
-              <span className="text-[10px] text-zinc-500 font-medium">Management Panel</span>
+              <span className="text-sm font-bold tracking-tight text-white">Lity Admin</span>
+              <span className="text-[10px] font-medium uppercase tracking-[0.24em] text-zinc-500">Control Surface</span>
             </div>
           </Link>
         ) : (
           <Link href="/admin">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 shadow-glow">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#38bdf8,#0ea5e9)] shadow-[0_16px_34px_rgba(14,165,233,0.35)]">
               <Shield className="h-4.5 w-4.5 text-white" />
             </div>
           </Link>
@@ -197,12 +197,12 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+      <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-5">
         {filteredGroups.map((group) => (
           <div key={group.title}>
             {!collapsed && (
               <div className="px-3 mb-2">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.26em] text-zinc-600">
                   {group.title}
                 </span>
               </div>
@@ -228,10 +228,10 @@ export function Sidebar() {
       )}
 
       {/* User Footer */}
-      <div className="border-t border-white/[0.06] p-3 flex-shrink-0">
-        {!collapsed && session?.user && (
-          <div className="flex items-center gap-3 px-3 py-2 mb-1 rounded-xl bg-white/[0.02]">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-violet-500/20 text-purple-400 text-xs font-bold flex-shrink-0">
+        <div className="border-t border-white/[0.06] p-3 flex-shrink-0">
+          {!collapsed && session?.user && (
+          <div className="mb-1 flex items-center gap-3 rounded-2xl border border-white/[0.05] bg-white/[0.02] px-3 py-3">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,rgba(56,189,248,0.16),rgba(14,165,233,0.08))] text-xs font-bold text-sky-300">
               {(session.user.name || "A").charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -243,7 +243,7 @@ export function Sidebar() {
         <button
           onClick={() => signOut({ callbackUrl: "/admin/login" })}
           className={cn(
-            "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium text-zinc-500 hover:text-red-400 hover:bg-red-500/[0.06] transition-all duration-200",
+            "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium text-zinc-500 transition-all duration-200 hover:bg-red-500/[0.06] hover:text-red-400",
             collapsed && "justify-center"
           )}
           title={collapsed ? "Logout" : undefined}
@@ -269,7 +269,7 @@ export function Sidebar() {
       <aside
         className={cn(
           "fixed left-0 top-0 z-50 h-full flex flex-col transition-all duration-300 ease-in-out",
-          "bg-[#080d19] border-r border-white/[0.06]",
+          "border-r border-white/[0.06] bg-[linear-gradient(180deg,rgba(3,7,18,0.96),rgba(8,14,28,0.94))] backdrop-blur-xl",
           collapsed ? "w-[72px]" : "w-[260px]",
           // Mobile
           "max-lg:w-[260px] max-lg:shadow-2xl max-lg:shadow-black/50",

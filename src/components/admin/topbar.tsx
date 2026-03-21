@@ -21,16 +21,18 @@ export function Topbar({ title, description, children }: TopbarProps) {
   const role = (session?.user as any)?.role;
 
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8 animate-fade-in">
+    <div className="mb-8 flex flex-col gap-4 rounded-[28px] border border-white/[0.06] bg-[linear-gradient(135deg,rgba(15,23,42,0.72),rgba(10,15,30,0.42))] px-6 py-5 shadow-[0_24px_60px_rgba(2,6,23,0.22)] backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between animate-fade-in">
       <div>
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-white">{title}</h1>
           {role && (
             <Badge
               variant={role === "ADMIN" ? "default" : "secondary"}
               className={cn(
-                "text-[10px] font-semibold",
-                role === "ADMIN" && "bg-gradient-to-r from-purple-500/20 to-violet-500/20 text-purple-400 border border-purple-500/20"
+                "border text-[10px] font-semibold uppercase tracking-[0.22em]",
+                role === "ADMIN"
+                  ? "border-sky-400/20 bg-sky-400/10 text-sky-300"
+                  : "border-white/[0.08] bg-white/[0.04] text-zinc-300"
               )}
             >
               {role}
@@ -38,7 +40,7 @@ export function Topbar({ title, description, children }: TopbarProps) {
           )}
         </div>
         {description && (
-          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+          <p className="mt-1 text-sm text-zinc-400">{description}</p>
         )}
       </div>
       {children && <div className="flex items-center gap-2">{children}</div>}
@@ -106,7 +108,7 @@ export function AdminHeader() {
     : [];
 
   return (
-    <header className="sticky top-0 z-30 h-14 flex items-center justify-between px-6 border-b border-white/[0.04] bg-[#0a0f1e]/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/[0.05] bg-[linear-gradient(180deg,rgba(6,11,24,0.9),rgba(6,11,24,0.72))] px-6 backdrop-blur-2xl">
       {/* Left: Search */}
       <div className="relative flex-1 max-w-md">
         <div className="relative">
@@ -118,14 +120,14 @@ export function AdminHeader() {
             onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
             onFocus={() => setSearchOpen(true)}
             onBlur={() => setTimeout(() => setSearchOpen(false), 200)}
-            className="w-full h-9 pl-9 pr-12 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/30 focus:bg-white/[0.06] transition-all"
+            className="h-10 w-full rounded-2xl border border-white/[0.06] bg-white/[0.04] pl-10 pr-12 text-sm text-zinc-300 placeholder:text-zinc-600 transition-all focus:border-sky-400/30 focus:bg-white/[0.06] focus:outline-none"
           />
           <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-0.5 text-[10px] text-zinc-600 font-medium bg-white/[0.04] px-1.5 py-0.5 rounded">
             <Command className="h-2.5 w-2.5" />K
           </kbd>
         </div>
         {searchOpen && filteredRoutes.length > 0 && (
-          <div className="absolute top-full mt-1 left-0 right-0 bg-[#0d1424] border border-white/[0.08] rounded-xl shadow-2xl shadow-black/40 overflow-hidden z-50">
+          <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d1424] shadow-2xl shadow-black/40">
             {filteredRoutes.map((route) => (
               <button
                 key={route.path}
@@ -146,7 +148,7 @@ export function AdminHeader() {
         <div ref={notifRef} className="relative">
           <button
             onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }}
-            className="relative flex items-center justify-center h-9 w-9 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04] transition-all"
+            className="relative flex h-10 w-10 items-center justify-center rounded-2xl text-zinc-500 transition-all hover:bg-white/[0.04] hover:text-zinc-300"
           >
             <Bell className="h-[18px] w-[18px]" />
             {unreadCount > 0 && (
@@ -154,14 +156,14 @@ export function AdminHeader() {
             )}
           </button>
           {notifOpen && (
-            <div className="absolute right-0 top-full mt-2 w-80 bg-[#0d1424] border border-white/[0.08] rounded-xl shadow-2xl shadow-black/40 overflow-hidden z-50">
+            <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d1424] shadow-2xl shadow-black/40">
               <div className="px-4 py-3 border-b border-white/[0.06]">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-white">Notifications</span>
                   {unreadCount > 0 && (
-                    <Badge variant="default" className="text-[10px] bg-purple-500/20 text-purple-400 border-purple-500/20">
-                      {unreadCount} new
-                    </Badge>
+                      <Badge variant="default" className="border-sky-400/20 bg-sky-400/10 text-[10px] text-sky-300">
+                        {unreadCount} new
+                      </Badge>
                   )}
                 </div>
               </div>
@@ -173,7 +175,7 @@ export function AdminHeader() {
                     key={n.id}
                     className={cn(
                       "px-4 py-3 border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors cursor-pointer",
-                      !n.readAt && "bg-purple-500/[0.03]"
+                      !n.readAt && "bg-sky-500/[0.03]"
                     )}
                   >
                     <p className="text-xs font-medium text-zinc-300 line-clamp-1">{n.title}</p>
@@ -183,7 +185,7 @@ export function AdminHeader() {
               </div>
               <button
                 onMouseDown={() => router.push("/admin/notifications")}
-                className="w-full py-2.5 text-xs text-purple-400 hover:text-purple-300 hover:bg-white/[0.02] transition-colors font-medium"
+                className="w-full py-2.5 text-xs font-medium text-sky-300 transition-colors hover:bg-white/[0.02] hover:text-sky-200"
               >
                 View all notifications
               </button>
@@ -192,15 +194,15 @@ export function AdminHeader() {
         </div>
 
         {/* Divider */}
-        <div className="w-px h-6 bg-white/[0.06] mx-1" />
+        <div className="mx-1 h-6 w-px bg-white/[0.06]" />
 
         {/* Profile */}
         <div ref={profileRef} className="relative">
           <button
             onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }}
-            className="flex items-center gap-2 h-9 pl-1.5 pr-2 rounded-lg hover:bg-white/[0.04] transition-all"
+            className="flex h-10 items-center gap-2 rounded-2xl pl-1.5 pr-2 transition-all hover:bg-white/[0.04]"
           >
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center text-white text-[11px] font-bold">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#38bdf8,#0ea5e9)] text-[11px] font-bold text-white shadow-[0_10px_24px_rgba(14,165,233,0.28)]">
               {(session?.user?.name || "A").charAt(0).toUpperCase()}
             </div>
             {!session?.user?.name ? null : (
@@ -211,7 +213,7 @@ export function AdminHeader() {
             <ChevronDown className="h-3 w-3 text-zinc-600" />
           </button>
           {profileOpen && (
-            <div className="absolute right-0 top-full mt-2 w-56 bg-[#0d1424] border border-white/[0.08] rounded-xl shadow-2xl shadow-black/40 overflow-hidden z-50">
+            <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d1424] shadow-2xl shadow-black/40">
               <div className="px-4 py-3 border-b border-white/[0.06]">
                 <p className="text-sm font-semibold text-white truncate">{session?.user?.name}</p>
                 <p className="text-[11px] text-zinc-500 truncate">{session?.user?.email}</p>
