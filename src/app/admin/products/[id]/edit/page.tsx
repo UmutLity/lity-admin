@@ -71,8 +71,10 @@ const statusOptions = [
 
 const planOptions = [
   { value: "DAILY", label: "Daily" },
+  { value: "3_DAYS", label: "3 Days" },
   { value: "WEEKLY", label: "Weekly" },
   { value: "MONTHLY", label: "Monthly" },
+  { value: "3_MONTHS", label: "3 Months" },
   { value: "LIFETIME", label: "Lifetime" },
 ];
 
