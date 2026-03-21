@@ -10,14 +10,6 @@ const updateLicenseSchema = z.object({
   plan: z.string().min(1).max(40),
   key: z.string().min(3).max(120).regex(/^[a-zA-Z0-9_.-]+$/),
   status: z.enum(["ACTIVE", "EXPIRED", "REVOKED"]),
-  downloadUrl: z.string().url().refine((value) => {
-    try {
-      const url = new URL(value);
-      return ["mega.nz", "www.mega.nz", "mega.co.nz", "www.mega.co.nz"].includes(url.hostname);
-    } catch {
-      return false;
-    }
-  }, "Download URL must be a valid Mega link"),
   expiresAt: z.string().datetime().optional().nullable(),
   note: z.string().max(500).optional().nullable(),
 });
@@ -49,6 +41,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     const data = validation.data;
+    const product = await prisma.product.findUnique({
+      where: { id: data.productId },
+      select: { id: true, defaultLoaderUrl: true },
+    });
+
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    if (!product.defaultLoaderUrl) {
+      return NextResponse.json({ error: "Selected product does not have a default Mega loader link yet" }, { status: 400 });
+    }
+
     const normalizedKey = data.key.trim();
     const duplicate = await prisma.license.findFirst({
       where: {
@@ -70,7 +75,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         plan: data.plan.toUpperCase(),
         key: normalizedKey,
         status: data.status,
-        downloadUrl: data.downloadUrl,
+        downloadUrl: product.defaultLoaderUrl,
         note: data.note || null,
         expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
       },

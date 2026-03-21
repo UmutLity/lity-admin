@@ -15,6 +15,15 @@ export const productSchema = z.object({
   isActive: z.boolean().default(true),
   currency: z.string().min(1).max(3).default("USD"),
   buyUrl: z.string().url("Enter a valid URL").optional().nullable().or(z.literal("")),
+  defaultLoaderUrl: z.string().url("Enter a valid URL").optional().nullable().or(z.literal("")).refine((value) => {
+    if (!value) return true;
+    try {
+      const url = new URL(value);
+      return ["mega.nz", "www.mega.nz", "mega.co.nz", "www.mega.co.nz"].includes(url.hostname);
+    } catch {
+      return false;
+    }
+  }, "Loader link must be a valid Mega URL"),
   sortOrder: z.number().int().default(0),
   displayOrder: z.number().int().default(0),
   prices: z.array(z.object({

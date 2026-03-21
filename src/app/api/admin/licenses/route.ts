@@ -8,18 +8,14 @@ const licenseSchema = z.object({
   customerId: z.string().cuid().optional().nullable(),
   productId: z.string().cuid(),
   plan: z.string().min(1).max(40),
-  key: z.string().min(3).max(120).regex(/^[a-zA-Z0-9_.-]+$/, "License key can only contain letters, numbers, dot, underscore and dash"),
+  key: z.string().min(3).max(120).regex(/^[a-zA-Z0-9_.-]+$/, "License key can only contain letters, numbers, dot, underscore and dash").optional(),
+  keys: z.array(z.string().min(3).max(120).regex(/^[a-zA-Z0-9_.-]+$/)).optional(),
   status: z.enum(["ACTIVE", "EXPIRED", "REVOKED"]).default("ACTIVE"),
-  downloadUrl: z.string().url().refine((value) => {
-    try {
-      const url = new URL(value);
-      return ["mega.nz", "www.mega.nz", "mega.co.nz", "www.mega.co.nz"].includes(url.hostname);
-    } catch {
-      return false;
-    }
-  }, "Download URL must be a valid Mega link"),
   expiresAt: z.string().datetime().optional().nullable(),
   note: z.string().max(500).optional().nullable(),
+}).refine((value) => Boolean(value.key || (value.keys && value.keys.length > 0)), {
+  message: "At least one license key is required",
+  path: ["key"],
 });
 
 export async function GET(req: NextRequest) {
@@ -75,48 +71,66 @@ export async function POST(req: NextRequest) {
     }
 
     const data = validation.data;
-    const licenseKey = data.key.trim();
-
-    const existing = await prisma.license.findUnique({
-      where: { key: licenseKey },
-      select: { id: true },
+    const product = await prisma.product.findUnique({
+      where: { id: data.productId },
+      select: { id: true, name: true, slug: true, defaultLoaderUrl: true },
     });
 
-    if (existing) {
-      return NextResponse.json({ error: "This license key is already in use" }, { status: 409 });
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    const license = await prisma.license.create({
-      data: {
-        customerId: data.customerId || null,
-        productId: data.productId,
-        plan: data.plan.toUpperCase(),
-        key: licenseKey,
-        status: data.status,
-        downloadUrl: data.downloadUrl,
-        note: data.note || null,
-        expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
-      },
-      include: {
-        product: { select: { id: true, name: true, slug: true } },
-        customer: { select: { id: true, username: true, email: true, isActive: true } },
-      },
+    if (!product.defaultLoaderUrl) {
+      return NextResponse.json({ error: "Selected product does not have a default Mega loader link yet" }, { status: 400 });
+    }
+
+    const inputKeys = Array.from(new Set((data.keys?.length ? data.keys : [data.key!]).map((item) => item.trim()).filter(Boolean)));
+    const duplicates = await prisma.license.findMany({
+      where: { key: { in: inputKeys } },
+      select: { key: true },
     });
 
-    await createAuditLog({
-      userId: (session.user as any).id,
-      action: "CREATE",
-      entity: "License",
-      entityId: license.id,
-      after: {
-        licenseKey: license.key,
-        product: license.product.name,
-        customer: license.customer?.username || null,
-        status: license.status,
-      },
-    });
+    if (duplicates.length > 0) {
+      return NextResponse.json({
+        error: `These license keys are already in use: ${duplicates.map((item) => item.key).join(", ")}`,
+      }, { status: 409 });
+    }
 
-    return NextResponse.json({ success: true, data: license }, { status: 201 });
+    const created = await prisma.$transaction(
+      inputKeys.map((licenseKey) => prisma.license.create({
+        data: {
+          customerId: data.customerId || null,
+          productId: data.productId,
+          plan: data.plan.toUpperCase(),
+          key: licenseKey,
+          status: data.status,
+          downloadUrl: product.defaultLoaderUrl,
+          note: data.note || null,
+          expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+        },
+        include: {
+          product: { select: { id: true, name: true, slug: true } },
+          customer: { select: { id: true, username: true, email: true, isActive: true } },
+        },
+      }))
+    );
+
+    for (const license of created) {
+      await createAuditLog({
+        userId: (session.user as any).id,
+        action: "CREATE",
+        entity: "License",
+        entityId: license.id,
+        after: {
+          licenseKey: license.key,
+          product: license.product.name,
+          customer: license.customer?.username || null,
+          status: license.status,
+        },
+      });
+    }
+
+    return NextResponse.json({ success: true, data: created, createdCount: created.length }, { status: 201 });
   } catch (error: any) {
     if (error.message === "Unauthorized") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (error.message?.includes("Forbidden")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });

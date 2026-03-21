@@ -123,6 +123,7 @@ export default function EditProductPage() {
     isActive: true,
     currency: "USD",
     buyUrl: "",
+    defaultLoaderUrl: "",
     displayOrder: 0,
     sortOrder: 0,
   });
@@ -177,6 +178,7 @@ export default function EditProductPage() {
             isActive: p.isActive ?? true,
             currency: p.currency || "USD",
             buyUrl: p.buyUrl || "",
+            defaultLoaderUrl: p.defaultLoaderUrl || "",
             displayOrder: p.displayOrder ?? 0,
             sortOrder: p.sortOrder ?? 0,
           });
@@ -956,6 +958,17 @@ function BasicInfoTab({
                   placeholder="https://..."
                   className="w-full px-3 py-2 bg-[#0a0a1a] border border-[#1e293b] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-300">Default Loader URL</label>
+                <input
+                  value={(form as any).defaultLoaderUrl}
+                  onChange={(e) => updateField("defaultLoaderUrl", e.target.value)}
+                  placeholder="https://mega.nz/folder/..."
+                  className="w-full px-3 py-2 bg-[#0a0a1a] border border-[#1e293b] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+                />
+                <p className="text-xs text-gray-500">Licenses created for this product will automatically use this Mega link.</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

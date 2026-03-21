@@ -11,19 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/toast";
-import {
-  Copy,
-  Download,
-  ExternalLink,
-  KeyRound,
-  Link2,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  Search,
-  ShieldCheck,
-  Trash2,
-} from "lucide-react";
+import { Copy, ExternalLink, KeyRound, Link2, MoreHorizontal, Pencil, Plus, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +25,7 @@ type Product = {
   id: string;
   name: string;
   slug: string;
+  defaultLoaderUrl?: string | null;
 };
 
 type LicenseRecord = {
@@ -58,9 +47,8 @@ const emptyForm = {
   customerId: "",
   productId: "",
   plan: "LIFETIME",
-  key: "",
+  keyInput: "",
   status: "ACTIVE",
-  downloadUrl: "",
   expiresAt: "",
   note: "",
 };
@@ -128,6 +116,11 @@ export default function LicensesPage() {
     downloads: licenses.reduce((sum, item) => sum + item.downloadCount, 0),
   }), [licenses]);
 
+  const selectedProduct = useMemo(
+    () => products.find((product) => product.id === form.productId) || null,
+    [products, form.productId]
+  );
+
   const resetForm = () => {
     setForm(emptyForm);
     setEditing(null);
@@ -138,6 +131,12 @@ export default function LicensesPage() {
     const firstValidationError = Object.values(data?.errors || {})[0];
     return typeof firstValidationError === "string" ? firstValidationError : "Unknown error";
   };
+
+  const parseKeys = () =>
+    form.keyInput
+      .split(/\r?\n/)
+      .map((item) => item.trim())
+      .filter(Boolean);
 
   const openCreate = () => {
     resetForm();
@@ -150,9 +149,8 @@ export default function LicensesPage() {
       customerId: license.customer?.id || "",
       productId: license.product.id,
       plan: license.plan,
-      key: license.key,
+      keyInput: license.key,
       status: license.status,
-      downloadUrl: license.downloadUrl || "",
       expiresAt: license.expiresAt ? new Date(license.expiresAt).toISOString().slice(0, 16) : "",
       note: license.note || "",
     });
@@ -160,8 +158,19 @@ export default function LicensesPage() {
   };
 
   const handleSave = async () => {
-    if (!form.productId || !form.key || !form.downloadUrl) {
-      addToast({ type: "error", title: "Missing fields", description: "Product, license key and Mega link are required" });
+    const parsedKeys = parseKeys();
+    if (!form.productId || parsedKeys.length === 0) {
+      addToast({ type: "error", title: "Missing fields", description: "At least one key and one product are required" });
+      return;
+    }
+
+    if (!selectedProduct?.defaultLoaderUrl) {
+      addToast({ type: "error", title: "Missing loader link", description: "Selected product does not have a default Mega link yet" });
+      return;
+    }
+
+    if (editing && parsedKeys.length !== 1) {
+      addToast({ type: "error", title: "Edit mode", description: "You can only edit one license key at a time" });
       return;
     }
 
@@ -171,9 +180,9 @@ export default function LicensesPage() {
         customerId: form.customerId || null,
         productId: form.productId,
         plan: form.plan,
-        key: form.key.trim(),
+        key: parsedKeys[0],
+        keys: !editing ? parsedKeys : undefined,
         status: form.status,
-        downloadUrl: form.downloadUrl.trim(),
         expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : null,
         note: form.note.trim() || null,
       };
@@ -191,7 +200,11 @@ export default function LicensesPage() {
         return;
       }
 
-      addToast({ type: "success", title: editing ? "License updated" : "License created" });
+      addToast({
+        type: "success",
+        title: editing ? "License updated" : "Licenses added",
+        description: editing ? "License updated successfully" : `${data.createdCount || parsedKeys.length} licenses created`,
+      });
       setShowDialog(false);
       resetForm();
       loadData();
@@ -236,27 +249,45 @@ export default function LicensesPage() {
 
   return (
     <div className="space-y-6">
-      <Topbar title="Licenses" description="Manage private loader links and the license keys attached to them.">
-        <Button
-          onClick={openCreate}
-          className="rounded-2xl border-0 bg-[linear-gradient(135deg,#ff8a1a,#ff6a00)] px-5 text-white shadow-[0_14px_34px_rgba(255,106,0,0.28)] hover:opacity-95"
-        >
-          <Plus className="h-4 w-4" /> Add License
+      <Topbar title="Licenses" description="Assign product-based loader access and add keys in bulk.">
+        <Button onClick={openCreate} className="rounded-2xl bg-violet-500 text-white hover:bg-violet-400">
+          <Plus className="h-4 w-4" /> Add Licenses
         </Button>
       </Topbar>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="inline-flex items-center gap-2 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-2 text-sm text-zinc-300">
-          <ShieldCheck className="h-4 w-4 text-emerald-400" />
-          <span>{stats.active} active</span>
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="kpi-card">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-300">
+              <KeyRound className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Total Keys</p>
+              <p className="text-2xl font-semibold text-white">{stats.total}</p>
+            </div>
+          </div>
         </div>
-        <div className="inline-flex items-center gap-2 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-2 text-sm text-zinc-300">
-          <KeyRound className="h-4 w-4 text-orange-400" />
-          <span>{stats.total} total keys</span>
+        <div className="kpi-card">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-300">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Active</p>
+              <p className="text-2xl font-semibold text-white">{stats.active}</p>
+            </div>
+          </div>
         </div>
-        <div className="inline-flex items-center gap-2 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-2 text-sm text-zinc-300">
-          <Download className="h-4 w-4 text-violet-400" />
-          <span>{stats.downloads} downloads</span>
+        <div className="kpi-card">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-500/15 text-blue-300">
+              <Link2 className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Downloads</p>
+              <p className="text-2xl font-semibold text-white">{stats.downloads}</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -268,7 +299,7 @@ export default function LicensesPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search licenses, products or customers..."
-              className="h-12 rounded-2xl border-white/[0.06] bg-[#0b111d] pl-11 text-zinc-200 placeholder:text-zinc-600 focus:border-orange-500/30 focus:ring-orange-500/20"
+              className="h-12 rounded-2xl border-white/[0.06] bg-[#14141c] pl-11 text-zinc-200 placeholder:text-zinc-600"
             />
           </div>
         </div>
@@ -277,16 +308,9 @@ export default function LicensesPage() {
           <div className="p-6 space-y-3">{[1, 2, 3, 4].map((i) => <div key={i} className="skeleton h-16 w-full" />)}</div>
         ) : licenses.length === 0 ? (
           <div className="p-10">
-            <EmptyState
-              icon={KeyRound}
-              title="No licenses yet"
-              description="Create your first license and attach its private Mega link."
-            >
-              <Button
-                onClick={openCreate}
-                className="rounded-2xl border-0 bg-[linear-gradient(135deg,#ff8a1a,#ff6a00)] text-white"
-              >
-                <Plus className="h-4 w-4" /> Add License
+            <EmptyState icon={KeyRound} title="No licenses yet" description="Pick a product, then bulk add license keys.">
+              <Button onClick={openCreate} className="rounded-2xl bg-violet-500 text-white hover:bg-violet-400">
+                <Plus className="h-4 w-4" /> Add Licenses
               </Button>
             </EmptyState>
           </div>
@@ -294,10 +318,10 @@ export default function LicensesPage() {
           <div className="overflow-x-auto">
             <table className="w-full premium-table">
               <thead>
-                <tr className="border-b border-white/[0.06] bg-[#0c111d]/70">
+                <tr className="border-b border-white/[0.06]">
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">License</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Product</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Download Link</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Loader Link</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Owner</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Downloads</th>
                   <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Actions</th>
@@ -305,86 +329,64 @@ export default function LicensesPage() {
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
                 {licenses.map((license) => (
-                  <tr key={license.id} className="group">
+                  <tr key={license.id}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgba(255,138,26,0.14),rgba(255,106,0,0.08))] text-orange-400">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-500/12 text-violet-300">
                           <KeyRound className="h-4 w-4" />
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="truncate text-sm font-semibold text-white">{license.key}</p>
-                            <button
-                              type="button"
-                              onClick={() => copyLicenseKey(license.key)}
-                              className="rounded-md p-1 text-zinc-500 transition hover:bg-white/[0.04] hover:text-zinc-200"
-                            >
+                            <button type="button" onClick={() => copyLicenseKey(license.key)} className="rounded-md p-1 text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200">
                               <Copy className="h-3.5 w-3.5" />
                             </button>
                           </div>
                           <div className="mt-1 flex items-center gap-2">
-                            <Badge variant="outline" className={cn("border text-[10px] tracking-[0.18em]", statusStyles[license.status])}>
-                              {license.status}
-                            </Badge>
+                            <Badge variant="outline" className={cn("border text-[10px] tracking-[0.18em]", statusStyles[license.status])}>{license.status}</Badge>
                             <span className="text-xs uppercase tracking-[0.18em] text-zinc-500">{license.plan}</span>
                           </div>
                         </div>
                       </div>
                     </td>
-
                     <td className="px-6 py-4">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-white">{license.product.name}</p>
-                        <p className="mt-1 text-xs text-zinc-500">/{license.product.slug}</p>
-                      </div>
+                      <p className="text-sm font-semibold text-white">{license.product.name}</p>
+                      <p className="mt-1 text-xs text-zinc-500">/{license.product.slug}</p>
                     </td>
-
                     <td className="px-6 py-4">
                       {license.downloadUrl ? (
-                        <a
-                          href={license.downloadUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex max-w-[340px] items-center gap-2 text-sm text-zinc-300 transition hover:text-white"
-                        >
+                        <a href={license.downloadUrl} target="_blank" rel="noreferrer" className="inline-flex max-w-[340px] items-center gap-2 text-sm text-zinc-300 hover:text-white">
                           <Link2 className="h-4 w-4 flex-shrink-0 text-zinc-500" />
                           <span className="truncate">{truncateLink(license.downloadUrl)}</span>
                           <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-zinc-600" />
                         </a>
                       ) : (
-                        <span className="text-sm text-zinc-600">No link assigned</span>
+                        <span className="text-sm text-zinc-600">No loader link</span>
                       )}
                     </td>
-
                     <td className="px-6 py-4">
                       {license.customer ? (
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-zinc-200">{license.customer.username}</p>
-                          <p className="truncate text-xs text-zinc-500">{license.customer.email}</p>
-                        </div>
+                        <>
+                          <p className="text-sm font-medium text-zinc-200">{license.customer.username}</p>
+                          <p className="mt-1 text-xs text-zinc-500">{license.customer.email}</p>
+                        </>
                       ) : (
                         <span className="text-sm text-zinc-600">Unassigned</span>
                       )}
                     </td>
-
                     <td className="px-6 py-4">
-                      <div className="inline-flex min-w-[48px] items-center justify-center rounded-xl bg-[#131c2b] px-3 py-1.5 text-sm font-semibold text-slate-200">
+                      <div className="inline-flex min-w-[48px] items-center justify-center rounded-xl bg-[#151a2a] px-3 py-1.5 text-sm font-semibold text-slate-200">
                         {license.downloadCount}
                       </div>
                       <p className="mt-2 text-xs text-zinc-600">
                         {license.lastDownloadedAt ? `Last ${formatDate(license.lastDownloadedAt)}` : `Created ${formatDate(license.createdAt)}`}
                       </p>
                     </td>
-
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-9 w-9 rounded-xl text-zinc-500 hover:bg-white/[0.04] hover:text-white"
-                            >
+                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-zinc-500 hover:bg-white/[0.04] hover:text-white">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -422,111 +424,114 @@ export default function LicensesPage() {
         setShowDialog(open);
         if (!open) resetForm();
       }}>
-        <DialogContent className="max-w-2xl border-white/[0.08] bg-[#0d1424]">
+        <DialogContent className="max-w-2xl border-white/[0.08] bg-[#141b2d]">
           <DialogHeader>
-            <DialogTitle className="text-white">{editing ? "Edit License" : "Add License"}</DialogTitle>
-            <DialogDescription className="text-zinc-500">
-              Assign a license key to a private Mega link and optionally bind it to a customer.
-            </DialogDescription>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <DialogTitle className="text-3xl font-bold tracking-tight text-white">{editing ? "Edit License" : "Add Licenses"}</DialogTitle>
+                <DialogDescription className="mt-2 text-sm text-zinc-500">
+                  Add one or many keys. The selected product's default Mega link will be assigned automatically.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2 sm:col-span-2">
-              <Label>Customer</Label>
-              <Select
-                value={form.customerId}
-                onChange={(e) => setForm((prev) => ({ ...prev, customerId: e.target.value }))}
-                options={[
-                  { value: "", label: "No customer assigned" },
-                  ...customers.map((customer) => ({ value: customer.id, label: `${customer.username} (${customer.email})` })),
-                ]}
-              />
-            </div>
-
+          <div className="space-y-5">
             <div className="space-y-2">
-              <Label>Product</Label>
-              <Select
-                value={form.productId}
-                onChange={(e) => setForm((prev) => ({ ...prev, productId: e.target.value }))}
-                options={[
-                  { value: "", label: "Select product" },
-                  ...products.map((product) => ({ value: product.id, label: product.name })),
-                ]}
+              <Label>License Keys {editing ? "" : "* (one per line)"}</Label>
+              <textarea
+                value={form.keyInput}
+                onChange={(e) => setForm((prev) => ({ ...prev, keyInput: e.target.value }))}
+                rows={6}
+                placeholder={"Enter license keys, one per line:\nABC123-XYZ789\nDEF456-UVW012"}
+                className="w-full rounded-2xl border border-white/[0.08] bg-[#1a2334] px-4 py-4 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-violet-500/40"
               />
+              <p className="text-xs text-zinc-500">Bulk addition: enter multiple keys, each on a separate line.</p>
             </div>
 
-            <div className="space-y-2">
-              <Label>Plan</Label>
-              <Select
-                value={form.plan}
-                onChange={(e) => setForm((prev) => ({ ...prev, plan: e.target.value }))}
-                options={[
-                  { value: "DAILY", label: "Daily" },
-                  { value: "WEEKLY", label: "Weekly" },
-                  { value: "MONTHLY", label: "Monthly" },
-                  { value: "LIFETIME", label: "Lifetime" },
-                ]}
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Product *</Label>
+                <Select
+                  value={form.productId}
+                  onChange={(e) => setForm((prev) => ({ ...prev, productId: e.target.value }))}
+                  options={[
+                    { value: "", label: "Select a product" },
+                    ...products.map((product) => ({ value: product.id, label: product.name })),
+                  ]}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Plan</Label>
+                <Select
+                  value={form.plan}
+                  onChange={(e) => setForm((prev) => ({ ...prev, plan: e.target.value }))}
+                  options={[
+                    { value: "DAILY", label: "Daily" },
+                    { value: "WEEKLY", label: "Weekly" },
+                    { value: "MONTHLY", label: "Monthly" },
+                    { value: "LIFETIME", label: "Lifetime" },
+                  ]}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select
+                  value={form.status}
+                  onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}
+                  options={[
+                    { value: "ACTIVE", label: "Active" },
+                    { value: "EXPIRED", label: "Expired" },
+                    { value: "REVOKED", label: "Revoked" },
+                  ]}
+                />
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Customer</Label>
+                <Select
+                  value={form.customerId}
+                  onChange={(e) => setForm((prev) => ({ ...prev, customerId: e.target.value }))}
+                  options={[
+                    { value: "", label: "No customer assigned" },
+                    ...customers.map((customer) => ({ value: customer.id, label: `${customer.username} (${customer.email})` })),
+                  ]}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Expires At</Label>
+                <Input type="datetime-local" value={form.expiresAt} onChange={(e) => setForm((prev) => ({ ...prev, expiresAt: e.target.value }))} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Input value={form.note} onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))} placeholder="Internal note" />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>License Key</Label>
-              <Input
-                value={form.key}
-                onChange={(e) => setForm((prev) => ({ ...prev, key: e.target.value }))}
-                placeholder="litysoftware1"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select
-                value={form.status}
-                onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}
-                options={[
-                  { value: "ACTIVE", label: "Active" },
-                  { value: "EXPIRED", label: "Expired" },
-                  { value: "REVOKED", label: "Revoked" },
-                ]}
-              />
-            </div>
-
-            <div className="space-y-2 sm:col-span-2">
-              <Label>Mega Download URL</Label>
-              <Input
-                value={form.downloadUrl}
-                onChange={(e) => setForm((prev) => ({ ...prev, downloadUrl: e.target.value }))}
-                placeholder="https://mega.nz/file/..."
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Expires At</Label>
-              <Input
-                type="datetime-local"
-                value={form.expiresAt}
-                onChange={(e) => setForm((prev) => ({ ...prev, expiresAt: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Input
-                value={form.note}
-                onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
-                placeholder="Internal note"
-              />
+            <div className="rounded-2xl border border-violet-500/15 bg-violet-500/5 p-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-violet-200">
+                <Link2 className="h-4 w-4" />
+                Product Loader Link
+              </div>
+              {selectedProduct?.defaultLoaderUrl ? (
+                <a href={selectedProduct.defaultLoaderUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex max-w-full items-center gap-2 text-sm text-zinc-300 hover:text-white">
+                  <span className="truncate">{selectedProduct.defaultLoaderUrl}</span>
+                  <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
+                </a>
+              ) : (
+                <p className="mt-2 text-sm text-zinc-500">Select a product with a configured default Mega link.</p>
+              )}
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="mt-2">
             <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-            <Button
-              onClick={handleSave}
-              loading={saving}
-              className="rounded-xl border-0 bg-[linear-gradient(135deg,#ff8a1a,#ff6a00)] text-white"
-            >
-              <Download className="h-4 w-4" /> {editing ? "Save Changes" : "Create License"}
+            <Button onClick={handleSave} loading={saving} className="rounded-xl bg-violet-500 text-white hover:bg-violet-400">
+              {editing ? "Save Changes" : "Add Licenses"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -536,9 +541,7 @@ export default function LicensesPage() {
         <DialogContent className="border-white/[0.08] bg-[#0d1424]">
           <DialogHeader>
             <DialogTitle className="text-white">Delete License</DialogTitle>
-            <DialogDescription className="text-zinc-500">
-              This will permanently remove the license mapping and its private download access.
-            </DialogDescription>
+            <DialogDescription className="text-zinc-500">This will permanently remove the selected key.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>Cancel</Button>

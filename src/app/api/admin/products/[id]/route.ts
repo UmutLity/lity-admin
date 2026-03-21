@@ -73,6 +73,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       data: {
         ...productData,
         buyUrl: productData.buyUrl || null,
+        defaultLoaderUrl: productData.defaultLoaderUrl || null,
         lastStatusChangeAt: statusChanged ? new Date() : existing.lastStatusChangeAt,
         prices: {
           deleteMany: {},

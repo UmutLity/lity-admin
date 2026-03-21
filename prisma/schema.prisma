@@ -219,6 +219,7 @@ model Product {
   isActive             Boolean  @default(true)
   currency             String   @default("USD")
   buyUrl               String?
+  defaultLoaderUrl     String?
   sortOrder            Int      @default(0)
   displayOrder         Int      @default(0)
   createdAt            DateTime @default(now())

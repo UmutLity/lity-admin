@@ -87,6 +87,7 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
     isActive: initialData?.isActive ?? true,
     currency: initialData?.currency || "USD",
     buyUrl: initialData?.buyUrl || "",
+    defaultLoaderUrl: initialData?.defaultLoaderUrl || "",
     sortOrder: initialData?.sortOrder ?? 0,
   });
 
@@ -574,6 +575,18 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                   onChange={(e) => updateField("buyUrl", e.target.value)}
                   placeholder="https://discord.gg/..."
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="defaultLoaderUrl">Varsayilan Loader Linki</Label>
+                <Input
+                  id="defaultLoaderUrl"
+                  className={inputClassName}
+                  value={(form as any).defaultLoaderUrl}
+                  onChange={(e) => updateField("defaultLoaderUrl", e.target.value)}
+                  placeholder="https://mega.nz/folder/..."
+                />
+                <p className="text-xs text-slate-400">Bu urune ait lisanslar eklenirken Mega link otomatik buradan alinacak.</p>
+                {errors.defaultLoaderUrl && <p className="text-sm text-destructive">{errors.defaultLoaderUrl}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="sortOrder">Siralama</Label>
