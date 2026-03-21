@@ -1,0 +1,8 @@
+ALTER TABLE "License"
+ALTER COLUMN "customerId" DROP NOT NULL;
+
+ALTER TABLE "License"
+ADD COLUMN "downloadUrl" TEXT,
+ADD COLUMN "note" TEXT,
+ADD COLUMN "downloadCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN "lastDownloadedAt" TIMESTAMP(3);

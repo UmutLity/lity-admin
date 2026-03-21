@@ -33,6 +33,7 @@ export type AuditEntity =
   | "Webhook"
   | "Category"
   | "Customer"
+  | "License"
   | "ProductEnvironment"
   | "AdminSession";
 

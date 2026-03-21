@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Package, FileText, Settings, Image as ImageIcon,
   Users, Shield, ClipboardList, Clock, LogOut, ChevronLeft, Menu,
   ShieldAlert, KeyRound, BarChart3, Server, Bell, DollarSign,
-  FolderOpen, Gauge, Brain, Handshake, Zap,
+  FolderOpen, Gauge, Brain, Handshake, Zap, Download,
   Search, PanelLeftClose, PanelLeft,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
@@ -41,6 +41,7 @@ const navGroups: NavGroup[] = [
     title: "Commerce",
     items: [
       { href: "/admin/products", label: "Products", icon: Package, roles: ["ADMIN", "EDITOR"] },
+      { href: "/admin/licenses", label: "Licenses", icon: Download, roles: ["ADMIN"] },
       { href: "/admin/categories", label: "Categories", icon: FolderOpen, roles: ["ADMIN"] },
       { href: "/admin/changelog", label: "Changelog", icon: FileText, roles: ["ADMIN", "EDITOR"] },
       { href: "/admin/media", label: "Media", icon: ImageIcon, roles: ["ADMIN", "EDITOR"] },

@@ -508,16 +508,20 @@ model OrderItem {
 // ─── License (Future-ready) ─────────────────────────────
 
 model License {
-  id         String    @id @default(cuid())
-  customerId String
-  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  productId  String
-  product    Product   @relation(fields: [productId], references: [id])
-  plan       String
-  key        String    @unique
-  status     String    @default("ACTIVE") // ACTIVE | EXPIRED | REVOKED
-  expiresAt  DateTime?
-  createdAt  DateTime  @default(now())
+  id               String    @id @default(cuid())
+  customerId       String?
+  customer         Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product   @relation(fields: [productId], references: [id])
+  plan             String
+  key              String    @unique
+  status           String    @default("ACTIVE") // ACTIVE | EXPIRED | REVOKED
+  downloadUrl      String?
+  note             String?
+  downloadCount    Int       @default(0)
+  lastDownloadedAt DateTime?
+  expiresAt        DateTime?
+  createdAt        DateTime  @default(now())
 
   @@index([customerId])
   @@index([productId])
