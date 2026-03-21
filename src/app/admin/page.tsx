@@ -34,19 +34,19 @@ function KpiCard({
   color: string;
 }) {
   const colorMap: Record<string, string> = {
-    purple: "from-purple-500/20 to-violet-500/10 text-purple-400 border-purple-500/10",
-    emerald: "from-emerald-500/20 to-green-500/10 text-emerald-400 border-emerald-500/10",
-    blue: "from-blue-500/20 to-cyan-500/10 text-blue-400 border-blue-500/10",
-    amber: "from-amber-500/20 to-yellow-500/10 text-amber-400 border-amber-500/10",
-    rose: "from-rose-500/20 to-pink-500/10 text-rose-400 border-rose-500/10",
+    purple: "from-violet-500/20 to-fuchsia-500/10 text-violet-300 border-violet-500/10",
+    emerald: "from-violet-500/18 to-zinc-500/10 text-violet-300 border-violet-500/10",
+    blue: "from-zinc-500/18 to-violet-500/10 text-zinc-300 border-zinc-500/10",
+    amber: "from-stone-500/18 to-zinc-500/10 text-stone-300 border-stone-500/10",
+    rose: "from-fuchsia-500/18 to-violet-500/10 text-fuchsia-300 border-fuchsia-500/10",
   };
 
   const iconBg: Record<string, string> = {
-    purple: "bg-purple-500/15 text-purple-400",
-    emerald: "bg-emerald-500/15 text-emerald-400",
-    blue: "bg-blue-500/15 text-blue-400",
-    amber: "bg-amber-500/15 text-amber-400",
-    rose: "bg-rose-500/15 text-rose-400",
+    purple: "bg-violet-500/15 text-violet-300",
+    emerald: "bg-violet-500/12 text-violet-300",
+    blue: "bg-zinc-500/12 text-zinc-300",
+    amber: "bg-stone-500/14 text-stone-300",
+    rose: "bg-fuchsia-500/14 text-fuchsia-300",
   };
 
   return (
@@ -157,7 +157,7 @@ export default function DashboardPage() {
       <Topbar title="Dashboard" description="Overview of your platform" />
 
       {/* KPI Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-8">
+      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
         <KpiCard
           title="Total Products"
           value={stats?.totalProducts || 0}
@@ -198,13 +198,13 @@ export default function DashboardPage() {
       </div>
 
       {/* Status Overview + Recent Products */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         {/* Status Overview */}
         <div className="lg:col-span-2 premium-card overflow-hidden">
           <div className="px-6 py-4 border-b border-white/[0.06]">
             <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-500/15">
-                <Activity className="h-4 w-4 text-purple-400" />
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-500/15">
+                <Activity className="h-4 w-4 text-violet-300" />
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-white">Status Overview</h3>
@@ -239,8 +239,8 @@ export default function DashboardPage() {
         <div className="lg:col-span-3 premium-card overflow-hidden">
           <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/15">
-                <Package className="h-4 w-4 text-emerald-400" />
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-500/12">
+                <Package className="h-4 w-4 text-violet-300" />
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-white">Recent Products</h3>
@@ -249,7 +249,7 @@ export default function DashboardPage() {
             </div>
             <Link
               href="/admin/products"
-              className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 font-medium transition-colors"
+              className="flex items-center gap-1 text-xs font-medium text-violet-300 transition-colors hover:text-violet-200"
             >
               View all <ArrowUpRight className="h-3 w-3" />
             </Link>
@@ -263,7 +263,7 @@ export default function DashboardPage() {
                 style={{ animationDelay: `${i * 50}ms` }}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/[0.04] text-zinc-500 group-hover:bg-purple-500/10 group-hover:text-purple-400 transition-all flex-shrink-0">
+                  <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/[0.04] text-zinc-500 group-hover:bg-violet-500/10 group-hover:text-violet-300 transition-all flex-shrink-0">
                     <Package className="h-4 w-4" />
                   </div>
                   <div className="min-w-0">
@@ -291,8 +291,8 @@ export default function DashboardPage() {
         <div className="mt-6 premium-card overflow-hidden">
           <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/15">
-                <Clock className="h-4 w-4 text-blue-400" />
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-500/12">
+                <Clock className="h-4 w-4 text-violet-300" />
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-white">Recent Updates</h3>
@@ -301,7 +301,7 @@ export default function DashboardPage() {
             </div>
             <Link
               href="/admin/changelog"
-              className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 font-medium transition-colors"
+              className="flex items-center gap-1 text-xs font-medium text-violet-300 transition-colors hover:text-violet-200"
             >
               View all <ArrowUpRight className="h-3 w-3" />
             </Link>
@@ -309,10 +309,10 @@ export default function DashboardPage() {
           <div className="divide-y divide-white/[0.04]">
             {stats?.recentChangelogs.map((cl: any, i: number) => {
               const typeColors: Record<string, string> = {
-                UPDATE: "bg-purple-500/15 text-purple-400",
-                FIX: "bg-emerald-500/15 text-emerald-400",
-                WARNING: "bg-amber-500/15 text-amber-400",
-                INFO: "bg-blue-500/15 text-blue-400",
+                UPDATE: "bg-violet-500/15 text-violet-300",
+                FIX: "bg-zinc-500/15 text-zinc-300",
+                WARNING: "bg-stone-500/15 text-stone-300",
+                INFO: "bg-fuchsia-500/15 text-fuchsia-300",
               };
               return (
                 <Link
