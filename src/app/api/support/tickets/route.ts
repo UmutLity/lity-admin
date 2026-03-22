@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getClientIp } from "@/lib/ip-utils";
-import { sendDiscordWebhook } from "@/lib/discord";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DISCORD_REGEX = /^.{2,32}$/;
@@ -119,36 +118,6 @@ export async function POST(req: NextRequest) {
         }),
       },
     }).catch(() => {});
-
-    const webhookEnabled = await prisma.siteSetting.findUnique({ where: { key: "discord_webhook_enabled" } });
-    const webhookUrl = await prisma.siteSetting.findUnique({ where: { key: "discord_webhook_url" } });
-    const webhookUsername = await prisma.siteSetting.findUnique({ where: { key: "discord_webhook_username" } });
-    const webhookAvatar = await prisma.siteSetting.findUnique({ where: { key: "discord_webhook_avatar_url" } });
-
-    if (webhookEnabled?.value === "true" && webhookUrl?.value) {
-      await sendDiscordWebhook(
-        webhookUrl.value,
-        {
-          username: webhookUsername?.value || "Lity Support",
-          avatar_url: webhookAvatar?.value || undefined,
-          embeds: [
-            {
-              title: usedFallback ? `New Support Request #${fallbackTicketNumber}` : `New Support Ticket #${ticket.ticketNumber}`,
-              color: 0x7c3aed,
-              fields: [
-                { name: "Subject", value: subject.slice(0, 1024), inline: false },
-                { name: "Contact", value: contactType === "EMAIL" ? email : discordUsername || "Unknown", inline: true },
-                { name: "Type", value: contactType, inline: true },
-                { name: "Product", value: product?.name || "General", inline: true },
-                { name: "Message", value: message.slice(0, 1024), inline: false },
-              ],
-              timestamp: new Date().toISOString(),
-            },
-          ],
-        },
-        1
-      ).catch(() => null);
-    }
 
     return NextResponse.json(
       {
