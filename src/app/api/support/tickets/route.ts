@@ -18,10 +18,105 @@ function corsHeaders(req?: NextRequest) {
 
   return {
     "Access-Control-Allow-Origin": allowOrigin,
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     Vary: "Origin",
   };
+}
+
+function safeArray(input: any): any[] {
+  return Array.isArray(input) ? input : [];
+}
+
+function parseThreadFromAdminNotes(adminNotes: string | null) {
+  if (!adminNotes) return { notes: null as string | null, replies: [] as any[] };
+  try {
+    const parsed = JSON.parse(adminNotes);
+    if (parsed && typeof parsed === "object" && Array.isArray(parsed.replies)) {
+      return {
+        notes: typeof parsed.notes === "string" ? parsed.notes : null,
+        replies: safeArray(parsed.replies),
+      };
+    }
+  } catch {}
+  return { notes: adminNotes, replies: [] as any[] };
+}
+
+async function requireEligibleCustomer(req: NextRequest) {
+  const token = getCustomerTokenFromRequest(req);
+  if (!token) {
+    return { error: NextResponse.json({ success: false, error: "Login required." }, { status: 401, headers: corsHeaders(req) }) };
+  }
+  const tokenPayload = verifyCustomerToken(token);
+  if (!tokenPayload) {
+    return { error: NextResponse.json({ success: false, error: "Session expired. Please login again." }, { status: 401, headers: corsHeaders(req) }) };
+  }
+  const customer = await prisma.customer.findUnique({
+    where: { id: tokenPayload.id },
+    select: { id: true, email: true, username: true, role: true, isActive: true },
+  });
+  if (!customer || !customer.isActive || customer.role === "BANNED") {
+    return { error: NextResponse.json({ success: false, error: "Your account is not eligible to create tickets." }, { status: 403, headers: corsHeaders(req) }) };
+  }
+  return { customer };
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const auth = await requireEligibleCustomer(req);
+    if ("error" in auth) return auth.error;
+    const customer = auth.customer;
+
+    let rows: any[] = [];
+    try {
+      rows = await prisma.supportTicket.findMany({
+        where: {
+          OR: [
+            { email: { equals: customer.email.toLowerCase(), mode: "insensitive" } },
+            { discordUsername: { equals: customer.username, mode: "insensitive" } },
+          ],
+        },
+        include: {
+          product: { select: { id: true, name: true, slug: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 200,
+      });
+    } catch (listError: any) {
+      const code = listError?.code || "";
+      const messageText = String(listError?.message || "").toLowerCase();
+      const isMissingSupportTable =
+        code === "P2021" ||
+        code === "P2022" ||
+        messageText.includes("supportticket");
+      if (!isMissingSupportTable) throw listError;
+    }
+
+    const data = rows.map((ticket) => {
+      const parsed = parseThreadFromAdminNotes(ticket.adminNotes);
+      const conversation = [
+        {
+          id: `${ticket.id}-customer`,
+          sender: "CUSTOMER",
+          author: ticket.email || ticket.discordUsername || "Customer",
+          message: ticket.message,
+          createdAt: ticket.createdAt,
+        },
+        ...parsed.replies,
+      ];
+      return {
+        ...ticket,
+        adminNotes: parsed.notes,
+        replies: parsed.replies,
+        conversation,
+      };
+    });
+
+    return NextResponse.json({ success: true, data }, { headers: corsHeaders(req) });
+  } catch (error) {
+    console.error("GET /api/support/tickets error:", error);
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500, headers: corsHeaders(req) });
+  }
 }
 
 export async function OPTIONS(req: NextRequest) {
@@ -38,26 +133,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const token = getCustomerTokenFromRequest(req);
-    if (!token) {
-      return NextResponse.json({ success: false, error: "Login required." }, { status: 401, headers: corsHeaders(req) });
-    }
-    const tokenPayload = verifyCustomerToken(token);
-    if (!tokenPayload) {
-      return NextResponse.json({ success: false, error: "Session expired. Please login again." }, { status: 401, headers: corsHeaders(req) });
-    }
-    const customer = await prisma.customer.findUnique({
-      where: { id: tokenPayload.id },
-      select: { id: true, email: true, username: true, role: true, isActive: true },
-    });
-    if (!customer || !customer.isActive || customer.role === "BANNED") {
-      return NextResponse.json({ success: false, error: "Your account is not eligible to create tickets." }, { status: 403, headers: corsHeaders(req) });
-    }
+    const auth = await requireEligibleCustomer(req);
+    if ("error" in auth) return auth.error;
+    const customer = auth.customer;
 
     const body = await req.json();
     const contactType = body.contactType === "discord" ? "DISCORD" : "EMAIL";
     const email = customer.email.toLowerCase();
-    const discordUsername = typeof body.discordUsername === "string" ? body.discordUsername.trim() : "";
+    const discordUsernameInput = typeof body.discordUsername === "string" ? body.discordUsername.trim() : "";
+    const discordUsername = discordUsernameInput || customer.username || "";
     const subject = typeof body.subject === "string" ? body.subject.trim() : "";
     const message = typeof body.message === "string" ? body.message.trim() : "";
     const productSlug = typeof body.productSlug === "string" ? body.productSlug.trim() : "";
@@ -94,7 +178,7 @@ export async function POST(req: NextRequest) {
         data: {
           productId: product?.id,
           contactType,
-          email: contactType === "EMAIL" ? email : null,
+          email,
           discordUsername: contactType === "DISCORD" ? discordUsername : null,
           subject,
           message,
