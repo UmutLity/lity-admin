@@ -97,7 +97,7 @@ export async function PATCH(
           email: updatedMeta.email || null,
           discordUsername: updatedMeta.discordUsername || null,
           createdAt: updatedNotification.createdAt,
-          updatedAt: updatedNotification.updatedAt,
+          updatedAt: new Date(),
         },
       });
     }
