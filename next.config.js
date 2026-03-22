@@ -54,7 +54,7 @@ const nextConfig = {
         headers: [
           {
             key: "Access-Control-Allow-Origin",
-            value: "https://litysoftware.com",
+            value: "*",
           },
           {
             key: "Access-Control-Allow-Methods",
