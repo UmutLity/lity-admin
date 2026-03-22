@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
-import { Inbox, Search, MessageSquare, Mail, Clock3, UserRound, Send } from "lucide-react";
+import { Inbox, Search, MessageSquare, Mail, Clock3, UserRound, Send, Trash2 } from "lucide-react";
 
 const statusOptions = [
   { value: "ALL", label: "All Statuses" },
@@ -59,6 +59,7 @@ export default function TicketsPage() {
   const [editPriority, setEditPriority] = useState("NORMAL");
   const [editNotes, setEditNotes] = useState("");
   const [replyMessage, setReplyMessage] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadTickets = async () => {
     setLoading(true);
@@ -114,6 +115,28 @@ export default function TicketsPage() {
       addToast({ type: "error", title: "Error", description: error.message || "Update failed." });
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const deleteTicket = async (ticket: any) => {
+    if (!ticket?.id) return;
+    const ok = window.confirm(`Delete ticket #${ticket.ticketNumber}? This action cannot be undone.`);
+    if (!ok) return;
+
+    setDeletingId(ticket.id);
+    try {
+      const res = await fetch(`/api/admin/tickets/${ticket.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Delete failed");
+      addToast({ type: "success", title: "Deleted", description: `Ticket #${ticket.ticketNumber} deleted.` });
+      if (selected?.id === ticket.id) setSelected(null);
+      loadTickets();
+    } catch (error: any) {
+      addToast({ type: "error", title: "Error", description: error.message || "Delete failed." });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -176,6 +199,14 @@ export default function TicketsPage() {
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={() => openTicket(ticket)}>
                       <MessageSquare className="h-4 w-4" /> Open
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="border-rose-500/30 text-rose-300 hover:bg-rose-500/10"
+                      onClick={() => deleteTicket(ticket)}
+                      disabled={deletingId === ticket.id}
+                    >
+                      <Trash2 className="h-4 w-4" /> {deletingId === ticket.id ? "Deleting..." : "Delete"}
                     </Button>
                   </div>
                 </div>
@@ -296,6 +327,14 @@ export default function TicketsPage() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setSelected(null)}>Close</Button>
+            <Button
+              variant="outline"
+              className="border-rose-500/30 text-rose-300 hover:bg-rose-500/10"
+              onClick={() => selected && deleteTicket(selected)}
+              disabled={!!selected && deletingId === selected.id}
+            >
+              <Trash2 className="h-4 w-4" /> {!!selected && deletingId === selected.id ? "Deleting..." : "Delete"}
+            </Button>
             <Button onClick={saveTicket} disabled={updating}>
               <Send className="h-4 w-4" /> {updating ? "Sending..." : "Save / Send Reply"}
             </Button>

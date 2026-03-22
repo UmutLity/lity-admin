@@ -221,3 +221,100 @@ export async function PATCH(
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await requireAuth();
+
+    // Fallback records are stored as admin notifications.
+    if (params.id.startsWith("fallback-")) {
+      const notificationId = params.id.replace("fallback-", "");
+      const existing = await prisma.adminNotification.findUnique({ where: { id: notificationId } });
+      if (!existing) {
+        return NextResponse.json({ success: false, error: "Fallback ticket not found" }, { status: 404 });
+      }
+
+      await prisma.adminNotification.delete({ where: { id: notificationId } });
+
+      await createAuditLog({
+        userId: (session.user as any).id,
+        action: "DELETE",
+        entity: "SupportTicket",
+        entityId: params.id,
+        before: {
+          fallback: true,
+          notificationId,
+          title: existing.title,
+          message: existing.message,
+        },
+        after: null,
+        ip: getClientIp(req),
+        userAgent: req.headers.get("user-agent") || undefined,
+      });
+
+      return NextResponse.json({ success: true });
+    }
+
+    const existing = await prisma.supportTicket.findUnique({ where: { id: params.id } });
+    if (!existing) {
+      return NextResponse.json({ success: false, error: "Ticket not found" }, { status: 404 });
+    }
+
+    await prisma.supportTicket.delete({ where: { id: params.id } });
+
+    // Clean related notification records so deleted tickets don't reappear as fallback.
+    const relatedNotifications = await prisma.adminNotification.findMany({
+      where: { type: "SYSTEM" },
+      orderBy: { createdAt: "desc" },
+      take: 500,
+      select: { id: true, meta: true, title: true },
+    });
+
+    const notificationIdsToDelete: string[] = [];
+    for (const notification of relatedNotifications) {
+      const meta = safeParseMeta(notification.meta);
+      const metaTicketId = String((meta as any)?.ticketId || "");
+      const metaTicketNumber = Number((meta as any)?.ticketNumber || 0);
+      const titleMatch = notification.title.match(/#(\d+)/);
+      const titleTicketNumber = titleMatch ? Number(titleMatch[1]) : 0;
+      if (
+        metaTicketId === existing.id ||
+        (metaTicketNumber && metaTicketNumber === existing.ticketNumber) ||
+        (titleTicketNumber && titleTicketNumber === existing.ticketNumber)
+      ) {
+        notificationIdsToDelete.push(notification.id);
+      }
+    }
+
+    if (notificationIdsToDelete.length > 0) {
+      await prisma.adminNotification.deleteMany({
+        where: { id: { in: notificationIdsToDelete } },
+      });
+    }
+
+    await createAuditLog({
+      userId: (session.user as any).id,
+      action: "DELETE",
+      entity: "SupportTicket",
+      entityId: existing.id,
+      before: {
+        id: existing.id,
+        ticketNumber: existing.ticketNumber,
+        subject: existing.subject,
+        status: existing.status,
+        priority: existing.priority,
+      },
+      after: null,
+      ip: getClientIp(req),
+      userAgent: req.headers.get("user-agent") || undefined,
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    if (error.message === "Unauthorized") return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+  }
+}
