@@ -16,6 +16,24 @@ function safeParseMeta(meta: string | null) {
   }
 }
 
+function safeArray(input: any): any[] {
+  return Array.isArray(input) ? input : [];
+}
+
+function parseThreadFromAdminNotes(adminNotes: string | null) {
+  if (!adminNotes) return { notes: null as string | null, replies: [] as any[] };
+  try {
+    const parsed = JSON.parse(adminNotes);
+    if (parsed && typeof parsed === "object" && Array.isArray(parsed.replies)) {
+      return {
+        notes: typeof parsed.notes === "string" ? parsed.notes : null,
+        replies: safeArray(parsed.replies),
+      };
+    }
+  } catch {}
+  return { notes: adminNotes, replies: [] as any[] };
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -26,6 +44,7 @@ export async function PATCH(
     const status = typeof body.status === "string" ? body.status : undefined;
     const priority = typeof body.priority === "string" ? body.priority : undefined;
     const adminNotes = typeof body.adminNotes === "string" ? body.adminNotes.trim() : undefined;
+    const replyMessage = typeof body.replyMessage === "string" ? body.replyMessage.trim() : "";
 
     if (status && !ALLOWED_STATUS.has(status)) {
       return NextResponse.json({ success: false, error: "Invalid status" }, { status: 400 });
@@ -44,11 +63,25 @@ export async function PATCH(
       }
 
       const currentMeta: any = safeParseMeta(notification.meta);
+      const currentReplies = safeArray(currentMeta.replies);
+      const nextReplies = replyMessage
+        ? [
+            ...currentReplies,
+            {
+              id: `r-${Date.now()}`,
+              sender: "ADMIN",
+              author: (session.user as any).name || (session.user as any).email || "Admin",
+              message: replyMessage,
+              createdAt: new Date().toISOString(),
+            },
+          ]
+        : currentReplies;
       const updatedMeta = {
         ...currentMeta,
         status: status || currentMeta.status || "OPEN",
         priority: priority || currentMeta.priority || "NORMAL",
         adminNotes: adminNotes !== undefined ? adminNotes : (currentMeta.adminNotes || null),
+        replies: nextReplies,
         lastAdminUpdateAt: new Date().toISOString(),
         fallback: true,
       };
@@ -93,6 +126,17 @@ export async function PATCH(
           status: updatedMeta.status,
           priority: updatedMeta.priority,
           adminNotes: updatedMeta.adminNotes,
+          replies: nextReplies,
+          conversation: [
+            {
+              id: `${params.id}-customer`,
+              sender: "CUSTOMER",
+              author: updatedMeta.email || updatedMeta.discordUsername || "Customer",
+              message: updatedMeta.message || updatedNotification.message,
+              createdAt: updatedNotification.createdAt,
+            },
+            ...nextReplies,
+          ],
           contactType: updatedMeta.contactType || "DISCORD",
           email: updatedMeta.email || null,
           discordUsername: updatedMeta.discordUsername || null,
@@ -107,12 +151,30 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: "Ticket not found" }, { status: 404 });
     }
 
+    const parsedThread = parseThreadFromAdminNotes(existing.adminNotes);
+    const nextReplies = replyMessage
+      ? [
+          ...parsedThread.replies,
+          {
+            id: `r-${Date.now()}`,
+            sender: "ADMIN",
+            author: (session.user as any).name || (session.user as any).email || "Admin",
+            message: replyMessage,
+            createdAt: new Date().toISOString(),
+          },
+        ]
+      : parsedThread.replies;
+    const nextNotes = adminNotes !== undefined ? (adminNotes || null) : parsedThread.notes;
+
     const updated = await prisma.supportTicket.update({
       where: { id: params.id },
       data: {
         ...(status ? { status, resolvedAt: status === "RESOLVED" || status === "CLOSED" ? new Date() : null } : {}),
         ...(priority ? { priority } : {}),
-        ...(adminNotes !== undefined ? { adminNotes: adminNotes || null } : {}),
+        adminNotes: JSON.stringify({
+          notes: nextNotes,
+          replies: nextReplies,
+        }),
       },
     });
 
@@ -124,18 +186,36 @@ export async function PATCH(
       before: {
         status: existing.status,
         priority: existing.priority,
-        adminNotes: existing.adminNotes,
+        adminNotes: parsedThread.notes,
       },
       after: {
         status: updated.status,
         priority: updated.priority,
-        adminNotes: updated.adminNotes,
+        adminNotes: nextNotes,
+        replyAdded: !!replyMessage,
       },
       ip: getClientIp(req),
       userAgent: req.headers.get("user-agent") || undefined,
     });
 
-    return NextResponse.json({ success: true, data: updated });
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...updated,
+        adminNotes: nextNotes,
+        replies: nextReplies,
+        conversation: [
+          {
+            id: `${updated.id}-customer`,
+            sender: "CUSTOMER",
+            author: updated.email || updated.discordUsername || "Customer",
+            message: updated.message,
+            createdAt: updated.createdAt,
+          },
+          ...nextReplies,
+        ],
+      },
+    });
   } catch (error: any) {
     if (error.message === "Unauthorized") return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });

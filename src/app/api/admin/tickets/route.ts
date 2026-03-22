@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 
+function safeArray(input: any): any[] {
+  return Array.isArray(input) ? input : [];
+}
+
 function safeJsonParse(input: string | null) {
   if (!input) return null;
   try {
@@ -9,6 +13,20 @@ function safeJsonParse(input: string | null) {
   } catch {
     return null;
   }
+}
+
+function parseThreadFromAdminNotes(adminNotes: string | null) {
+  if (!adminNotes) return { notes: null as string | null, replies: [] as any[] };
+  try {
+    const parsed = JSON.parse(adminNotes);
+    if (parsed && typeof parsed === "object" && Array.isArray(parsed.replies)) {
+      return {
+        notes: typeof parsed.notes === "string" ? parsed.notes : null,
+        replies: safeArray(parsed.replies),
+      };
+    }
+  } catch {}
+  return { notes: adminNotes, replies: [] as any[] };
 }
 
 function matchesQuery(ticket: any, q: string) {
@@ -44,12 +62,31 @@ export async function GET(req: NextRequest) {
 
     let dbTickets: any[] = [];
     try {
-      dbTickets = await prisma.supportTicket.findMany({
+      const rows = await prisma.supportTicket.findMany({
         where,
         include: {
           product: { select: { name: true, slug: true } },
         },
         orderBy: { createdAt: "desc" },
+      });
+      dbTickets = rows.map((ticket) => {
+        const parsed = parseThreadFromAdminNotes(ticket.adminNotes);
+        const conversation = [
+          {
+            id: `${ticket.id}-customer`,
+            sender: "CUSTOMER",
+            author: ticket.email || ticket.discordUsername || "Customer",
+            message: ticket.message,
+            createdAt: ticket.createdAt,
+          },
+          ...parsed.replies,
+        ];
+        return {
+          ...ticket,
+          adminNotes: parsed.notes,
+          replies: parsed.replies,
+          conversation,
+        };
       });
     } catch (ticketError: any) {
       const code = ticketError?.code || "";
@@ -89,10 +126,21 @@ export async function GET(req: NextRequest) {
           discordUsername: meta?.discordUsername || null,
           subject: meta?.subject || notification.title,
           message: meta?.message || notification.message || "Support request received via fallback mode.",
-          status: "OPEN",
-          priority: "NORMAL",
+          status: meta?.status || "OPEN",
+          priority: meta?.priority || "NORMAL",
           source: "FALLBACK_NOTIFICATION",
-          adminNotes: "Read-only record generated from notification fallback.",
+          adminNotes: meta?.adminNotes || null,
+          replies: safeArray(meta?.replies),
+          conversation: [
+            {
+              id: `fallback-${notification.id}-customer`,
+              sender: "CUSTOMER",
+              author: meta?.email || meta?.discordUsername || "Customer",
+              message: meta?.message || notification.message || "Support request received.",
+              createdAt: notification.createdAt,
+            },
+            ...safeArray(meta?.replies),
+          ],
           createdAt: notification.createdAt,
           updatedAt: notification.createdAt,
         };

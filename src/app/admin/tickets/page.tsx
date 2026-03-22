@@ -58,6 +58,7 @@ export default function TicketsPage() {
   const [editStatus, setEditStatus] = useState("OPEN");
   const [editPriority, setEditPriority] = useState("NORMAL");
   const [editNotes, setEditNotes] = useState("");
+  const [replyMessage, setReplyMessage] = useState("");
 
   const loadTickets = async () => {
     setLoading(true);
@@ -82,6 +83,7 @@ export default function TicketsPage() {
     setEditStatus(ticket.status || "OPEN");
     setEditPriority(ticket.priority || "NORMAL");
     setEditNotes(ticket.adminNotes || "");
+    setReplyMessage("");
   };
 
   const saveTicket = async () => {
@@ -95,12 +97,18 @@ export default function TicketsPage() {
           status: editStatus,
           priority: editPriority,
           adminNotes: editNotes,
+          replyMessage,
         }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || "Update failed");
-      addToast({ type: "success", title: "Saved", description: "Ticket updated successfully." });
-      setSelected(null);
+      addToast({ type: "success", title: "Saved", description: replyMessage ? "Reply sent and ticket updated." : "Ticket updated successfully." });
+      const nextSelected = data.data || null;
+      setSelected(nextSelected);
+      setEditStatus(nextSelected?.status || "OPEN");
+      setEditPriority(nextSelected?.priority || "NORMAL");
+      setEditNotes(nextSelected?.adminNotes || "");
+      setReplyMessage("");
       loadTickets();
     } catch (error: any) {
       addToast({ type: "error", title: "Error", description: error.message || "Update failed." });
@@ -207,8 +215,33 @@ export default function TicketsPage() {
 
               <div>
                 <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Message</p>
-                <div className="max-h-56 overflow-y-auto whitespace-pre-wrap rounded-lg border bg-card p-3 text-sm">
-                  {selected.message}
+                <div className="max-h-72 space-y-3 overflow-y-auto rounded-lg border bg-card p-3 text-sm">
+                  {(selected.conversation?.length ? selected.conversation : [
+                    {
+                      id: `${selected.id}-customer`,
+                      sender: "CUSTOMER",
+                      author: selected.email || selected.discordUsername || "Customer",
+                      message: selected.message,
+                      createdAt: selected.createdAt,
+                    },
+                  ]).map((entry: any) => (
+                    <div
+                      key={entry.id || `${entry.sender}-${entry.createdAt}`}
+                      className={`rounded-xl px-3 py-2 ${
+                        entry.sender === "ADMIN"
+                          ? "ml-10 border border-violet-400/20 bg-violet-500/10"
+                          : "mr-10 border border-white/10 bg-white/5"
+                      }`}
+                    >
+                      <div className="mb-1 flex items-center justify-between gap-2 text-xs">
+                        <span className={entry.sender === "ADMIN" ? "text-violet-300" : "text-sky-300"}>
+                          {entry.sender === "ADMIN" ? "Admin" : "Customer"} {entry.author ? `- ${entry.author}` : ""}
+                        </span>
+                        <span className="text-muted-foreground">{timeAgo(entry.createdAt)}</span>
+                      </div>
+                      <p className="whitespace-pre-wrap leading-6 text-zinc-200">{entry.message}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -244,6 +277,16 @@ export default function TicketsPage() {
                   rows={5}
                 />
               </div>
+              <div>
+                <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Reply to customer</p>
+                <Textarea
+                  value={replyMessage}
+                  onChange={(e) => setReplyMessage(e.target.value)}
+                  placeholder="Type your response here..."
+                  rows={4}
+                />
+                <p className="mt-2 text-xs text-muted-foreground">This reply is added to the ticket conversation timeline.</p>
+              </div>
               {selected.isFallback && (
                 <p className="text-xs text-amber-400">
                   This ticket was captured from notification fallback. Updates are saved into fallback metadata.
@@ -254,7 +297,7 @@ export default function TicketsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setSelected(null)}>Close</Button>
             <Button onClick={saveTicket} disabled={updating}>
-              <Send className="h-4 w-4" /> {updating ? "Saving..." : "Save changes"}
+              <Send className="h-4 w-4" /> {updating ? "Sending..." : "Save / Send Reply"}
             </Button>
           </DialogFooter>
         </DialogContent>
