@@ -86,6 +86,14 @@ export default function TicketsPage() {
 
   const saveTicket = async () => {
     if (!selected) return;
+    if (selected.isFallback) {
+      addToast({
+        type: "error",
+        title: "Read-only ticket",
+        description: "This ticket came from notification fallback and cannot be updated.",
+      });
+      return;
+    }
     setUpdating(true);
     try {
       const res = await fetch(`/api/admin/tickets/${selected.id}`, {
@@ -153,6 +161,7 @@ export default function TicketsPage() {
                       <Badge className={STATUS_BADGES[ticket.status] || STATUS_BADGES.OPEN}>{ticket.status.replaceAll("_", " ")}</Badge>
                       <Badge className={PRIORITY_BADGES[ticket.priority] || PRIORITY_BADGES.NORMAL}>{ticket.priority}</Badge>
                       {ticket.product?.name && <Badge variant="outline">{ticket.product.name}</Badge>}
+                      {ticket.isFallback && <Badge variant="outline">Notification fallback</Badge>}
                     </div>
                     <h3 className="text-base font-semibold text-white">{ticket.subject}</h3>
                     <p className="mt-2 line-clamp-2 text-sm text-zinc-400">{ticket.message}</p>
@@ -166,7 +175,7 @@ export default function TicketsPage() {
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={() => openTicket(ticket)}>
-                      <MessageSquare className="h-4 w-4" /> Open
+                      <MessageSquare className="h-4 w-4" /> {ticket.isFallback ? "View" : "Open"}
                     </Button>
                   </div>
                 </div>
@@ -218,6 +227,7 @@ export default function TicketsPage() {
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value)}
                     options={statusOptions.filter((option) => option.value !== "ALL")}
+                    disabled={!!selected.isFallback}
                   />
                 </div>
                 <div>
@@ -230,6 +240,7 @@ export default function TicketsPage() {
                       { value: "NORMAL", label: "Normal" },
                       { value: "HIGH", label: "High" },
                     ]}
+                    disabled={!!selected.isFallback}
                   />
                 </div>
               </div>
@@ -241,13 +252,19 @@ export default function TicketsPage() {
                   onChange={(e) => setEditNotes(e.target.value)}
                   placeholder="Internal notes for the team..."
                   rows={5}
+                  disabled={!!selected.isFallback}
                 />
               </div>
+              {selected.isFallback && (
+                <p className="text-xs text-amber-400">
+                  This ticket is loaded from notification fallback because the ticket table was unavailable at submission time.
+                </p>
+              )}
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setSelected(null)}>Close</Button>
-            <Button onClick={saveTicket} disabled={updating}>
+            <Button onClick={saveTicket} disabled={updating || !!selected?.isFallback}>
               <Send className="h-4 w-4" /> {updating ? "Saving..." : "Save changes"}
             </Button>
           </DialogFooter>
