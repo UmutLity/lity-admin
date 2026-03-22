@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getClientIp } from "@/lib/ip-utils";
+import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DISCORD_REGEX = /^.{2,32}$/;
@@ -18,7 +19,7 @@ function corsHeaders(req?: NextRequest) {
   return {
     "Access-Control-Allow-Origin": allowOrigin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     Vary: "Origin",
   };
 }
@@ -37,9 +38,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const token = getCustomerTokenFromRequest(req);
+    if (!token) {
+      return NextResponse.json({ success: false, error: "Login required." }, { status: 401, headers: corsHeaders(req) });
+    }
+    const tokenPayload = verifyCustomerToken(token);
+    if (!tokenPayload) {
+      return NextResponse.json({ success: false, error: "Session expired. Please login again." }, { status: 401, headers: corsHeaders(req) });
+    }
+    const customer = await prisma.customer.findUnique({
+      where: { id: tokenPayload.id },
+      select: { id: true, email: true, username: true, role: true, isActive: true },
+    });
+    if (!customer || !customer.isActive || customer.role === "BANNED") {
+      return NextResponse.json({ success: false, error: "Your account is not eligible to create tickets." }, { status: 403, headers: corsHeaders(req) });
+    }
+
     const body = await req.json();
     const contactType = body.contactType === "discord" ? "DISCORD" : "EMAIL";
-    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const email = customer.email.toLowerCase();
     const discordUsername = typeof body.discordUsername === "string" ? body.discordUsername.trim() : "";
     const subject = typeof body.subject === "string" ? body.subject.trim() : "";
     const message = typeof body.message === "string" ? body.message.trim() : "";
@@ -104,10 +121,12 @@ export async function POST(req: NextRequest) {
         type: "SYSTEM",
         severity: "INFO",
         title: usedFallback ? `New support request #${fallbackTicketNumber}` : `New ticket #${ticket.ticketNumber}`,
-        message: `${subject} from ${contactType === "EMAIL" ? email : discordUsername}`,
+        message: `${subject} from ${customer.username}`,
         meta: JSON.stringify({
           ticketId: ticket?.id || null,
           ticketNumber: ticket?.ticketNumber || fallbackTicketNumber,
+          customerId: customer.id,
+          customerUsername: customer.username,
           contactType,
           fallback: usedFallback,
           subject,
