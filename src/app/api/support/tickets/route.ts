@@ -68,12 +68,45 @@ export async function GET(req: NextRequest) {
     const customer = auth.customer;
 
     let rows: any[] = [];
+    let relatedNotifications: any[] = [];
     try {
+      const notifications = await prisma.adminNotification.findMany({
+        where: { type: "SYSTEM" },
+        orderBy: { createdAt: "desc" },
+        take: 500,
+      });
+
+      const relatedTicketIds = new Set<string>();
+      const relatedTicketNumbers = new Set<number>();
+      for (const notification of notifications) {
+        try {
+          const meta = JSON.parse(notification.meta || "{}");
+          const metaCustomerId = String(meta?.customerId || "");
+          const metaEmail = String(meta?.email || "").toLowerCase();
+          const matchesCustomer =
+            (metaCustomerId && metaCustomerId === String(customer.id)) ||
+            (metaEmail && metaEmail === customer.email.toLowerCase());
+          if (!matchesCustomer) continue;
+          relatedNotifications.push({ notification, meta });
+          if (meta?.ticketId && typeof meta.ticketId === "string") {
+            relatedTicketIds.add(meta.ticketId);
+          }
+          if (meta?.ticketNumber) {
+            const ticketNumber = Number(meta.ticketNumber);
+            if (!Number.isNaN(ticketNumber)) relatedTicketNumbers.add(ticketNumber);
+          }
+        } catch {}
+      }
+
+      const idList = Array.from(relatedTicketIds);
+      const ticketNumberList = Array.from(relatedTicketNumbers);
       rows = await prisma.supportTicket.findMany({
         where: {
           OR: [
             { email: { equals: customer.email.toLowerCase(), mode: "insensitive" } },
             { discordUsername: { equals: customer.username, mode: "insensitive" } },
+            ...(idList.length ? [{ id: { in: idList } }] : []),
+            ...(ticketNumberList.length ? [{ ticketNumber: { in: ticketNumberList } }] : []),
           ],
         },
         include: {
@@ -92,7 +125,7 @@ export async function GET(req: NextRequest) {
       if (!isMissingSupportTable) throw listError;
     }
 
-    const data = rows.map((ticket) => {
+    const dbData = rows.map((ticket) => {
       const parsed = parseThreadFromAdminNotes(ticket.adminNotes);
       const conversation = [
         {
@@ -111,6 +144,48 @@ export async function GET(req: NextRequest) {
         conversation,
       };
     });
+
+    const dbTicketNumbers = new Set(dbData.map((ticket) => ticket.ticketNumber));
+    const fallbackData = relatedNotifications
+      .map(({ notification, meta }) => {
+        const isFallback = !!meta?.fallback || /support request/i.test(notification.title || "");
+        if (!isFallback) return null;
+        const ticketNumber = Number(meta?.ticketNumber || 0);
+        if (!ticketNumber || dbTicketNumbers.has(ticketNumber)) return null;
+        const replies = safeArray(meta?.replies);
+        return {
+          id: `fallback-${notification.id}`,
+          ticketNumber,
+          product: meta?.productName ? { id: null, name: meta.productName, slug: meta.productSlug || null } : null,
+          contactType: meta?.contactType || "DISCORD",
+          email: meta?.email || customer.email,
+          discordUsername: meta?.discordUsername || customer.username,
+          subject: meta?.subject || notification.title || "Support request",
+          message: meta?.message || notification.message || "Support request",
+          status: meta?.status || "OPEN",
+          priority: meta?.priority || "NORMAL",
+          source: "FALLBACK_NOTIFICATION",
+          adminNotes: meta?.adminNotes || null,
+          replies,
+          conversation: [
+            {
+              id: `fallback-${notification.id}-customer`,
+              sender: "CUSTOMER",
+              author: meta?.email || meta?.discordUsername || customer.username || "Customer",
+              message: meta?.message || notification.message || "Support request",
+              createdAt: notification.createdAt,
+            },
+            ...replies,
+          ],
+          createdAt: notification.createdAt,
+          updatedAt: notification.createdAt,
+        };
+      })
+      .filter((ticket): ticket is any => !!ticket);
+
+    const data = [...dbData, ...fallbackData].sort(
+      (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)
+    );
 
     return NextResponse.json({ success: true, data }, { headers: corsHeaders(req) });
   } catch (error) {
