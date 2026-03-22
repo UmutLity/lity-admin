@@ -49,6 +49,7 @@ Edit `.env` and set your values:
 
 ```env
 DATABASE_URL="postgresql://user:password@localhost:5432/lity_admin?schema=public"
+DIRECT_URL="postgresql://user:password@localhost:5432/lity_admin?schema=public"
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="generate-a-random-secret-here"
 ```
@@ -78,6 +79,18 @@ npm run dev
 ```
 
 Open [http://localhost:3000/admin](http://localhost:3000/admin)
+
+### Deployment Note (Vercel + Neon)
+
+- `build` script does not run migrations anymore to avoid deploy lock timeouts.
+- Run migrations separately:
+
+```bash
+npm run migrate:deploy
+```
+
+- Keep `DATABASE_URL` for runtime (pooler is fine).
+- Set `DIRECT_URL` to a direct/non-pooler Postgres connection for Prisma migrate.
 
 ### Demo Credentials
 
