@@ -20,7 +20,9 @@ export type AuditAction =
   | "MEDIA_UPLOAD"
   | "MEDIA_DELETE"
   | "ROLE_CHANGE"
-  | "PASSWORD_RESET";
+  | "PASSWORD_RESET"
+  | "TICKET_CREATE"
+  | "TICKET_STATUS_CHANGE";
 
 export type AuditEntity =
   | "Product"
@@ -35,7 +37,8 @@ export type AuditEntity =
   | "Customer"
   | "License"
   | "ProductEnvironment"
-  | "AdminSession";
+  | "AdminSession"
+  | "SupportTicket";
 
 // ─── Enhanced Audit Log Input ───────────────────────────
 

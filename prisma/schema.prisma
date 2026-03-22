@@ -239,6 +239,7 @@ model Product {
   environments   ProductEnvironment[]
   orderItems     OrderItem[]
   licenses       License[]
+  supportTickets SupportTicket[]
 }
 
 model ProductPrice {
@@ -376,6 +377,32 @@ model SiteSetting {
   group     String   @default("general")
   label     String?
   updatedAt DateTime @updatedAt
+}
+
+model SupportTicket {
+  id              String    @id @default(cuid())
+  ticketNumber    Int       @unique @default(autoincrement())
+  productId       String?
+  product         Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  contactType     String
+  email           String?
+  discordUsername String?
+  subject         String
+  message         String
+  status          String    @default("OPEN")
+  priority        String    @default("NORMAL")
+  source          String    @default("PUBLIC_FORM")
+  adminNotes      String?
+  ip              String?
+  userAgent       String?
+  resolvedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([productId])
+  @@index([contactType])
+  @@index([ticketNumber])
 }
 
 // ─── Media ───────────────────────────────────────────────

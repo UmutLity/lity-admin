@@ -19,6 +19,7 @@ async function main() {
         "media.view","media.upload","media.delete",
         "user.view","user.manage",
         "customer.view","customer.manage",
+        "ticket.view","ticket.manage",
         "role.view","role.manage",
         "audit.view",
         "security.view","security.manage",
@@ -38,6 +39,7 @@ async function main() {
         "media.view","media.upload","media.delete",
         "user.view","user.manage",
         "customer.view","customer.manage",
+        "ticket.view","ticket.manage",
         "role.view","role.manage",
         "audit.view",
         "security.view","security.manage",
@@ -58,6 +60,7 @@ async function main() {
         "media.view","media.upload",
         "webhook.test",
         "analytics.view","notification.view","customer.view",
+        "ticket.view","ticket.manage",
       ]),
     },
     create: {
@@ -71,6 +74,7 @@ async function main() {
         "media.view","media.upload",
         "webhook.test",
         "analytics.view","notification.view","customer.view",
+        "ticket.view","ticket.manage",
       ]),
     },
   });
@@ -80,7 +84,7 @@ async function main() {
     where: { name: "VIEWER" },
     update: {
       permissions: JSON.stringify([
-        "product.view","changelog.view","category.view","media.view","notification.view",
+        "product.view","changelog.view","category.view","media.view","notification.view","ticket.view",
       ]),
     },
     create: {
@@ -88,7 +92,7 @@ async function main() {
       label: "Viewer",
       isSystem: true,
       permissions: JSON.stringify([
-        "product.view","changelog.view","category.view","media.view","notification.view",
+        "product.view","changelog.view","category.view","media.view","notification.view","ticket.view",
       ]),
     },
   });

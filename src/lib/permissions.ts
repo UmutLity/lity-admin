@@ -50,6 +50,9 @@ export const ALL_PERMISSIONS = [
   // Customers
   "customer.view",
   "customer.manage",
+  // Support tickets
+  "ticket.view",
+  "ticket.manage",
 ] as const;
 
 export type Permission = (typeof ALL_PERMISSIONS)[number];
@@ -84,6 +87,10 @@ export const PERMISSION_GROUPS: Record<string, { label: string; permissions: Per
   customer: {
     label: "Customers",
     permissions: ["customer.view", "customer.manage"],
+  },
+  ticket: {
+    label: "Support Tickets",
+    permissions: ["ticket.view", "ticket.manage"],
   },
   role: {
     label: "Roles",
@@ -128,6 +135,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, Permission[]> = {
     "analytics.view",
     "notification.view",
     "customer.view",
+    "ticket.view",
+    "ticket.manage",
   ],
   VIEWER: [
     "product.view",
@@ -135,6 +144,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, Permission[]> = {
     "category.view",
     "media.view",
     "notification.view",
+    "ticket.view",
   ],
 };
 
