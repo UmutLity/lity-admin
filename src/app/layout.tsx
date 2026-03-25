@@ -8,6 +8,11 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Lity Admin - Management Panel",
   description: "Lity Software Admin Panel - Product, Changelog & Site Management",
+  icons: {
+    icon: "/litysoftware.png",
+    shortcut: "/litysoftware.png",
+    apple: "/litysoftware.png",
+  },
 };
 
 export default function RootLayout({
