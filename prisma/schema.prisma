@@ -380,6 +380,24 @@ model SiteSetting {
   updatedAt DateTime @updatedAt
 }
 
+model Review {
+  id              String   @id @default(cuid())
+  source          String
+  sourceMessageId String
+  authorName      String
+  authorAvatarUrl String?
+  content         String
+  rating          Int?
+  isVisible       Boolean  @default(true)
+  meta            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([source, sourceMessageId])
+  @@index([isVisible, createdAt])
+  @@index([source, createdAt])
+}
+
 model SupportTicket {
   id              String    @id @default(cuid())
   ticketNumber    Int       @unique @default(autoincrement())

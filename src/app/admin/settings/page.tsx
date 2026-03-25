@@ -248,6 +248,44 @@ const handleTestWebhook = async () => {
                 )}
               </div>
 
+              <div className="border-t border-border pt-6 space-y-4">
+                <div>
+                  <p className="font-medium">Reviews Webhook Ingest</p>
+                  <p className="text-sm text-muted-foreground">Accept forwarded Discord feedback and publish to /reviews</p>
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-lg border">
+                  <div>
+                    <p className="font-medium">Enable Reviews Ingest</p>
+                    <p className="text-sm text-muted-foreground">Requires valid x-review-signature header</p>
+                  </div>
+                  <Switch
+                    checked={values.reviews_webhook_enabled === "true"}
+                    onCheckedChange={(checked) => setBoolValue("reviews_webhook_enabled", checked)}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Reviews Source</Label>
+                    <Input
+                      value={values.reviews_webhook_source || "DISCORD_BRIDGE"}
+                      onChange={(e) => updateValue("reviews_webhook_source", e.target.value)}
+                      placeholder="DISCORD_BRIDGE"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Webhook Secret</Label>
+                    <Input
+                      value={values.reviews_webhook_secret || ""}
+                      onChange={(e) => updateValue("reviews_webhook_secret", e.target.value)}
+                      placeholder="Set shared secret for x-review-signature"
+                      type="password"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="flex items-center justify-between p-4 rounded-lg border">
                 <div>
                   <p className="font-medium">Status Changes Affect Last Update</p>

@@ -252,6 +252,9 @@ async function main() {
     { key: "discord_webhook_enabled", value: "false", type: "boolean", group: "discord", label: "Discord Webhook Enabled" },
     { key: "discord_webhook_username", value: "Lity Software", type: "string", group: "discord", label: "Webhook Bot Name" },
     { key: "discord_webhook_avatar_url", value: "", type: "string", group: "discord", label: "Webhook Avatar URL" },
+    { key: "reviews_webhook_enabled", value: "false", type: "boolean", group: "discord", label: "Reviews Webhook Enabled" },
+    { key: "reviews_webhook_secret", value: "", type: "string", group: "discord", label: "Reviews Webhook Secret" },
+    { key: "reviews_webhook_source", value: "DISCORD_BRIDGE", type: "string", group: "discord", label: "Reviews Webhook Source" },
     // Emergency
     { key: "maintenance_mode", value: "false", type: "boolean", group: "emergency", label: "Maintenance Mode" },
     { key: "disable_purchases", value: "false", type: "boolean", group: "emergency", label: "Disable Purchases" },
