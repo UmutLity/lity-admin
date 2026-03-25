@@ -241,6 +241,7 @@ model Product {
   orderItems     OrderItem[]
   licenses       License[]
   supportTickets SupportTicket[]
+  reviews        Review[]
 }
 
 model ProductPrice {
@@ -384,10 +385,13 @@ model Review {
   id              String   @id @default(cuid())
   source          String
   sourceMessageId String
+  productId       String?
+  product         Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
   authorName      String
   authorAvatarUrl String?
   content         String
   rating          Int?
+  isVerifiedPurchase Boolean @default(false)
   isVisible       Boolean  @default(true)
   meta            String?
   createdAt       DateTime @default(now())
@@ -396,6 +400,7 @@ model Review {
   @@unique([source, sourceMessageId])
   @@index([isVisible, createdAt])
   @@index([source, createdAt])
+  @@index([productId, createdAt])
 }
 
 model SupportTicket {

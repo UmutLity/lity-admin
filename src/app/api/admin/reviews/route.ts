@@ -25,6 +25,9 @@ export async function POST(req: NextRequest) {
     const authorName = String(body?.authorName || "").trim();
     const content = String(body?.content || "").trim();
     const source = String(body?.source || "MANUAL").trim() || "MANUAL";
+    const productId = body?.productId ? String(body.productId).trim() : null;
+    const customerEmail = body?.customerEmail ? String(body.customerEmail).trim() : null;
+    const isVerifiedPurchase = !!body?.isVerifiedPurchase;
     const authorAvatarUrl = body?.authorAvatarUrl ? String(body.authorAvatarUrl).trim() : null;
     const ratingRaw = Number(body?.rating);
     const rating = Number.isInteger(ratingRaw) && ratingRaw >= 1 && ratingRaw <= 5 ? ratingRaw : null;
@@ -41,6 +44,9 @@ export async function POST(req: NextRequest) {
       rating,
       isVisible,
       source,
+      productId,
+      customerEmail,
+      isVerifiedPurchase,
     });
     return NextResponse.json({ success: true, data: created });
   } catch (error: any) {
