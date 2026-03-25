@@ -45,10 +45,10 @@ async function loadFallback(): Promise<ReviewItem[]> {
     const parsed = JSON.parse(row.value);
     if (!Array.isArray(parsed)) return [];
     return (parsed as ReviewItem[]).map((r) => ({
-      productId: null,
-      productName: null,
-      isVerifiedPurchase: false,
       ...r,
+      productId: r.productId ?? null,
+      productName: r.productName ?? null,
+      isVerifiedPurchase: !!r.isVerifiedPurchase,
     }));
   } catch {
     return [];
