@@ -29,6 +29,11 @@ function verifySignature(rawBody: string, secret: string, headerValue: string): 
   return safeTimingEqual(parsed, expectedHex) || safeTimingEqual(parsed, expectedBase64);
 }
 
+function verifySecretToken(provided: string | null, expected: string): boolean {
+  if (!provided) return false;
+  return safeTimingEqual(provided.trim(), expected.trim());
+}
+
 function parseRating(payload: any, content: string): number | null {
   const direct = Number(payload?.rating);
   if (Number.isInteger(direct) && direct >= 1 && direct <= 5) return direct;
@@ -108,14 +113,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Missing reviews webhook secret" }, { status: 500 });
     }
 
-    const signature = req.headers.get("x-review-signature");
-    if (!signature) {
-      return NextResponse.json({ success: false, error: "Missing signature" }, { status: 401 });
-    }
-
     const rawBody = await req.text();
-    if (!verifySignature(rawBody, secret, signature)) {
-      return NextResponse.json({ success: false, error: "Invalid signature" }, { status: 403 });
+    const signature = req.headers.get("x-review-signature");
+    const headerSecret = req.headers.get("x-review-secret");
+    const querySecret = req.nextUrl.searchParams.get("secret");
+    const bodySecret = req.nextUrl.searchParams.get("key");
+
+    const signatureOk = signature ? verifySignature(rawBody, secret, signature) : false;
+    const tokenOk =
+      verifySecretToken(headerSecret, secret) ||
+      verifySecretToken(querySecret, secret) ||
+      verifySecretToken(bodySecret, secret);
+
+    if (!signatureOk && !tokenOk) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Unauthorized. Provide x-review-signature OR x-review-secret header OR ?secret=... query.",
+        },
+        { status: 403 }
+      );
     }
 
     let payload: any;
@@ -157,7 +175,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("POST /api/reviews/ingest error:", error);
+    const msg = String((error as any)?.message || "").toLowerCase();
+    if (msg.includes("review") && (msg.includes("does not exist") || msg.includes("relation"))) {
+      return NextResponse.json(
+        { success: false, error: "Review table is missing. Run Prisma migration first." },
+        { status: 500 }
+      );
+    }
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }
-

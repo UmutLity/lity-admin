@@ -39,7 +39,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, data: rows });
   } catch (error) {
     console.error("GET /api/reviews error:", error);
+    const msg = String((error as any)?.message || "").toLowerCase();
+    if (msg.includes("review") && (msg.includes("does not exist") || msg.includes("relation"))) {
+      return NextResponse.json(
+        { success: false, error: "Review table is missing. Run Prisma migration first." },
+        { status: 500 }
+      );
+    }
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }
-
