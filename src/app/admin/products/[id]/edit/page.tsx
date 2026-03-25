@@ -137,6 +137,7 @@ export default function EditProductPage() {
   const [editingFeatureId, setEditingFeatureId] = useState<string | null>(null);
   const [editFeatureData, setEditFeatureData] = useState<Partial<Feature>>({});
   const [newFeature, setNewFeature] = useState({ title: "", description: "", icon: "", order: 0 });
+  const [bulkFeatureText, setBulkFeatureText] = useState("");
 
   // ── Gallery state
   const [gallery, setGallery] = useState<GalleryImage[]>([]);
@@ -306,7 +307,7 @@ export default function EditProductPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setFeatures((prev) => [...prev, data.data]);
+        setFeatures((prev) => [...prev, data.data].sort((a, b) => a.order - b.order));
         setNewFeature({ title: "", description: "", icon: "", order: 0 });
         addToast({ type: "success", title: "Added", description: "Feature added" });
       } else {
@@ -314,6 +315,60 @@ export default function EditProductPage() {
       }
     } catch {
       addToast({ type: "error", title: "Error", description: "Failed to add feature" });
+    }
+  };
+
+  const addFeaturesBulk = async () => {
+    const lines = bulkFeatureText
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    if (lines.length === 0) {
+      addToast({ type: "warning", title: "Warning", description: "Paste at least one line" });
+      return;
+    }
+
+    const parsed = lines
+      .map((line, index) => {
+        const [titleRaw, descriptionRaw, iconRaw, orderRaw] = line.split("|");
+        const title = (titleRaw || "").trim();
+        if (!title) return null;
+
+        const fallbackOrder = features.length + index;
+        const parsedOrder = Number(orderRaw?.trim());
+        return {
+          title,
+          description: descriptionRaw?.trim() ? descriptionRaw.trim() : null,
+          icon: iconRaw?.trim() ? iconRaw.trim() : null,
+          order: Number.isFinite(parsedOrder) ? parsedOrder : fallbackOrder,
+        };
+      })
+      .filter((item): item is { title: string; description: string | null; icon: string | null; order: number } => !!item);
+
+    if (parsed.length === 0) {
+      addToast({ type: "warning", title: "Warning", description: "No valid rows found" });
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/products/${productId}/features`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ items: parsed }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const created = Array.isArray(data.data) ? data.data : [];
+        setFeatures((prev) => [...prev, ...created].sort((a, b) => a.order - b.order));
+        setBulkFeatureText("");
+        addToast({ type: "success", title: "Bulk Added", description: `${created.length} features added` });
+      } else {
+        addToast({ type: "error", title: "Error", description: data.error || "Bulk add failed" });
+      }
+    } catch {
+      addToast({ type: "error", title: "Error", description: "Failed to bulk add features" });
     }
   };
 
@@ -647,9 +702,12 @@ export default function EditProductPage() {
             loading={featuresLoading}
             newFeature={newFeature}
             setNewFeature={setNewFeature}
+            bulkFeatureText={bulkFeatureText}
+            setBulkFeatureText={setBulkFeatureText}
             editingFeatureId={editingFeatureId}
             editFeatureData={editFeatureData}
             onAdd={addFeature}
+            onAddBulk={addFeaturesBulk}
             onStartEdit={(f) => {
               setEditingFeatureId(f.id);
               setEditFeatureData({ title: f.title, description: f.description || "", icon: f.icon || "", order: f.order });
@@ -1066,9 +1124,12 @@ function FeaturesTab({
   loading,
   newFeature,
   setNewFeature,
+  bulkFeatureText,
+  setBulkFeatureText,
   editingFeatureId,
   editFeatureData,
   onAdd,
+  onAddBulk,
   onStartEdit,
   onCancelEdit,
   onSaveEdit,
@@ -1080,9 +1141,12 @@ function FeaturesTab({
   loading: boolean;
   newFeature: { title: string; description: string; icon: string; order: number };
   setNewFeature: (v: any) => void;
+  bulkFeatureText: string;
+  setBulkFeatureText: (v: string) => void;
   editingFeatureId: string | null;
   editFeatureData: Partial<Feature>;
   onAdd: () => void;
+  onAddBulk: () => void;
   onStartEdit: (f: Feature) => void;
   onCancelEdit: () => void;
   onSaveEdit: (id: string) => void;
@@ -1153,6 +1217,29 @@ function FeaturesTab({
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Bulk Add Features */}
+      <div className="bg-[#111827] border border-[#1e293b] rounded-xl p-6">
+        <h3 className="text-lg font-semibold mb-2">Bulk Add Features</h3>
+        <p className="text-sm text-gray-400 mb-3">
+          One line = <code className="text-xs bg-[#0a0a1a] px-1.5 py-0.5 rounded">title|description|icon|order</code>
+        </p>
+        <textarea
+          value={bulkFeatureText}
+          onChange={(e) => setBulkFeatureText(e.target.value)}
+          placeholder={"Enable Aimbot|Smooth targeting|Target|0\nESP|Player outlines|Eye|1"}
+          rows={6}
+          className="w-full px-3 py-2 bg-[#0a0a1a] border border-[#1e293b] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors font-mono text-sm"
+        />
+        <div className="mt-3 flex justify-end">
+          <button
+            onClick={onAddBulk}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+          >
+            <Plus className="h-4 w-4" /> Add Bulk
+          </button>
         </div>
       </div>
 

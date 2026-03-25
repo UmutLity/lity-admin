@@ -77,7 +77,8 @@ export default function SettingsPage() {
       if (res.ok) {
         addToast({ type: "success", title: "Saved", description: "Site settings updated" });
       } else {
-        addToast({ type: "error", title: "Error", description: "Save failed" });
+        const err = await res.json().catch(() => ({}));
+        addToast({ type: "error", title: "Error", description: err.error || "Save failed" });
       }
     } catch (error) {
       addToast({ type: "error", title: "Error" });
@@ -195,12 +196,16 @@ const handleTestWebhook = async () => {
         <TabsContent value="discord">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5" /> Discord Webhook Integration</CardTitle>
-              <CardDescription>Send automatic Discord notification when changelog is published</CardDescription>
+              <CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5" /> Discord Webhooks</CardTitle>
+              <CardDescription>Use separate webhooks for Updates and Reviews</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              <div>
+                <p className="font-medium">Update Webhook</p>
+                <p className="text-sm text-muted-foreground">Used for changelog/update messages</p>
+              </div>
               <div className="space-y-2">
-                <Label>Webhook URL</Label>
+                <Label>Update Webhook URL</Label>
                 <Input
                   value={values.discord_webhook_url || ""}
                   onChange={(e) => updateValue("discord_webhook_url", e.target.value)}
@@ -213,7 +218,7 @@ const handleTestWebhook = async () => {
               <div className="flex items-center justify-between p-4 rounded-lg border">
                 <div>
                   <p className="font-medium">Automatic Sending</p>
-                  <p className="text-sm text-muted-foreground">Automatically send Discord message when changelog is published</p>
+                  <p className="text-sm text-muted-foreground">Automatically send update message when changelog is published</p>
                 </div>
                 <Switch
                   checked={values.discord_webhook_enabled === "true"}
@@ -252,6 +257,17 @@ const handleTestWebhook = async () => {
                 <div>
                   <p className="font-medium">Reviews Webhook Ingest</p>
                   <p className="text-sm text-muted-foreground">Accept forwarded Discord feedback and publish to /reviews</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Review Webhook URL (Bridge Source)</Label>
+                  <Input
+                    value={values.reviews_webhook_url || ""}
+                    onChange={(e) => updateValue("reviews_webhook_url", e.target.value)}
+                    placeholder="https://... (optional, for bridge reference)"
+                    type="url"
+                    className="font-mono text-sm"
+                  />
                 </div>
 
                 <div className="flex items-center justify-between p-4 rounded-lg border">

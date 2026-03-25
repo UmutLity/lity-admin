@@ -28,7 +28,38 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (!product) return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
 
     const body = await req.json();
-    const { title, description, icon, order } = body;
+    const { title, description, icon, order, items } = body;
+
+    if (Array.isArray(items)) {
+      const normalized = items
+        .map((item: any) => ({
+          title: String(item?.title || "").trim(),
+          description: item?.description ? String(item.description) : null,
+          icon: item?.icon ? String(item.icon) : null,
+          order: Number(item?.order) || 0,
+        }))
+        .filter((item: any) => item.title.length > 0);
+
+      if (normalized.length === 0) {
+        return NextResponse.json({ success: false, error: "At least one valid feature item is required" }, { status: 400 });
+      }
+
+      const created = await prisma.$transaction(
+        normalized.map((item: any) =>
+          prisma.productFeature.create({
+            data: {
+              productId: params.id,
+              title: item.title,
+              description: item.description,
+              icon: item.icon,
+              order: item.order,
+            },
+          })
+        )
+      );
+
+      return NextResponse.json({ success: true, data: created });
+    }
 
     if (!title) {
       return NextResponse.json({ success: false, error: "Title is required" }, { status: 400 });
