@@ -229,6 +229,26 @@ export default function AdminReviewsPage() {
     }
   };
 
+  const toggleVerified = async (row: Review) => {
+    clearMessages();
+    try {
+      const res = await fetch(`/api/admin/reviews/${row.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ isVerifiedPurchase: !row.isVerifiedPurchase }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRows((prev) => prev.map((r) => (r.id === row.id ? data.data : r)));
+      } else {
+        setError(data.error || "Failed to update verified status");
+      }
+    } catch {
+      setError("Failed to update verified status");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Topbar title="Reviews" description={`Manage manual reviews. Visible: ${totalVisible}/${rows.length}`} />
@@ -421,6 +441,17 @@ export default function AdminReviewsPage() {
                     <div className="flex items-center gap-1">
                       <button onClick={() => toggleVisibility(row)} className="p-2 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Toggle visibility">
                         {row.isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                      <button
+                        onClick={() => toggleVerified(row)}
+                        className={`px-2 py-1 rounded text-xs ${
+                          row.isVerifiedPurchase
+                            ? "bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25"
+                            : "bg-muted text-muted-foreground hover:text-foreground"
+                        }`}
+                        title="Toggle verified purchase"
+                      >
+                        Verified
                       </button>
                       <button onClick={() => startEdit(row)} className="p-2 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Edit">
                         <Pencil className="h-4 w-4" />
