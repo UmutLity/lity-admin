@@ -196,16 +196,12 @@ const handleTestWebhook = async () => {
         <TabsContent value="discord">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5" /> Discord Webhooks</CardTitle>
-              <CardDescription>Use separate webhooks for Updates and Reviews</CardDescription>
+              <CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5" /> Discord Webhook Integration</CardTitle>
+              <CardDescription>Send automatic Discord notification when changelog is published</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div>
-                <p className="font-medium">Update Webhook</p>
-                <p className="text-sm text-muted-foreground">Used for changelog/update messages</p>
-              </div>
               <div className="space-y-2">
-                <Label>Update Webhook URL</Label>
+                <Label>Webhook URL</Label>
                 <Input
                   value={values.discord_webhook_url || ""}
                   onChange={(e) => updateValue("discord_webhook_url", e.target.value)}
@@ -218,7 +214,7 @@ const handleTestWebhook = async () => {
               <div className="flex items-center justify-between p-4 rounded-lg border">
                 <div>
                   <p className="font-medium">Automatic Sending</p>
-                  <p className="text-sm text-muted-foreground">Automatically send update message when changelog is published</p>
+                  <p className="text-sm text-muted-foreground">Automatically send Discord message when changelog is published</p>
                 </div>
                 <Switch
                   checked={values.discord_webhook_enabled === "true"}
@@ -251,55 +247,6 @@ const handleTestWebhook = async () => {
                     {lastTestResult.date && <span className="text-xs text-muted-foreground">{new Date(lastTestResult.date).toLocaleString("en-US")}</span>}
                   </div>
                 )}
-              </div>
-
-              <div className="border-t border-border pt-6 space-y-4">
-                <div>
-                  <p className="font-medium">Reviews Webhook Ingest</p>
-                  <p className="text-sm text-muted-foreground">Accept forwarded Discord feedback and publish to /reviews</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Review Webhook URL (Bridge Source)</Label>
-                  <Input
-                    value={values.reviews_webhook_url || ""}
-                    onChange={(e) => updateValue("reviews_webhook_url", e.target.value)}
-                    placeholder="https://... (optional, for bridge reference)"
-                    type="url"
-                    className="font-mono text-sm"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between p-4 rounded-lg border">
-                  <div>
-                    <p className="font-medium">Enable Reviews Ingest</p>
-                    <p className="text-sm text-muted-foreground">Requires valid x-review-signature header</p>
-                  </div>
-                  <Switch
-                    checked={values.reviews_webhook_enabled === "true"}
-                    onCheckedChange={(checked) => setBoolValue("reviews_webhook_enabled", checked)}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Reviews Source</Label>
-                    <Input
-                      value={values.reviews_webhook_source || "DISCORD_BRIDGE"}
-                      onChange={(e) => updateValue("reviews_webhook_source", e.target.value)}
-                      placeholder="DISCORD_BRIDGE"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Webhook Secret</Label>
-                    <Input
-                      value={values.reviews_webhook_secret || ""}
-                      onChange={(e) => updateValue("reviews_webhook_secret", e.target.value)}
-                      placeholder="Set shared secret for x-review-signature"
-                      type="password"
-                    />
-                  </div>
-                </div>
               </div>
 
               <div className="flex items-center justify-between p-4 rounded-lg border">

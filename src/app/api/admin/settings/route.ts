@@ -9,21 +9,6 @@ export async function GET() {
   try {
     await requireAdmin();
 
-    const defaults = [
-      { key: "reviews_webhook_enabled", value: "false", type: "boolean", group: "discord", label: "Reviews Webhook Enabled" },
-      { key: "reviews_webhook_url", value: "", type: "string", group: "discord", label: "Reviews Webhook URL" },
-      { key: "reviews_webhook_secret", value: "", type: "string", group: "discord", label: "Reviews Webhook Secret" },
-      { key: "reviews_webhook_source", value: "DISCORD_BRIDGE", type: "string", group: "discord", label: "Reviews Webhook Source" },
-    ];
-
-    for (const item of defaults) {
-      await prisma.siteSetting.upsert({
-        where: { key: item.key },
-        update: {},
-        create: item,
-      });
-    }
-
     const settings = await prisma.siteSetting.findMany({ orderBy: { group: "asc" } });
     return NextResponse.json({ success: true, data: settings });
   } catch (error: any) {
@@ -42,18 +27,6 @@ export async function PUT(req: NextRequest) {
 
     if (!body.settings || !Array.isArray(body.settings)) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
-    }
-
-    const incoming = new Map<string, string>(
-      body.settings.map((item: { key: string; value: string }) => [item.key, String(item.value ?? "")])
-    );
-    const updateWebhookUrl = (incoming.get("discord_webhook_url") || "").trim();
-    const reviewsWebhookUrl = (incoming.get("reviews_webhook_url") || "").trim();
-    if (updateWebhookUrl && reviewsWebhookUrl && updateWebhookUrl === reviewsWebhookUrl) {
-      return NextResponse.json(
-        { error: "Update webhook and review webhook must be different URLs" },
-        { status: 400 }
-      );
     }
 
     const before: Record<string, string> = {};

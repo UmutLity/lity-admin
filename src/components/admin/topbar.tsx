@@ -91,6 +91,7 @@ export function AdminHeader() {
     { label: "Dashboard", path: "/admin", keywords: "home overview" },
     { label: "Products", path: "/admin/products", keywords: "items store" },
     { label: "Changelog", path: "/admin/changelog", keywords: "updates notes" },
+    { label: "Reviews", path: "/admin/reviews", keywords: "feedback testimonials comments" },
     { label: "Users", path: "/admin/users", keywords: "customers staff" },
     { label: "Settings", path: "/admin/settings", keywords: "config" },
     { label: "Analytics", path: "/admin/analytics", keywords: "stats traffic" },

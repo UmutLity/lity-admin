@@ -8,7 +8,7 @@ import {
   Users, Shield, ClipboardList, Clock, LogOut, ChevronLeft, Menu,
   ShieldAlert, KeyRound, BarChart3, Server, Bell, DollarSign,
   FolderOpen, Gauge, Brain, Handshake, Zap, Download,
-  Search, PanelLeftClose, PanelLeft,
+  Search, PanelLeftClose, PanelLeft, MessageSquare,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useState, useEffect, createContext, useContext } from "react";
@@ -44,6 +44,7 @@ const navGroups: NavGroup[] = [
       { href: "/admin/licenses", label: "Licenses", icon: Download, roles: ["ADMIN"] },
       { href: "/admin/categories", label: "Categories", icon: FolderOpen, roles: ["ADMIN"] },
       { href: "/admin/changelog", label: "Changelog", icon: FileText, roles: ["ADMIN", "EDITOR"] },
+      { href: "/admin/reviews", label: "Reviews", icon: MessageSquare, roles: ["ADMIN", "EDITOR"] },
       { href: "/admin/media", label: "Media", icon: ImageIcon, roles: ["ADMIN", "EDITOR"] },
       { href: "/admin/revenue", label: "Revenue", icon: DollarSign, roles: ["ADMIN"] },
     ],
