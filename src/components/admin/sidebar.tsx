@@ -9,7 +9,6 @@ import {
   ShieldAlert, KeyRound, BarChart3, Server, Bell, DollarSign,
   FolderOpen, Gauge, Brain, Handshake, Zap, Download,
   Search, PanelLeftClose, PanelLeft,
-  MessageSquare,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useState, useEffect, createContext, useContext } from "react";
@@ -56,7 +55,6 @@ const navGroups: NavGroup[] = [
       { href: "/admin/roles", label: "Roles", icon: KeyRound, roles: ["ADMIN"] },
       { href: "/admin/security", label: "Security", icon: ShieldAlert, roles: ["ADMIN"] },
       { href: "/admin/resellers", label: "Resellers", icon: Handshake, roles: ["ADMIN"] },
-      { href: "/admin/tickets", label: "Tickets", icon: MessageSquare, roles: ["ADMIN", "EDITOR", "VIEWER"] },
     ],
   },
   {

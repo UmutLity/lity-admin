@@ -88,10 +88,6 @@ export const PERMISSION_GROUPS: Record<string, { label: string; permissions: Per
     label: "Customers",
     permissions: ["customer.view", "customer.manage"],
   },
-  ticket: {
-    label: "Support Tickets",
-    permissions: ["ticket.view", "ticket.manage"],
-  },
   role: {
     label: "Roles",
     permissions: ["role.view", "role.manage"],

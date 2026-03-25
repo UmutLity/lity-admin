@@ -92,7 +92,6 @@ export function AdminHeader() {
     { label: "Products", path: "/admin/products", keywords: "items store" },
     { label: "Changelog", path: "/admin/changelog", keywords: "updates notes" },
     { label: "Users", path: "/admin/users", keywords: "customers staff" },
-    { label: "Tickets", path: "/admin/tickets", keywords: "support contact help mail discord" },
     { label: "Settings", path: "/admin/settings", keywords: "config" },
     { label: "Analytics", path: "/admin/analytics", keywords: "stats traffic" },
     { label: "Security", path: "/admin/security", keywords: "auth login" },
