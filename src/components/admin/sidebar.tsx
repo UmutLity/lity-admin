@@ -132,19 +132,19 @@ export function Sidebar() {
         className={cn(
           "group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200",
           active
-            ? "bg-[linear-gradient(135deg,rgba(168,85,247,0.18),rgba(113,113,122,0.12))] text-white shadow-[0_14px_34px_rgba(24,24,33,0.35)] ring-1 ring-violet-400/15"
+            ? "bg-[linear-gradient(135deg,rgba(154,136,187,0.18),rgba(136,132,152,0.12))] text-white shadow-[0_14px_34px_rgba(20,20,26,0.34)] ring-1 ring-[#b9accf]/20"
             : "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.04]"
         )}
         title={collapsed ? item.label : undefined}
       >
         {/* Active indicator */}
         {active && (
-          <div className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-gradient-to-b from-violet-400 to-fuchsia-300" />
+          <div className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#b8abcf] to-[#9e92b7]" />
         )}
         <div className={cn(
           "flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl transition-all duration-200",
           active
-            ? "bg-[linear-gradient(135deg,rgba(168,85,247,0.15),rgba(113,113,122,0.12))] text-violet-300"
+            ? "bg-[linear-gradient(135deg,rgba(154,136,187,0.16),rgba(136,132,152,0.12))] text-[#c1b5d4]"
             : "text-zinc-500 group-hover:bg-white/[0.04] group-hover:text-zinc-200"
         )}>
           <item.icon className="h-[18px] w-[18px]" />
@@ -173,7 +173,7 @@ export function Sidebar() {
       )}>
         {!collapsed ? (
           <Link href="/admin" className="flex items-center gap-2.5 group">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] shadow-[0_16px_34px_rgba(109,40,217,0.28)]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#8f7ab0,#77688f)] shadow-[0_14px_30px_rgba(40,36,52,0.28)]">
               <Shield className="h-4 w-4 text-white" />
             </div>
             <div className="flex flex-col">
@@ -183,7 +183,7 @@ export function Sidebar() {
           </Link>
         ) : (
           <Link href="/admin">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] shadow-[0_16px_34px_rgba(109,40,217,0.28)]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#8f7ab0,#77688f)] shadow-[0_14px_30px_rgba(40,36,52,0.28)]">
               <Shield className="h-4.5 w-4.5 text-white" />
             </div>
           </Link>
@@ -233,7 +233,7 @@ export function Sidebar() {
         <div className="border-t border-white/[0.06] p-3 flex-shrink-0">
           {!collapsed && session?.user && (
           <div className="mb-1 flex items-center gap-3 rounded-2xl border border-white/[0.05] bg-white/[0.02] px-3 py-3">
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,rgba(168,85,247,0.16),rgba(113,113,122,0.1))] text-xs font-bold text-violet-300">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,rgba(154,136,187,0.16),rgba(136,132,152,0.1))] text-xs font-bold text-[#c1b5d4]">
               {(session.user.name || "A").charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -271,7 +271,7 @@ export function Sidebar() {
       <aside
         className={cn(
           "fixed left-0 top-0 z-50 h-full flex flex-col transition-all duration-300 ease-in-out",
-          "border-r border-white/[0.06] bg-[linear-gradient(180deg,rgba(15,15,22,0.97),rgba(10,10,16,0.96))] backdrop-blur-xl",
+          "border-r border-white/[0.06] bg-[linear-gradient(180deg,rgba(17,18,24,0.97),rgba(13,14,19,0.96))] backdrop-blur-xl",
           collapsed ? "w-[72px]" : "w-[260px]",
           // Mobile
           "max-lg:w-[260px] max-lg:shadow-2xl max-lg:shadow-black/50",
@@ -286,7 +286,7 @@ export function Sidebar() {
         onClick={() => setMobileOpen(true)}
         className={cn(
           "lg:hidden fixed top-4 left-4 z-30 h-10 w-10 flex items-center justify-center rounded-xl",
-          "bg-[#0d1424] border border-white/[0.08] text-zinc-400 hover:text-white shadow-lg transition-all",
+          "bg-[#12131a] border border-white/[0.08] text-zinc-400 hover:text-white shadow-lg transition-all",
           mobileOpen && "opacity-0 pointer-events-none"
         )}
       >
