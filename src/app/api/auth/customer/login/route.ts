@@ -89,6 +89,8 @@ export async function POST(req: NextRequest) {
           username: customer.username,
           avatar: customer.avatar,
           role: customer.role,
+          balance: customer.balance,
+          totalSpent: customer.totalSpent,
           createdAt: customer.createdAt,
         },
       },

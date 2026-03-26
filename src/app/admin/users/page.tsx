@@ -16,7 +16,7 @@ import { useToast } from "@/components/ui/toast";
 import {
   Plus, MoreHorizontal, Trash2, Users, UserCog, Shield,
   Crown, Ban, Search, UserPlus, UserCheck, UserX, KeyRound,
-  Copy, RefreshCw, Eye, EyeOff, Check,
+  Copy, RefreshCw, Eye, EyeOff, Check, Wallet,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -82,6 +82,10 @@ export default function UsersPage() {
   const [deleting, setDeleting] = useState(false);
   const [customerSearch, setCustomerSearch] = useState("");
   const [editCustomer, setEditCustomer] = useState<any>(null);
+  const [balanceTarget, setBalanceTarget] = useState<any>(null);
+  const [balanceAmount, setBalanceAmount] = useState("");
+  const [balanceReason, setBalanceReason] = useState("");
+  const [adjustingBalance, setAdjustingBalance] = useState(false);
 
   const loadData = async () => {
     try {
@@ -234,6 +238,45 @@ export default function UsersPage() {
     } catch { addToast({ type: "error", title: "Error" }); }
   };
 
+  const handleAdjustBalance = async () => {
+    if (!balanceTarget) return;
+    const amount = Number(balanceAmount);
+    if (!Number.isFinite(amount) || amount === 0) {
+      addToast({ type: "error", title: "Amount must be a non-zero number" });
+      return;
+    }
+    setAdjustingBalance(true);
+    try {
+      const res = await fetch(`/api/admin/customers/${balanceTarget.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          balanceAdjustment: amount,
+          balanceReason,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        addToast({
+          type: "success",
+          title: "Balance updated",
+          description: `${balanceTarget.username} new balance: $${Number(data.data.balance || 0).toFixed(2)}`,
+        });
+        setBalanceTarget(null);
+        setBalanceAmount("");
+        setBalanceReason("");
+        loadData();
+      } else {
+        addToast({ type: "error", title: "Failed", description: data.error || "Could not update balance" });
+      }
+    } catch {
+      addToast({ type: "error", title: "Error" });
+    } finally {
+      setAdjustingBalance(false);
+    }
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -381,6 +424,7 @@ export default function UsersPage() {
                       <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Email</th>
                       <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Role</th>
                       <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
+                      <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Balance</th>
                       <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Last Login</th>
                       <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Joined</th>
                       <th className="w-[50px] px-4"></th>
@@ -425,6 +469,10 @@ export default function UsersPage() {
                             {customer.isActive ? "Active" : "Suspended"}
                           </span>
                         </td>
+                        <td className="px-6 py-3">
+                          <div className="text-sm text-zinc-200 font-medium">${Number(customer.balance || 0).toFixed(2)}</div>
+                          <div className="text-[11px] text-zinc-600">Spent ${Number(customer.totalSpent || 0).toFixed(2)}</div>
+                        </td>
                         <td className="px-6 py-3 text-xs text-zinc-600">
                           {customer.lastLoginAt ? formatDate(customer.lastLoginAt) : "Never"}
                         </td>
@@ -450,6 +498,13 @@ export default function UsersPage() {
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => toggleActive(customer.id, customer.isActive, "customer")}>
                                 <UserCog className="h-4 w-4 mr-2" /> {customer.isActive ? "Suspend" : "Activate"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                setBalanceTarget(customer);
+                                setBalanceAmount("");
+                                setBalanceReason("");
+                              }}>
+                                <Wallet className="h-4 w-4 mr-2" /> Adjust Balance
                               </DropdownMenuItem>
                               <DropdownMenuSeparator className="bg-white/[0.06]" />
                               <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteTarget({ id: customer.id, type: "customer" })}>
@@ -781,6 +836,54 @@ export default function UsersPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditCustomer(null)}>Cancel</Button>
             <Button onClick={() => editCustomer && updateCustomerRole(editCustomer.id, editCustomer.role)} className="bg-gradient-to-r from-purple-600 to-violet-600 border-0 text-white">Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══ Adjust Balance Dialog ═══ */}
+      <Dialog open={!!balanceTarget} onOpenChange={() => setBalanceTarget(null)}>
+        <DialogContent className="bg-[#0d1424] border-white/[0.08]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-emerald-400" /> Adjust Customer Balance
+            </DialogTitle>
+          </DialogHeader>
+          {balanceTarget && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                <div className="text-sm text-zinc-200 font-medium">{balanceTarget.username}</div>
+                <div className="text-xs text-zinc-500">{balanceTarget.email}</div>
+                <div className="text-xs text-emerald-400 mt-2">Current: ${Number(balanceTarget.balance || 0).toFixed(2)}</div>
+              </div>
+              <div className="space-y-2">
+                <Label>Amount (use negative to deduct)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={balanceAmount}
+                  onChange={(e) => setBalanceAmount(e.target.value)}
+                  placeholder="50 or -20"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Reason (optional)</Label>
+                <Input
+                  value={balanceReason}
+                  onChange={(e) => setBalanceReason(e.target.value)}
+                  placeholder="Manual top-up"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBalanceTarget(null)}>Cancel</Button>
+            <Button
+              onClick={handleAdjustBalance}
+              loading={adjustingBalance}
+              className="bg-gradient-to-r from-emerald-600 to-teal-600 border-0 text-white"
+            >
+              Save Balance
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

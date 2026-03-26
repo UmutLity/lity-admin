@@ -23,6 +23,8 @@ export async function GET(req: NextRequest) {
         avatar: true,
         role: true,
         isActive: true,
+        balance: true,
+        totalSpent: true,
         mustChangePassword: true,
         createdAt: true,
       },

@@ -78,6 +78,8 @@ export async function POST(req: NextRequest) {
         username: true,
         avatar: true,
         role: true,
+        balance: true,
+        totalSpent: true,
         createdAt: true,
       },
     });

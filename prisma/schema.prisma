@@ -59,6 +59,8 @@ model Customer {
   avatar      String?
   role        String    @default("MEMBER") // MEMBER | VIP | BANNED
   isActive    Boolean   @default(true)
+  balance     Float     @default(0)
+  totalSpent  Float     @default(0)
   lastLoginAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -73,6 +75,9 @@ model Customer {
 
   cartItems CartItem[]
   licenses  License[]
+  orders    Order[]
+  balanceTransactions BalanceTransaction[]
+  communityMessages   CommunityMessage[]
 }
 
 // ─── Cart Item ──────────────────────────────────────────
@@ -532,7 +537,9 @@ model AnalyticsEvent {
 model Order {
   id         String   @id @default(cuid())
   customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   status     String   @default("PENDING") // PENDING | PAID | REFUNDED | CANCELED
+  paymentMethod String @default("BALANCE") // BALANCE | MANUAL | EXTERNAL
   currency   String   @default("USD")
   totalAmount Float
   createdAt  DateTime @default(now())
@@ -615,6 +622,34 @@ model InsightEvent {
   @@index([type])
   @@index([severity])
   @@index([createdAt])
+}
+
+model BalanceTransaction {
+  id            String    @id @default(cuid())
+  customerId    String
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type          String    // CREDIT | DEBIT
+  amount        Float
+  balanceBefore Float
+  balanceAfter  Float
+  reason        String?
+  adminUserId   String?
+  orderId       String?
+  createdAt     DateTime  @default(now())
+
+  @@index([customerId, createdAt])
+  @@index([type, createdAt])
+}
+
+model CommunityMessage {
+  id         String    @id @default(cuid())
+  customerId String
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  message    String
+  createdAt  DateTime  @default(now())
+
+  @@index([createdAt])
+  @@index([customerId, createdAt])
 }
 
 // ─── Performance Metric ─────────────────────────────────
