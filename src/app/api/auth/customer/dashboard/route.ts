@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Your account is not eligible." }, { status: 403 });
     }
 
-    const [activeLicenses, totalOrders, recentOrders, openTickets, recentTransactions, ownedRoles, totalSpentAgg, leaderboard, pendingTopups] = await Promise.all([
+    const [activeLicenses, totalOrders, recentOrders, openTickets, recentTransactions, ownedRoles, totalSpentAgg, leaderboard, pendingTopups, orderRankRows] = await Promise.all([
       prisma.license.count({
         where: {
           customerId: customer.id,
@@ -121,9 +121,42 @@ export async function GET(req: NextRequest) {
       prisma.topUpRequest.count({
         where: { customerId: customer.id, status: "PENDING" },
       }).catch(() => 0),
+      prisma.order.groupBy({
+        by: ["customerId"],
+        where: {
+          customerId: { not: null },
+          status: { not: "CANCELED" },
+        },
+        _count: { _all: true },
+      }).catch(() => []),
     ]);
 
     const totalSpent = Number(totalSpentAgg?._sum?.totalAmount || 0);
+    const spendingRank = leaderboard.findIndex((item) => item.id === customer.id);
+    const orderRank = orderRankRows
+      .map((x) => ({
+        customerId: x.customerId as string,
+        orderCount: Number(x._count?._all || 0),
+      }))
+      .filter((x) => x.orderCount > 0)
+      .sort((a, b) => b.orderCount - a.orderCount)
+      .findIndex((x) => x.customerId === customer.id);
+
+    const tierRules = [
+      { label: "Bronze", minSpent: 10 },
+      { label: "Silver", minSpent: 50 },
+      { label: "Gold", minSpent: 150 },
+      { label: "Platinum", minSpent: 300 },
+      { label: "Diamond", minSpent: 750 },
+    ];
+    let currentTier = "Unranked";
+    let nextTier: { label: string; minSpent: number } | null = tierRules[0];
+    for (let i = 0; i < tierRules.length; i++) {
+      if (totalSpent >= tierRules[i].minSpent) {
+        currentTier = tierRules[i].label;
+        nextTier = tierRules[i + 1] || null;
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -145,6 +178,13 @@ export async function GET(req: NextRequest) {
           username: item.username,
           totalSpent: item.totalSpent,
         })),
+        rank: {
+          currentTier,
+          spendingRank: spendingRank >= 0 ? spendingRank + 1 : null,
+          orderRank: orderRank >= 0 ? orderRank + 1 : null,
+          nextTier: nextTier ? nextTier.label : null,
+          amountToNextTier: nextTier ? Math.max(0, nextTier.minSpent - totalSpent) : 0,
+        },
         ownedProductRoles: ownedRoles
           .map((item) => ({
             roleKey: item.product.accessRoleKey!,
