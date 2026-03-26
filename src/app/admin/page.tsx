@@ -155,17 +155,17 @@ function PeriodCard({
         <ArrowUpRight className="h-4 w-4 text-zinc-600" />
       </div>
       <div className="grid grid-cols-3 gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-3xl font-bold leading-tight tabular-nums text-white xl:text-4xl">{sales}</p>
+        <div>
+          <p className="text-4xl font-bold text-white">{sales}</p>
           <p className="text-xs text-zinc-500">sales</p>
         </div>
-        <div className="min-w-0">
-          <p className="truncate text-3xl font-bold leading-tight tabular-nums text-emerald-400 xl:text-4xl">${revenue.toFixed(2)}</p>
+        <div>
+          <p className="text-[2rem] font-bold leading-none tabular-nums text-emerald-400 whitespace-nowrap">${revenue.toFixed(2)}</p>
           <p className="text-xs text-zinc-500">revenue</p>
         </div>
-        <div className="min-w-0">
-          <p className="flex items-center gap-1 truncate text-3xl font-bold leading-tight tabular-nums text-blue-400 xl:text-4xl">
-            <UserRound className="h-4 w-4 shrink-0" />
+        <div>
+          <p className="flex items-center gap-1 text-4xl font-bold text-blue-400">
+            <UserRound className="h-4 w-4" />
             {users}
           </p>
           <p className="text-xs text-zinc-500">new users</p>
