@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Package, Settings, FileText, Bell, DollarSign, MessageSquare, BookOpen,
-  Users, Shield, LogOut, Menu,
+  Users, Shield, LogOut, Menu, ClipboardList,
   Download, PanelLeftClose, PanelLeft, Ticket,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
@@ -40,6 +40,7 @@ const navGroups: NavGroup[] = [
       { href: "/admin/reviews", label: "Reviews", icon: MessageSquare, roles: ["ADMIN", "EDITOR"] },
       { href: "/admin/notifications", label: "Community", icon: Bell, roles: ["ADMIN", "EDITOR"] },
       { href: "/admin/tickets", label: "Tickets", icon: Ticket, roles: ["ADMIN", "EDITOR"] },
+      { href: "/admin/logs", label: "Logs", icon: ClipboardList, roles: ["ADMIN"] },
       { href: "/admin/settings", label: "Settings", icon: Settings, roles: ["ADMIN"] },
     ],
   },
