@@ -252,6 +252,13 @@ async function main() {
     { key: "discord_webhook_enabled", value: "false", type: "boolean", group: "discord", label: "Discord Webhook Enabled" },
     { key: "discord_webhook_username", value: "Lity Software", type: "string", group: "discord", label: "Webhook Bot Name" },
     { key: "discord_webhook_avatar_url", value: "", type: "string", group: "discord", label: "Webhook Avatar URL" },
+    // Manual top-up
+    { key: "manual_topup_iban_holder", value: "", type: "string", group: "payments", label: "IBAN Holder" },
+    { key: "manual_topup_iban_number", value: "", type: "string", group: "payments", label: "IBAN Number" },
+    { key: "manual_topup_iban_bank_name", value: "", type: "string", group: "payments", label: "IBAN Bank Name" },
+    { key: "manual_topup_crypto_network", value: "", type: "string", group: "payments", label: "Crypto Network" },
+    { key: "manual_topup_crypto_address", value: "", type: "string", group: "payments", label: "Crypto Address" },
+    { key: "manual_topup_note", value: "Transfer sonrası formu doldurup talep oluşturun.", type: "string", group: "payments", label: "Top-up Note" },
     // Emergency
     { key: "maintenance_mode", value: "false", type: "boolean", group: "emergency", label: "Maintenance Mode" },
     { key: "disable_purchases", value: "false", type: "boolean", group: "emergency", label: "Disable Purchases" },

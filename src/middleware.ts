@@ -170,6 +170,7 @@ export default withAuth(
       "/admin/revenue",
       "/admin/categories",
       "/admin/notifications",
+      "/admin/topups",
       "/admin/insights",
       "/admin/seo",
       "/admin/performance",

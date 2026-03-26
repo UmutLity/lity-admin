@@ -22,7 +22,9 @@ export type AuditAction =
   | "ROLE_CHANGE"
   | "PASSWORD_RESET"
   | "TICKET_CREATE"
-  | "TICKET_STATUS_CHANGE";
+  | "TICKET_STATUS_CHANGE"
+  | "TOPUP_APPROVE"
+  | "TOPUP_REJECT";
 
 export type AuditEntity =
   | "Product"
@@ -39,7 +41,8 @@ export type AuditEntity =
   | "License"
   | "ProductEnvironment"
   | "AdminSession"
-  | "SupportTicket";
+  | "SupportTicket"
+  | "TopUpRequest";
 
 // ─── Enhanced Audit Log Input ───────────────────────────
 

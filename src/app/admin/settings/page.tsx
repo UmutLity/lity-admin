@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
 import {
   Save, Globe, Palette, Layout, Share2, MessageSquare, AlertTriangle,
-  Send, CheckCircle, XCircle, Shield, ShoppingCart, Wifi, WifiOff,
+  Send, CheckCircle, XCircle, Shield, ShoppingCart, Wifi, WifiOff, Landmark,
 } from "lucide-react";
 
 interface Setting {
@@ -166,6 +166,7 @@ const handleTestWebhook = async () => {
           <TabsTrigger value="hero" className="gap-2"><Layout className="h-4 w-4" /> Hero</TabsTrigger>
           <TabsTrigger value="social" className="gap-2"><Share2 className="h-4 w-4" /> Social</TabsTrigger>
           <TabsTrigger value="theme" className="gap-2"><Palette className="h-4 w-4" /> Theme</TabsTrigger>
+          <TabsTrigger value="payments" className="gap-2"><Landmark className="h-4 w-4" /> Payments</TabsTrigger>
           <TabsTrigger value="discord" className="gap-2"><MessageSquare className="h-4 w-4" /> Discord</TabsTrigger>
           <TabsTrigger value="emergency" className="gap-2"><AlertTriangle className="h-4 w-4" /> Emergency Controls</TabsTrigger>
         </TabsList>
@@ -191,6 +192,42 @@ const handleTestWebhook = async () => {
             </Card>
           </TabsContent>
         ))}
+
+        {/* Discord Integration */}
+        <TabsContent value="payments">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Landmark className="h-5 w-5" /> Manual Top-up Instructions</CardTitle>
+              <CardDescription>These details are shown on the customer dashboard top-up page.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>IBAN Account Holder</Label>
+                <Input value={values.manual_topup_iban_holder || ""} onChange={(e) => updateValue("manual_topup_iban_holder", e.target.value)} placeholder="John Doe" />
+              </div>
+              <div className="space-y-2">
+                <Label>IBAN Number</Label>
+                <Input value={values.manual_topup_iban_number || ""} onChange={(e) => updateValue("manual_topup_iban_number", e.target.value)} placeholder="TR00 0000 0000 0000 0000 0000 00" />
+              </div>
+              <div className="space-y-2">
+                <Label>Bank Name</Label>
+                <Input value={values.manual_topup_iban_bank_name || ""} onChange={(e) => updateValue("manual_topup_iban_bank_name", e.target.value)} placeholder="Bank Name" />
+              </div>
+              <div className="space-y-2">
+                <Label>Crypto Network</Label>
+                <Input value={values.manual_topup_crypto_network || ""} onChange={(e) => updateValue("manual_topup_crypto_network", e.target.value)} placeholder="TRC20 / ERC20 / BEP20" />
+              </div>
+              <div className="space-y-2">
+                <Label>Crypto Address</Label>
+                <Input value={values.manual_topup_crypto_address || ""} onChange={(e) => updateValue("manual_topup_crypto_address", e.target.value)} placeholder="0x... or T..." />
+              </div>
+              <div className="space-y-2">
+                <Label>Top-up Note</Label>
+                <Textarea value={values.manual_topup_note || ""} onChange={(e) => updateValue("manual_topup_note", e.target.value)} rows={3} placeholder="Transfer sonrası formu doldurup talep oluşturun." />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Discord Integration */}
         <TabsContent value="discord">

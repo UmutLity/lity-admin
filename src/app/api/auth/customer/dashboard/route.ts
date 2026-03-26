@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Your account is not eligible." }, { status: 403 });
     }
 
-    const [activeLicenses, totalOrders, recentOrders, openTickets, recentTransactions, ownedRoles, totalSpentAgg, leaderboard] = await Promise.all([
+    const [activeLicenses, totalOrders, recentOrders, openTickets, recentTransactions, ownedRoles, totalSpentAgg, leaderboard, pendingTopups] = await Promise.all([
       prisma.license.count({
         where: {
           customerId: customer.id,
@@ -118,6 +118,9 @@ export async function GET(req: NextRequest) {
           return [];
         }
       })(),
+      prisma.topUpRequest.count({
+        where: { customerId: customer.id, status: "PENDING" },
+      }).catch(() => 0),
     ]);
 
     const totalSpent = Number(totalSpentAgg?._sum?.totalAmount || 0);
@@ -130,7 +133,7 @@ export async function GET(req: NextRequest) {
           balance: customer.balance,
           activeCheats: activeLicenses,
           totalOrders,
-          pendingPayments: 0,
+          pendingPayments: pendingTopups,
           totalSpent,
           openTickets,
         },

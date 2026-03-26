@@ -46,6 +46,7 @@ model User {
   allowedIps     UserAllowedIp[]
   adminSessions  AdminSession[]
   notifications  AdminNotification[]
+  reviewedTopUpRequests TopUpRequest[] @relation("TopUpReviewedBy")
 }
 
 // ─── Customer (Public Site Users) ───────────────────────
@@ -78,6 +79,7 @@ model Customer {
   balanceTransactions BalanceTransaction[]
   communityMessages   CommunityMessage[]
   reviews             Review[]
+  topUpRequests       TopUpRequest[]
 }
 
 // ─── Cart Item ──────────────────────────────────────────
@@ -660,6 +662,28 @@ model BalanceTransaction {
 
   @@index([customerId, createdAt])
   @@index([type, createdAt])
+}
+
+model TopUpRequest {
+  id              String    @id @default(cuid())
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  senderName      String
+  senderBankName  String
+  amount          Float
+  note            String?
+  status          String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  reviewedById    String?
+  reviewedBy      User?     @relation("TopUpReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewNote      String?
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([customerId, createdAt])
+  @@index([status, createdAt])
+  @@index([reviewedById])
 }
 
 model CommunityMessage {
