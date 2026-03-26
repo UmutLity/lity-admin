@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard, Package, Settings,
+  LayoutDashboard, Package, Settings, FileText, Bell, DollarSign, MessageSquare,
   Users, Shield, LogOut, Menu,
   Download, PanelLeftClose, PanelLeft, Ticket,
 } from "lucide-react";
@@ -28,28 +28,17 @@ interface NavItem {
 
 const navGroups: NavGroup[] = [
   {
-    title: "Overview",
+    title: "Navigation",
     items: [
       { href: "/admin", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "EDITOR", "VIEWER"] },
-    ],
-  },
-  {
-    title: "Commerce",
-    items: [
       { href: "/admin/products", label: "Products", icon: Package, roles: ["ADMIN", "EDITOR"] },
       { href: "/admin/licenses", label: "Licenses", icon: Download, roles: ["ADMIN"] },
-    ],
-  },
-  {
-    title: "Support",
-    items: [
+      { href: "/admin/changelog", label: "Guides", icon: FileText, roles: ["ADMIN", "EDITOR"] },
       { href: "/admin/users", label: "Users", icon: Users, roles: ["ADMIN"] },
+      { href: "/admin/revenue", label: "Payments", icon: DollarSign, roles: ["ADMIN"] },
+      { href: "/admin/reviews", label: "Reviews", icon: MessageSquare, roles: ["ADMIN", "EDITOR"] },
+      { href: "/admin/notifications", label: "Community", icon: Bell, roles: ["ADMIN", "EDITOR"] },
       { href: "/admin/tickets", label: "Tickets", icon: Ticket, roles: ["ADMIN", "EDITOR"] },
-    ],
-  },
-  {
-    title: "System",
-    items: [
       { href: "/admin/settings", label: "Settings", icon: Settings, roles: ["ADMIN"] },
     ],
   },

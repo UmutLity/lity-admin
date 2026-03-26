@@ -93,6 +93,10 @@ export function AdminHeader() {
     { label: "Users", path: "/admin/users", keywords: "customers staff" },
     { label: "Tickets", path: "/admin/tickets", keywords: "support replies messages" },
     { label: "Licenses", path: "/admin/licenses", keywords: "keys plans" },
+    { label: "Guides", path: "/admin/changelog", keywords: "changelog docs updates" },
+    { label: "Payments", path: "/admin/revenue", keywords: "revenue sales money" },
+    { label: "Reviews", path: "/admin/reviews", keywords: "feedback" },
+    { label: "Community", path: "/admin/notifications", keywords: "announcements notifications" },
     { label: "Settings", path: "/admin/settings", keywords: "config" },
   ];
 

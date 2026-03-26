@@ -1,34 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select-native";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast";
 import { slugify } from "@/lib/utils";
-import { ProductFormData } from "@/lib/validations/product";
-import { Trash2, Plus, Sparkles, Package2 } from "lucide-react";
+import { X, Plus, Ticket, Image as ImageIcon, Layers, DollarSign } from "lucide-react";
+
+interface ProductFormProps {
+  initialData?: any;
+  isEditing?: boolean;
+}
+
+type TabKey = "general" | "media" | "tabs" | "pricing";
 
 interface PriceEntry {
   plan: string;
   price: number;
 }
 
-interface FeatureEntry {
+interface FeatureTab {
   title: string;
   description: string;
-  icon: string;
-  order: number;
-}
-
-interface ProductFormProps {
-  initialData?: any;
-  isEditing?: boolean;
 }
 
 const categoryOptions = [
@@ -36,43 +28,62 @@ const categoryOptions = [
   { value: "CS2", label: "CS2" },
   { value: "SPOOFER", label: "Spoofer" },
   { value: "BYPASS", label: "Bypass" },
+  { value: "ROBLOX", label: "Roblox" },
   { value: "OTHER", label: "Other" },
 ];
 
 const statusOptions = [
   { value: "UNDETECTED", label: "Undetected" },
-  { value: "DETECTED", label: "Detected" },
   { value: "UPDATING", label: "Updating" },
-  { value: "MAINTENANCE", label: "Maintenance" },
-  { value: "DISCONTINUED", label: "Discontinued" },
+  { value: "MAINTENANCE", label: "Risky" },
+  { value: "DETECTED", label: "Detected" },
+  { value: "DISCONTINUED", label: "Custom" },
 ];
 
 const planOptions = [
-  { value: "DAILY", label: "Daily" },
+  { value: "DAILY", label: "1 Day" },
   { value: "3_DAYS", label: "3 Days" },
-  { value: "WEEKLY", label: "Weekly" },
-  { value: "MONTHLY", label: "Monthly" },
+  { value: "WEEKLY", label: "1 Week" },
+  { value: "MONTHLY", label: "1 Month" },
   { value: "3_MONTHS", label: "3 Months" },
   { value: "ONETIME", label: "One Time" },
   { value: "LIFETIME", label: "Lifetime" },
 ];
 
 const currencyOptions = [
-  { value: "USD", label: "USD ($)" },
-  { value: "EUR", label: "EUR (EUR)" },
-  { value: "TRY", label: "TRY (TL)" },
+  { value: "USD", label: "USD" },
+  { value: "EUR", label: "EUR" },
+  { value: "TRY", label: "TRY" },
 ];
 
-const cardClassName =
-  "border-violet-500/10 bg-[linear-gradient(180deg,rgba(23,23,31,0.98),rgba(14,14,20,0.98))] shadow-[0_18px_60px_rgba(7,7,12,0.42)]";
+const tabs: Array<{ key: TabKey; label: string; icon: any }> = [
+  { key: "general", label: "General", icon: Ticket },
+  { key: "media", label: "Media", icon: ImageIcon },
+  { key: "tabs", label: "Tabs", icon: Layers },
+  { key: "pricing", label: "Pricing", icon: DollarSign },
+];
 
-const inputClassName =
-  "border-zinc-700/70 bg-[#14141c] text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-violet-400/50";
+function tabButtonClass(active: boolean) {
+  return active
+    ? "border-b-2 border-[#c4b3de] text-white"
+    : "border-b-2 border-transparent text-zinc-500 hover:text-zinc-300";
+}
+
+function statusChipClass(value: string, active: boolean) {
+  if (!active) return "border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:border-white/[0.15]";
+  if (value === "UNDETECTED") return "border-emerald-400/50 bg-emerald-500/15 text-emerald-300";
+  if (value === "UPDATING") return "border-amber-400/50 bg-amber-500/15 text-amber-300";
+  if (value === "MAINTENANCE") return "border-orange-400/50 bg-orange-500/15 text-orange-300";
+  if (value === "DETECTED") return "border-red-400/50 bg-red-500/15 text-red-300";
+  return "border-sky-400/50 bg-sky-500/15 text-sky-300";
+}
 
 export function ProductForm({ initialData, isEditing }: ProductFormProps) {
   const router = useRouter();
   const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabKey>("general");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [autoSlug, setAutoSlug] = useState(!isEditing);
 
   const [form, setForm] = useState({
@@ -82,567 +93,496 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
     description: initialData?.description || "",
     category: initialData?.category || "OTHER",
     status: initialData?.status || "UNDETECTED",
-    statusNote: initialData?.statusNote || "",
-    isFeatured: initialData?.isFeatured ?? false,
-    isActive: initialData?.isActive ?? true,
     currency: initialData?.currency || "USD",
     buyUrl: initialData?.buyUrl || "",
     defaultLoaderUrl: initialData?.defaultLoaderUrl || "",
+    isActive: initialData?.isActive ?? true,
+    isFeatured: initialData?.isFeatured ?? false,
     sortOrder: initialData?.sortOrder ?? 0,
   });
 
-  const [prices, setPrices] = useState<PriceEntry[]>(
-    initialData?.prices?.map((p: any) => ({ plan: p.plan, price: p.price })) || []
-  );
-  const [features, setFeatures] = useState<FeatureEntry[]>(
-    initialData?.features?.map((feature: any, index: number) => ({
-      title: feature.title || "",
-      description: feature.description || "",
-      icon: feature.icon || "",
-      order: feature.order ?? index,
-    })) || []
-  );
-  const [bulkFeatures, setBulkFeatures] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [basePlan, setBasePlan] = useState("MONTHLY");
+  const [basePrice, setBasePrice] = useState<number>(Number(initialData?.prices?.[0]?.price || 0));
+  const [extraPrices, setExtraPrices] = useState<PriceEntry[]>([]);
 
-  useEffect(() => {
-    if (autoSlug && form.name) {
-      setForm((prev) => ({ ...prev, slug: slugify(prev.name) }));
-    }
-  }, [form.name, autoSlug]);
+  const [mainImageUrl, setMainImageUrl] = useState("");
+  const [galleryInput, setGalleryInput] = useState("");
+  const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
+  const [videoInput, setVideoInput] = useState("");
+  const [videoUrls, setVideoUrls] = useState<string[]>([]);
+
+  const [tabTitle, setTabTitle] = useState("");
+  const [tabDescription, setTabDescription] = useState("");
+  const [featureTabs, setFeatureTabs] = useState<FeatureTab[]>([]);
+
+  const computedSlug = useMemo(() => (autoSlug ? slugify(form.name || "") : form.slug), [form.name, form.slug, autoSlug]);
 
   const updateField = (key: string, value: any) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: "" }));
   };
 
-  const addPrice = () => {
-    const usedPlans = prices.map((p) => p.plan);
-    const available = planOptions.find((p) => !usedPlans.includes(p.value));
-    if (available) {
-      setPrices((prev) => [...prev, { plan: available.value, price: 0 }]);
-    }
+  const addExtraPrice = () => {
+    const used = new Set([basePlan, ...extraPrices.map((p) => p.plan)]);
+    const available = planOptions.find((p) => !used.has(p.value));
+    if (!available) return;
+    setExtraPrices((prev) => [...prev, { plan: available.value, price: 0 }]);
   };
 
-  const removePrice = (index: number) => {
-    setPrices((prev) => prev.filter((_, i) => i !== index));
+  const addGalleryUrl = () => {
+    const value = galleryInput.trim();
+    if (!value) return;
+    setGalleryUrls((prev) => (prev.includes(value) ? prev : [...prev, value]));
+    setGalleryInput("");
   };
 
-  const updatePrice = (index: number, key: keyof PriceEntry, value: any) => {
-    setPrices((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [key]: value };
-      return updated;
-    });
+  const addVideoUrl = () => {
+    const value = videoInput.trim();
+    if (!value) return;
+    setVideoUrls((prev) => (prev.includes(value) ? prev : [...prev, value]));
+    setVideoInput("");
   };
 
-  const addFeature = () => {
-    setFeatures((prev) => [
-      ...prev,
-      { title: "", description: "", icon: "", order: prev.length },
-    ]);
+  const addFeatureTab = () => {
+    const title = tabTitle.trim();
+    if (!title) return;
+    setFeatureTabs((prev) => [...prev, { title, description: tabDescription.trim() }]);
+    setTabTitle("");
+    setTabDescription("");
   };
 
-  const removeFeature = (index: number) => {
-    setFeatures((prev) =>
-      prev
-        .filter((_, i) => i !== index)
-        .map((feature, nextIndex) => ({ ...feature, order: nextIndex }))
+  function buildFinalDescription() {
+    const base = (form.description || "").trim();
+    if (!videoUrls.length) return base;
+    const videoBlock = `\n\n### Videos\n${videoUrls.map((url) => `- ${url}`).join("\n")}`;
+    return `${base}${videoBlock}`.trim();
+  }
+
+  async function createGallery(productId: string) {
+    const queue = [
+      ...(mainImageUrl.trim() ? [{ url: mainImageUrl.trim(), isThumbnail: true, order: 0 }] : []),
+      ...galleryUrls.map((url, index) => ({ url, isThumbnail: false, order: index + 1 })),
+    ];
+
+    await Promise.all(
+      queue.map((item) =>
+        fetch(`/api/admin/products/${productId}/gallery`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url: item.url,
+            isThumbnail: item.isThumbnail,
+            order: item.order,
+            altText: null,
+          }),
+        })
+      )
     );
-  };
+  }
 
-  const updateFeature = (index: number, key: keyof FeatureEntry, value: string | number) => {
-    setFeatures((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [key]: value };
-      return updated;
+  async function createFeatureTabs(productId: string) {
+    if (!featureTabs.length) return;
+    await fetch(`/api/admin/products/${productId}/features`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items: featureTabs.map((item, index) => ({
+          title: item.title,
+          description: item.description || null,
+          icon: null,
+          order: index,
+        })),
+      }),
     });
-  };
+  }
 
-  const applyBulkFeatures = () => {
-    const parsed = bulkFeatures
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        const [title = "", description = "", icon = ""] = line
-          .split("|")
-          .map((part) => part.trim());
-        return { title, description, icon };
-      })
-      .filter((feature) => feature.title);
-
-    if (!parsed.length) {
-      addToast({
-        type: "warning",
-        title: "Warning",
-        description: "Toplu ekleme icin en az bir gecerli satir gerekli.",
-      });
-      return;
-    }
-
-    setFeatures((prev) => [
-      ...prev,
-      ...parsed.map((feature, index) => ({
-        ...feature,
-        order: prev.length + index,
-      })),
-    ]);
-    setBulkFeatures("");
-    addToast({
-      type: "success",
-      title: "Added",
-      description: `${parsed.length} feature row added.`,
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
     setLoading(true);
     setErrors({});
 
+    const mergedPrices: PriceEntry[] = [{ plan: basePlan, price: Number(basePrice) }, ...extraPrices.map((p) => ({ ...p, price: Number(p.price) }))];
+    const uniquePrices = mergedPrices
+      .filter((item) => item.plan && Number.isFinite(item.price))
+      .filter((item, index, list) => list.findIndex((x) => x.plan === item.plan) === index);
+
+    const payload = {
+      ...form,
+      slug: computedSlug,
+      description: buildFinalDescription(),
+      sortOrder: Number(form.sortOrder || 0),
+      displayOrder: Number(form.sortOrder || 0),
+      prices: uniquePrices,
+      features: [],
+    };
+
     try {
-      const body: ProductFormData = {
-        ...form,
-        displayOrder: Number((form as any).displayOrder ?? form.sortOrder ?? 0),
-        sortOrder: Number(form.sortOrder),
-        prices: prices.map((p) => ({ plan: p.plan as any, price: Number(p.price) })),
-        features: features
-          .filter((feature) => feature.title.trim())
-          .map((feature, index) => ({
-            title: feature.title.trim(),
-            description: feature.description.trim() || null,
-            icon: feature.icon.trim() || null,
-            order: Number(feature.order ?? index),
-          })),
-      };
-
       const url = isEditing ? `/api/admin/products/${initialData.id}` : "/api/admin/products";
-
+      const method = isEditing ? "PUT" : "POST";
       const res = await fetch(url, {
-        method: isEditing ? "PUT" : "POST",
+        method,
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(payload),
       });
-
       const data = await res.json();
 
       if (!res.ok) {
-        if (data.errors) setErrors(data.errors);
-        addToast({
-          type: "error",
-          title: "Error",
-          description: data.error || "Islem basarisiz.",
-        });
+        if (data?.errors) setErrors(data.errors);
+        addToast({ type: "error", title: "Error", description: data?.error || "Product could not be saved." });
+        setLoading(false);
         return;
+      }
+
+      const productId = data?.data?.id || initialData?.id;
+      if (productId && !isEditing) {
+        await createGallery(productId);
+        await createFeatureTabs(productId);
       }
 
       addToast({
         type: "success",
         title: isEditing ? "Updated" : "Created",
-        description: `${form.name} saved successfully.`,
+        description: `${payload.name} saved successfully.`,
       });
       router.push("/admin/products");
       router.refresh();
     } catch {
-      addToast({
-        type: "error",
-        title: "Error",
-        description: "Beklenmeyen bir hata olustu.",
-      });
+      addToast({ type: "error", title: "Error", description: "Unexpected error while saving product." });
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <Card className={cardClassName}>
-            <CardHeader className="space-y-3">
-              <div className="flex items-center gap-3 text-violet-300">
-                <Package2 className="h-5 w-5" />
-                <span className="text-xs font-semibold uppercase tracking-[0.24em] text-violet-300/80">
-                  Product Setup
-                </span>
-              </div>
-              <CardTitle className="text-white">Urun Bilgileri</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Urun Adi *</Label>
-                  <Input
-                    id="name"
-                    className={inputClassName}
-                    value={form.name}
-                    onChange={(e) => updateField("name", e.target.value)}
-                    placeholder="Valorant Full"
-                  />
-                  {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="slug">Slug *</Label>
-                    <label className="flex items-center gap-2 text-xs text-slate-400">
-                      <input
-                        type="checkbox"
-                        checked={autoSlug}
-                        onChange={(e) => setAutoSlug(e.target.checked)}
-                        className="rounded border-slate-700 bg-slate-950"
-                      />
-                      Auto
-                    </label>
-                  </div>
-                  <Input
-                    id="slug"
-                    className={inputClassName}
-                    value={form.slug}
-                    onChange={(e) => updateField("slug", e.target.value)}
-                    disabled={autoSlug}
-                    placeholder="valorant-full"
-                  />
-                  {errors.slug && <p className="text-sm text-destructive">{errors.slug}</p>}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="shortDescription">Kisa Aciklama</Label>
-                <Input
-                  id="shortDescription"
-                  className={inputClassName}
-                  value={form.shortDescription}
-                  onChange={(e) => updateField("shortDescription", e.target.value)}
-                  placeholder="Short summary for cards and quick listings"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Aciklama</Label>
-                <Textarea
-                  id="description"
-                  className={`${inputClassName} min-h-[220px] font-mono text-sm`}
-                  value={form.description}
-                  onChange={(e) => updateField("description", e.target.value)}
-                  placeholder="# Product title&#10;&#10;Detailed markdown description..."
-                  rows={10}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className={cardClassName}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <div className="space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-300/80">
-                  Pricing
-                </span>
-                <CardTitle className="text-white">Fiyat Planlari</CardTitle>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addPrice}
-                disabled={prices.length >= planOptions.length}
-                className="border-slate-700 bg-slate-950/60 text-slate-100 hover:border-emerald-500/60 hover:bg-emerald-500/10"
-              >
-                <Plus className="h-4 w-4" /> Fiyat Ekle
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {prices.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-700/80 bg-slate-950/40 px-4 py-8 text-center text-sm text-slate-400">
-                  Henuz fiyat plani yok. Yukaridaki buton ile plan ekleyin.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {prices.map((price, idx) => (
-                    <div
-                      key={`${price.plan}-${idx}`}
-                      className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-800/90 bg-slate-950/55 p-4 sm:grid-cols-[180px_1fr_auto_auto]"
-                    >
-                      <Select
-                        options={planOptions}
-                        value={price.plan}
-                        onChange={(e) => updatePrice(idx, "plan", e.target.value)}
-                        className={inputClassName}
-                      />
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={price.price}
-                        onChange={(e) => updatePrice(idx, "price", e.target.value)}
-                        className={inputClassName}
-                        placeholder="0.00"
-                      />
-                      <div className="flex items-center rounded-xl border border-slate-800 bg-slate-900/80 px-4 text-sm text-slate-300">
-                        {form.currency}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removePrice(idx)}
-                        className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className={cardClassName}>
-            <CardHeader className="space-y-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 text-violet-300">
-                    <Sparkles className="h-5 w-5" />
-                    <span className="text-xs font-semibold uppercase tracking-[0.24em] text-violet-300/80">
-                      Highlights
-                    </span>
-                  </div>
-                  <CardTitle className="text-white">Ozellikler</CardTitle>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addFeature}
-                  className="border-slate-700 bg-slate-950/60 text-slate-100 hover:border-violet-500/60 hover:bg-violet-500/10"
-                >
-                  <Plus className="h-4 w-4" /> Ozellik Ekle
-                </Button>
-              </div>
-              <div className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-4 text-sm text-slate-300">
-                Yeni urun eklerken tek tek yazabilir veya satir satir toplu ekleme yapabilirsiniz.
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="rounded-2xl border border-slate-800/90 bg-slate-950/55 p-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bulkFeatures">Toplu Ekle</Label>
-                  <Textarea
-                    id="bulkFeatures"
-                    className={`${inputClassName} min-h-[120px] font-mono text-sm`}
-                    value={bulkFeatures}
-                    onChange={(e) => setBulkFeatures(e.target.value)}
-                    placeholder={"Aim Assist|Smooth lock and FOV settings|crosshair\nESP|Player, loot and distance info|radar"}
-                    rows={4}
-                  />
-                  <p className="text-xs text-slate-400">
-                    Format: <code>baslik|aciklama|ikon</code>. Aciklama ve ikon alanlari bos birakilabilir.
-                  </p>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={applyBulkFeatures}
-                    className="bg-violet-500/15 text-violet-100 hover:bg-violet-500/25"
-                  >
-                    Toplu Listeye Ekle
-                  </Button>
-                </div>
-              </div>
-
-              {features.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-700/80 bg-slate-950/30 px-4 py-10 text-center text-sm text-slate-400">
-                  Henuz ozellik eklenmedi. Elle ekleyebilir veya toplu yapistirabilirsiniz.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {features.map((feature, idx) => (
-                    <div
-                      key={`${feature.title}-${idx}`}
-                      className="rounded-2xl border border-slate-800/90 bg-[linear-gradient(180deg,rgba(15,23,42,0.9),rgba(2,6,23,0.95))] p-4"
-                    >
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label>Baslik *</Label>
-                          <Input
-                            className={inputClassName}
-                            value={feature.title}
-                            onChange={(e) => updateFeature(idx, "title", e.target.value)}
-                            placeholder="Aim Assist"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Ikon</Label>
-                          <Input
-                            className={inputClassName}
-                            value={feature.icon}
-                            onChange={(e) => updateFeature(idx, "icon", e.target.value)}
-                            placeholder="crosshair"
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_120px]">
-                        <div className="space-y-2">
-                          <Label>Aciklama</Label>
-                          <Input
-                            className={inputClassName}
-                            value={feature.description}
-                            onChange={(e) => updateFeature(idx, "description", e.target.value)}
-                            placeholder="Smooth lock and FOV settings"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Sira</Label>
-                          <Input
-                            type="number"
-                            className={inputClassName}
-                            value={feature.order}
-                            onChange={(e) => updateFeature(idx, "order", Number(e.target.value))}
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-4 flex justify-end">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeFeature(idx)}
-                          className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
-                        >
-                          <Trash2 className="h-4 w-4" /> Kaldir
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+    <form onSubmit={handleSubmit} className="mx-auto max-w-5xl">
+      <div className="overflow-hidden rounded-3xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(22,22,30,0.96),rgba(12,12,17,0.98))] shadow-[0_28px_70px_rgba(0,0,0,0.35)]">
+        <div className="border-b border-white/[0.06] px-6 py-5">
+          <h2 className="text-2xl font-semibold text-white">{isEditing ? "Edit Product" : "New Product"}</h2>
         </div>
 
-        <div className="space-y-6">
-          <Card className={cardClassName}>
-            <CardHeader className="space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-300/80">
-                Settings
-              </span>
-              <CardTitle className="text-white">Durum ve Kategori</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Kategori</Label>
-                <Select
-                  options={categoryOptions}
-                  value={form.category}
-                  onChange={(e) => updateField("category", e.target.value)}
-                  className={inputClassName}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select
-                  options={statusOptions}
-                  value={form.status}
-                  onChange={(e) => updateField("status", e.target.value)}
-                  className={inputClassName}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="statusNote">Status Notu</Label>
-                <Input
-                  id="statusNote"
-                  className={inputClassName}
-                  value={form.statusNote}
-                  onChange={(e) => updateField("statusNote", e.target.value)}
-                  placeholder="Status aciklamasi"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Para Birimi</Label>
-                <Select
-                  options={currencyOptions}
-                  value={form.currency}
-                  onChange={(e) => updateField("currency", e.target.value)}
-                  className={inputClassName}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="buyUrl">Satin Alma URL</Label>
-                <Input
-                  id="buyUrl"
-                  className={inputClassName}
-                  value={form.buyUrl}
-                  onChange={(e) => updateField("buyUrl", e.target.value)}
-                  placeholder="https://discord.gg/..."
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="defaultLoaderUrl">Varsayilan Loader Linki</Label>
-                <Input
-                  id="defaultLoaderUrl"
-                  className={inputClassName}
-                  value={(form as any).defaultLoaderUrl}
-                  onChange={(e) => updateField("defaultLoaderUrl", e.target.value)}
-                  placeholder="https://mega.nz/folder/..."
-                />
-                <p className="text-xs text-slate-400">Bu urune ait lisanslar eklenirken Mega link otomatik buradan alinacak.</p>
-                {errors.defaultLoaderUrl && <p className="text-sm text-destructive">{errors.defaultLoaderUrl}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="sortOrder">Siralama</Label>
-                <Input
-                  id="sortOrder"
-                  type="number"
-                  className={inputClassName}
-                  value={form.sortOrder}
-                  onChange={(e) => updateField("sortOrder", e.target.value)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className={cardClassName}>
-            <CardHeader className="space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.24em] text-violet-300/80">
-                Visibility
-              </span>
-              <CardTitle className="text-white">Gorunurluk</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between rounded-2xl border border-slate-800/80 bg-slate-950/45 px-4 py-3">
-                <div>
-                  <Label htmlFor="isActive">Aktif</Label>
-                  <p className="text-xs text-slate-400">Public listelerde gorunsun.</p>
-                </div>
-                <Switch id="isActive" checked={form.isActive} onCheckedChange={(v) => updateField("isActive", v)} />
-              </div>
-              <div className="flex items-center justify-between rounded-2xl border border-slate-800/80 bg-slate-950/45 px-4 py-3">
-                <div>
-                  <Label htmlFor="isFeatured">One Cikan</Label>
-                  <p className="text-xs text-slate-400">Anasayfada vurgulu goster.</p>
-                </div>
-                <Switch id="isFeatured" checked={form.isFeatured} onCheckedChange={(v) => updateField("isFeatured", v)} />
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="flex gap-2">
-            <Button
-              type="submit"
-              className="flex-1 bg-violet-500 text-white hover:bg-violet-400"
-              loading={loading}
-            >
-              {isEditing ? "Guncelle" : "Olustur"}
-            </Button>
-            <Button
+        <div className="flex gap-4 border-b border-white/[0.06] px-6">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
               type="button"
-              variant="outline"
-              onClick={() => router.back()}
-              className="border-slate-700 bg-slate-950/60 text-slate-100 hover:bg-slate-900"
+              onClick={() => setActiveTab(tab.key)}
+              className={`inline-flex items-center gap-2 px-2 py-3 text-sm font-medium transition ${tabButtonClass(activeTab === tab.key)}`}
             >
-              Iptal
-            </Button>
-          </div>
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="min-h-[430px] px-6 py-5">
+          {activeTab === "general" && (
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-300">Product Name *</label>
+                <input
+                  value={form.name}
+                  onChange={(event) => updateField("name", event.target.value)}
+                  className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  placeholder="Apex Legends Aimbot"
+                />
+                {errors.name && <p className="text-xs text-red-400">{errors.name}</p>}
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-zinc-300">Game *</label>
+                  <select
+                    value={form.category}
+                    onChange={(event) => updateField("category", event.target.value)}
+                    className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  >
+                    {categoryOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-zinc-300">Base Price ({form.currency}) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={basePrice}
+                    onChange={(event) => setBasePrice(Number(event.target.value))}
+                    className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                    placeholder="14.99"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-zinc-300">Slug *</label>
+                  <input
+                    value={computedSlug}
+                    onChange={(event) => {
+                      setAutoSlug(false);
+                      updateField("slug", event.target.value);
+                    }}
+                    className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-zinc-300">Currency</label>
+                  <select
+                    value={form.currency}
+                    onChange={(event) => updateField("currency", event.target.value)}
+                    className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  >
+                    {currencyOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <label className="mt-7 inline-flex items-center gap-2 text-xs text-zinc-400">
+                  <input type="checkbox" checked={autoSlug} onChange={(event) => setAutoSlug(event.target.checked)} />
+                  Auto slug
+                </label>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-300">Description</label>
+                <textarea
+                  value={form.description}
+                  onChange={(event) => updateField("description", event.target.value)}
+                  className="min-h-[110px] w-full rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  placeholder="Product description..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-300">Status</label>
+                <div className="flex flex-wrap gap-2">
+                  {statusOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => updateField("status", option.value)}
+                      className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${statusChipClass(option.value, form.status === option.value)}`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "media" && (
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-300">Main Image (Cover)</label>
+                <input
+                  value={mainImageUrl}
+                  onChange={(event) => setMainImageUrl(event.target.value)}
+                  className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  placeholder="https://..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-300">Gallery Images</label>
+                <div className="flex gap-2">
+                  <input
+                    value={galleryInput}
+                    onChange={(event) => setGalleryInput(event.target.value)}
+                    className="h-11 flex-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                    placeholder="https://..."
+                  />
+                  <button type="button" onClick={addGalleryUrl} className="rounded-xl border border-[#c4b3de]/35 bg-[#b6a4d2]/15 px-4 text-sm font-medium text-[#ded4ec]">
+                    Add
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {galleryUrls.map((url, index) => (
+                    <div key={`${url}-${index}`} className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.02] px-3 py-2 text-sm text-zinc-300">
+                      <span className="truncate">{url}</span>
+                      <button type="button" onClick={() => setGalleryUrls((prev) => prev.filter((_, i) => i !== index))} className="text-zinc-500 hover:text-zinc-300">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-300">Videos (Youtube / Streamable)</label>
+                <div className="flex gap-2">
+                  <input
+                    value={videoInput}
+                    onChange={(event) => setVideoInput(event.target.value)}
+                    className="h-11 flex-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                    placeholder="https://youtube.com/watch?v=..."
+                  />
+                  <button type="button" onClick={addVideoUrl} className="rounded-xl border border-[#c4b3de]/35 bg-[#b6a4d2]/15 px-4 text-sm font-medium text-[#ded4ec]">
+                    Add
+                  </button>
+                </div>
+                {videoUrls.length > 0 && (
+                  <p className="text-xs text-zinc-500">{videoUrls.length} video link will be appended into description.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "tabs" && (
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-300">Feature Tabs</label>
+                <p className="text-xs text-zinc-500">e.g. Visuals, Aimbot, Miscellaneous</p>
+              </div>
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_1fr_auto]">
+                <input
+                  value={tabTitle}
+                  onChange={(event) => setTabTitle(event.target.value)}
+                  className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  placeholder="Tab title"
+                />
+                <input
+                  value={tabDescription}
+                  onChange={(event) => setTabDescription(event.target.value)}
+                  className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  placeholder="Tab description"
+                />
+                <button type="button" onClick={addFeatureTab} className="rounded-xl border border-[#c4b3de]/35 bg-[#b6a4d2]/15 px-4 text-sm font-medium text-[#ded4ec]">
+                  <Plus className="mr-1 inline h-4 w-4" />
+                  Tab Add
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {featureTabs.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-white/[0.1] py-14 text-center text-zinc-500">No tabs added yet</div>
+                ) : (
+                  featureTabs.map((item, index) => (
+                    <div key={`${item.title}-${index}`} className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.02] px-3 py-2">
+                      <div>
+                        <p className="text-sm font-medium text-zinc-200">{item.title}</p>
+                        {item.description && <p className="text-xs text-zinc-500">{item.description}</p>}
+                      </div>
+                      <button type="button" onClick={() => setFeatureTabs((prev) => prev.filter((_, i) => i !== index))} className="text-zinc-500 hover:text-zinc-300">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "pricing" && (
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-300">Pricing Plans</label>
+                <p className="text-xs text-zinc-500">Base plan is always shown. Add optional extra plans below.</p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-[220px_1fr]">
+                <select
+                  value={basePlan}
+                  onChange={(event) => setBasePlan(event.target.value)}
+                  className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                >
+                  {planOptions.map((plan) => (
+                    <option key={plan.value} value={plan.value}>
+                      {plan.label}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={basePrice}
+                  onChange={(event) => setBasePrice(Number(event.target.value))}
+                  className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="space-y-2">
+                {extraPrices.map((price, index) => (
+                  <div key={`${price.plan}-${index}`} className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr_auto]">
+                    <select
+                      value={price.plan}
+                      onChange={(event) =>
+                        setExtraPrices((prev) => prev.map((item, i) => (i === index ? { ...item, plan: event.target.value } : item)))
+                      }
+                      className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none"
+                    >
+                      {planOptions.map((plan) => (
+                        <option key={plan.value} value={plan.value}>
+                          {plan.label}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={price.price}
+                      onChange={(event) =>
+                        setExtraPrices((prev) => prev.map((item, i) => (i === index ? { ...item, price: Number(event.target.value) } : item)))
+                      }
+                      className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none"
+                      placeholder="0.00"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setExtraPrices((prev) => prev.filter((_, i) => i !== index))}
+                      className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 text-sm text-zinc-400 hover:text-zinc-200"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button type="button" onClick={addExtraPrice} className="rounded-xl border border-[#c4b3de]/35 bg-[#b6a4d2]/15 px-4 py-2 text-sm font-medium text-[#ded4ec]">
+                  <Plus className="mr-1 inline h-4 w-4" />
+                  Plan Add
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-300">Loader Download URL</label>
+                <input
+                  value={form.defaultLoaderUrl}
+                  onChange={(event) => updateField("defaultLoaderUrl", event.target.value)}
+                  className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  placeholder="https://example.com/loader.exe"
+                />
+                {errors.defaultLoaderUrl && <p className="text-xs text-red-400">{errors.defaultLoaderUrl}</p>}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-2 border-t border-white/[0.06] px-6 py-4">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="rounded-xl border border-white/[0.08] bg-white/[0.02] px-5 py-2.5 text-sm font-medium text-zinc-300 hover:text-white"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-xl border border-[#c4b3de]/40 bg-[#b6a4d2]/20 px-5 py-2.5 text-sm font-semibold text-[#ede7f8] hover:bg-[#b6a4d2]/28 disabled:opacity-60"
+          >
+            {loading ? "Saving..." : isEditing ? "Update" : "Create"}
+          </button>
         </div>
       </div>
     </form>
