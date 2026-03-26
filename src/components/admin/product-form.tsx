@@ -159,6 +159,19 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
     return `${base}${videoBlock}`.trim();
   }
 
+  function mapCreateErrorMessage(error: string, code?: string) {
+    if (code === "DB_SCHEMA_MISMATCH") {
+      return "Database schema is out of date. Run migrations.";
+    }
+    if (code === "PRODUCT_CREATE_FAILED") {
+      return error || "Product could not be created.";
+    }
+    if (code === "PRODUCT_MEDIA_FAILED") {
+      return error || "Product created but media/tabs could not be saved.";
+    }
+    return error || "Product could not be saved.";
+  }
+
   async function createGallery(productId: string) {
     const queue = [
       ...(mainImageUrl.trim() ? [{ url: mainImageUrl.trim(), isThumbnail: true, order: 0 }] : []),
@@ -232,15 +245,44 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
 
       if (!res.ok) {
         if (data?.errors) setErrors(data.errors);
-        addToast({ type: "error", title: "Error", description: data?.error || "Product could not be saved." });
+        addToast({
+          type: "error",
+          title: "Error",
+          description: mapCreateErrorMessage(data?.error, data?.code),
+        });
         setLoading(false);
         return;
       }
 
       const productId = data?.data?.id || initialData?.id;
       if (productId && !isEditing) {
-        await createGallery(productId);
-        await createFeatureTabs(productId);
+        let mediaFailed = false;
+        try {
+          await createGallery(productId);
+        } catch (mediaError) {
+          console.error("Product gallery creation failed:", mediaError);
+          mediaFailed = true;
+        }
+        try {
+          await createFeatureTabs(productId);
+        } catch (featureError) {
+          console.error("Product feature tabs creation failed:", featureError);
+          mediaFailed = true;
+        }
+
+        if (mediaFailed) {
+          addToast({
+            type: "error",
+            title: "Partial Success",
+            description: mapCreateErrorMessage(
+              "Product created but media/tabs could not be saved.",
+              "PRODUCT_MEDIA_FAILED"
+            ),
+          });
+          router.push("/admin/products");
+          router.refresh();
+          return;
+        }
       }
 
       addToast({
