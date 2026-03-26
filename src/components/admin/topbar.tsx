@@ -6,8 +6,8 @@ import { useState, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
-  Search, Bell, User, LogOut, Settings,
-  ChevronDown, Shield, Command,
+  Search, Bell, LogOut, Settings,
+  ChevronDown, Command,
 } from "lucide-react";
 
 interface TopbarProps {
@@ -90,15 +90,10 @@ export function AdminHeader() {
   const searchRoutes = [
     { label: "Dashboard", path: "/admin", keywords: "home overview" },
     { label: "Products", path: "/admin/products", keywords: "items store" },
-    { label: "Changelog", path: "/admin/changelog", keywords: "updates notes" },
-    { label: "Reviews", path: "/admin/reviews", keywords: "feedback testimonials comments" },
     { label: "Users", path: "/admin/users", keywords: "customers staff" },
+    { label: "Tickets", path: "/admin/tickets", keywords: "support replies messages" },
+    { label: "Licenses", path: "/admin/licenses", keywords: "keys plans" },
     { label: "Settings", path: "/admin/settings", keywords: "config" },
-    { label: "Analytics", path: "/admin/analytics", keywords: "stats traffic" },
-    { label: "Security", path: "/admin/security", keywords: "auth login" },
-    { label: "Revenue", path: "/admin/revenue", keywords: "sales money" },
-    { label: "Media", path: "/admin/media", keywords: "images upload" },
-    { label: "Audit Log", path: "/admin/audit", keywords: "logs history" },
   ];
 
   const filteredRoutes = searchQuery
@@ -153,7 +148,7 @@ export function AdminHeader() {
           >
             <Bell className="h-[18px] w-[18px]" />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-[#0a0f1e]" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#b9accf] ring-2 ring-[#0a0f1e]" />
             )}
           </button>
           {notifOpen && (
@@ -228,7 +223,7 @@ export function AdminHeader() {
                 </button>
                 <button
                   onMouseDown={() => signOut({ callbackUrl: "/admin/login" })}
-                  className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-400/80 hover:text-red-400 hover:bg-red-500/[0.06] transition-colors"
+                  className="flex items-center gap-3 w-full px-4 py-2 text-sm text-[#c9bddb]/80 hover:text-[#ddd4ea] hover:bg-[#a996c4]/[0.12] transition-colors"
                 >
                   <LogOut className="h-4 w-4" /> Logout
                 </button>

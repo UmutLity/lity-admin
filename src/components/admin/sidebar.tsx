@@ -4,14 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard, Package, FileText, Settings, Image as ImageIcon,
-  Users, Shield, ClipboardList, Clock, LogOut, ChevronLeft, Menu,
-  ShieldAlert, KeyRound, BarChart3, Server, Bell, DollarSign,
-  FolderOpen, Gauge, Brain, Handshake, Zap, Download,
-  Search, PanelLeftClose, PanelLeft, MessageSquare,
+  LayoutDashboard, Package, Settings,
+  Users, Shield, LogOut, Menu,
+  Download, PanelLeftClose, PanelLeft, Ticket,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
-import { useState, useEffect, createContext, useContext } from "react";
+import { useState, createContext, useContext } from "react";
 
 type Role = "ADMIN" | "EDITOR" | "VIEWER";
 
@@ -33,8 +31,6 @@ const navGroups: NavGroup[] = [
     title: "Overview",
     items: [
       { href: "/admin", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "EDITOR", "VIEWER"] },
-      { href: "/admin/executive", label: "Executive", icon: Gauge, roles: ["ADMIN"] },
-      { href: "/admin/analytics", label: "Analytics", icon: BarChart3, roles: ["ADMIN"] },
     ],
   },
   {
@@ -42,33 +38,19 @@ const navGroups: NavGroup[] = [
     items: [
       { href: "/admin/products", label: "Products", icon: Package, roles: ["ADMIN", "EDITOR"] },
       { href: "/admin/licenses", label: "Licenses", icon: Download, roles: ["ADMIN"] },
-      { href: "/admin/categories", label: "Categories", icon: FolderOpen, roles: ["ADMIN"] },
-      { href: "/admin/changelog", label: "Changelog", icon: FileText, roles: ["ADMIN", "EDITOR"] },
-      { href: "/admin/reviews", label: "Reviews", icon: MessageSquare, roles: ["ADMIN", "EDITOR"] },
-      { href: "/admin/media", label: "Media", icon: ImageIcon, roles: ["ADMIN", "EDITOR"] },
-      { href: "/admin/revenue", label: "Revenue", icon: DollarSign, roles: ["ADMIN"] },
     ],
   },
   {
-    title: "Users & Access",
+    title: "Support",
     items: [
       { href: "/admin/users", label: "Users", icon: Users, roles: ["ADMIN"] },
-      { href: "/admin/roles", label: "Roles", icon: KeyRound, roles: ["ADMIN"] },
-      { href: "/admin/security", label: "Security", icon: ShieldAlert, roles: ["ADMIN"] },
-      { href: "/admin/resellers", label: "Resellers", icon: Handshake, roles: ["ADMIN"] },
+      { href: "/admin/tickets", label: "Tickets", icon: Ticket, roles: ["ADMIN", "EDITOR"] },
     ],
   },
   {
     title: "System",
     items: [
       { href: "/admin/settings", label: "Settings", icon: Settings, roles: ["ADMIN"] },
-      { href: "/admin/notifications", label: "Notifications", icon: Bell, roles: ["ADMIN", "EDITOR"] },
-      { href: "/admin/audit", label: "Audit Log", icon: ClipboardList, roles: ["ADMIN"] },
-      { href: "/admin/timeline", label: "Timeline", icon: Clock, roles: ["ADMIN"] },
-      { href: "/admin/insights", label: "AI Insights", icon: Brain, roles: ["ADMIN"] },
-      { href: "/admin/seo", label: "SEO", icon: Search, roles: ["ADMIN"] },
-      { href: "/admin/performance", label: "Performance", icon: Zap, roles: ["ADMIN"] },
-      { href: "/admin/system", label: "System Health", icon: Server, roles: ["ADMIN"] },
     ],
   },
 ];
@@ -97,21 +79,7 @@ export function Sidebar() {
   const { data: session } = useSession();
   const { collapsed, setCollapsed } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const userRole = (session?.user as any)?.role as Role | undefined;
-
-  useEffect(() => {
-    const fetchUnread = async () => {
-      try {
-        const res = await fetch("/api/admin/notifications?unread=true&limit=1");
-        const data = await res.json();
-        if (data.success) setUnreadCount(data.unreadCount || 0);
-      } catch {}
-    };
-    fetchUnread();
-    const interval = setInterval(fetchUnread, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   const filteredGroups = navGroups.map((group) => ({
     ...group,
@@ -121,7 +89,6 @@ export function Sidebar() {
   const renderNavItem = (item: NavItem) => {
     const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href + "/"));
     const isExact = pathname === item.href;
-    const isNotification = item.href === "/admin/notifications";
     const active = isExact || isActive;
 
     return (
@@ -151,14 +118,6 @@ export function Sidebar() {
         </div>
         {!collapsed && (
           <span className="truncate">{item.label}</span>
-        )}
-        {isNotification && unreadCount > 0 && !collapsed && (
-          <span className="ml-auto flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold">
-            {unreadCount > 99 ? "99+" : unreadCount}
-          </span>
-        )}
-        {isNotification && unreadCount > 0 && collapsed && (
-          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
         )}
       </Link>
     );
@@ -245,7 +204,7 @@ export function Sidebar() {
         <button
           onClick={() => signOut({ callbackUrl: "/admin/login" })}
           className={cn(
-            "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium text-zinc-500 transition-all duration-200 hover:bg-red-500/[0.06] hover:text-red-400",
+            "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium text-zinc-500 transition-all duration-200 hover:bg-[#a996c4]/[0.1] hover:text-[#c7bdd8]",
             collapsed && "justify-center"
           )}
           title={collapsed ? "Logout" : undefined}
