@@ -27,6 +27,7 @@ export type AuditAction =
 export type AuditEntity =
   | "Product"
   | "Changelog"
+  | "Guide"
   | "SiteSetting"
   | "User"
   | "Media"
