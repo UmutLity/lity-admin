@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Your account is not eligible." }, { status: 403 });
     }
 
-    const [activeLicenses, totalOrders, recentOrders, openTickets, recentTransactions, ownedRoles] = await Promise.all([
+    const [activeLicenses, totalOrders, recentOrders, openTickets, recentTransactions, ownedRoles, leaderboard] = await Promise.all([
       prisma.license.count({
         where: {
           customerId: customer.id,
@@ -71,6 +71,19 @@ export async function GET(req: NextRequest) {
         select: { product: { select: { accessRoleKey: true, name: true, slug: true } } },
         distinct: ["productId"],
       }),
+      prisma.customer.findMany({
+        where: {
+          totalSpent: { gt: 0 },
+          isActive: true,
+          role: { not: "BANNED" },
+        },
+        select: {
+          id: true,
+          username: true,
+          totalSpent: true,
+        },
+        orderBy: [{ totalSpent: "desc" }, { username: "asc" }],
+      }),
     ]);
 
     return NextResponse.json({
@@ -87,6 +100,12 @@ export async function GET(req: NextRequest) {
         },
         recentOrders,
         recentTransactions,
+        leaderboard: leaderboard.map((item, index) => ({
+          rank: index + 1,
+          id: item.id,
+          username: item.username,
+          totalSpent: item.totalSpent,
+        })),
         ownedProductRoles: ownedRoles
           .map((item) => ({
             roleKey: item.product.accessRoleKey!,
