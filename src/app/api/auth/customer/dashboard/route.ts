@@ -18,7 +18,6 @@ export async function GET(req: NextRequest) {
         role: true,
         isActive: true,
         balance: true,
-        totalSpent: true,
         createdAt: true,
       },
     });
@@ -28,7 +27,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Your account is not eligible." }, { status: 403 });
     }
 
-    const [activeLicenses, totalOrders, recentOrders, openTickets, recentTransactions, ownedRoles, leaderboard] = await Promise.all([
+    const [activeLicenses, totalOrders, recentOrders, openTickets, recentTransactions, ownedRoles, totalSpentAgg, leaderboard] = await Promise.all([
       prisma.license.count({
         where: {
           customerId: customer.id,
@@ -71,20 +70,57 @@ export async function GET(req: NextRequest) {
         select: { product: { select: { accessRoleKey: true, name: true, slug: true } } },
         distinct: ["productId"],
       }),
-      prisma.customer.findMany({
-        where: {
-          totalSpent: { gt: 0 },
-          isActive: true,
-          role: { not: "BANNED" },
-        },
-        select: {
-          id: true,
-          username: true,
-          totalSpent: true,
-        },
-        orderBy: [{ totalSpent: "desc" }, { username: "asc" }],
-      }).catch(() => []),
+      prisma.order
+        .aggregate({
+          where: { customerId: customer.id, status: { not: "CANCELED" } },
+          _sum: { totalAmount: true },
+        })
+        .catch(() => ({ _sum: { totalAmount: 0 } })),
+      (async () => {
+        try {
+          const grouped = await prisma.order.groupBy({
+            by: ["customerId"],
+            where: {
+              customerId: { not: null },
+              status: { not: "CANCELED" },
+            },
+            _sum: { totalAmount: true },
+          });
+
+          const nonZero = grouped
+            .map((x) => ({
+              customerId: x.customerId as string,
+              totalSpent: Number(x._sum.totalAmount || 0),
+            }))
+            .filter((x) => x.totalSpent > 0);
+
+          if (!nonZero.length) return [];
+
+          const customers = await prisma.customer.findMany({
+            where: {
+              id: { in: nonZero.map((x) => x.customerId) },
+              isActive: true,
+              role: { not: "BANNED" },
+            },
+            select: { id: true, username: true },
+          });
+
+          const userMap = new Map(customers.map((x) => [x.id, x.username]));
+          return nonZero
+            .filter((x) => userMap.has(x.customerId))
+            .map((x) => ({
+              id: x.customerId,
+              username: userMap.get(x.customerId)!,
+              totalSpent: x.totalSpent,
+            }))
+            .sort((a, b) => b.totalSpent - a.totalSpent || a.username.localeCompare(b.username));
+        } catch {
+          return [];
+        }
+      })(),
     ]);
+
+    const totalSpent = Number(totalSpentAgg?._sum?.totalAmount || 0);
 
     return NextResponse.json({
       success: true,
@@ -95,7 +131,7 @@ export async function GET(req: NextRequest) {
           activeCheats: activeLicenses,
           totalOrders,
           pendingPayments: 0,
-          totalSpent: customer.totalSpent,
+          totalSpent,
           openTickets,
         },
         recentOrders,

@@ -5,8 +5,16 @@ import prisma from "@/lib/prisma";
 export async function GET(req: NextRequest) {
   try {
     // Check public API pause
-    const apiPause = await prisma.siteSetting.findUnique({ where: { key: "public_api_pause" } });
-    if (apiPause?.value === "true") {
+    let isPaused = false;
+    try {
+      const apiPause = await prisma.siteSetting.findUnique({ where: { key: "public_api_pause" } });
+      isPaused = apiPause?.value === "true";
+    } catch (e) {
+      // If settings table is temporarily unavailable, keep products endpoint alive.
+      console.warn("GET /api/products: siteSetting lookup failed, skipping pause check");
+    }
+
+    if (isPaused) {
       return NextResponse.json(
         { success: false, error: "Service temporarily unavailable. Please try again later." },
         { status: 503 }
