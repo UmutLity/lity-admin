@@ -82,11 +82,10 @@ Open [http://localhost:3000/admin](http://localhost:3000/admin)
 
 ### Deployment Note (Vercel + Neon)
 
-- `build` script does not run migrations anymore to avoid deploy lock timeouts.
-- Run migrations separately:
+- `build` script runs migrations automatically:
 
 ```bash
-npm run migrate:deploy
+prisma generate && prisma migrate deploy && next build
 ```
 
 - Keep `DATABASE_URL` for runtime (pooler is fine).
