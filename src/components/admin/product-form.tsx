@@ -95,6 +95,7 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
     status: initialData?.status || "UNDETECTED",
     currency: initialData?.currency || "USD",
     buyUrl: initialData?.buyUrl || "",
+    accessRoleKey: initialData?.accessRoleKey || "",
     defaultLoaderUrl: initialData?.defaultLoaderUrl || "",
     isActive: initialData?.isActive ?? true,
     isFeatured: initialData?.isFeatured ?? false,
@@ -350,6 +351,18 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                   <input type="checkbox" checked={autoSlug} onChange={(event) => setAutoSlug(event.target.checked)} />
                   Auto slug
                 </label>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-300">Product Role Key</label>
+                <input
+                  value={form.accessRoleKey}
+                  onChange={(event) => updateField("accessRoleKey", event.target.value.toUpperCase())}
+                  className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  placeholder="ROLE_PRODUCT_APEX"
+                />
+                <p className="text-xs text-zinc-500">Assigned to users automatically when they purchase this product.</p>
+                {errors.accessRoleKey && <p className="text-xs text-red-400">{errors.accessRoleKey}</p>}
               </div>
 
               <div className="space-y-2">

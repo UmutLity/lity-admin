@@ -61,7 +61,7 @@ export default function ChangelogPage() {
 
   return (
     <div>
-      <Topbar title="Changelog" description="Announcements and update records">
+      <Topbar title="Changelogs" description="Announcements and update records">
         <Link href="/admin/changelog/new">
           <Button><Plus className="h-4 w-4" /> New Entry</Button>
         </Link>

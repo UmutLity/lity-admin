@@ -43,7 +43,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Your account has been deactivated" }, { status: 403 });
     }
 
-    return NextResponse.json({ success: true, data: customer });
+    const ownedRoles = await prisma.license.findMany({
+      where: {
+        customerId: customer.id,
+        status: "ACTIVE",
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        product: { accessRoleKey: { not: null } },
+      },
+      select: { product: { select: { accessRoleKey: true, name: true, slug: true } } },
+      distinct: ["productId"],
+    });
+
+    const ownedProductRoles = ownedRoles
+      .map((item) => ({
+        roleKey: item.product.accessRoleKey!,
+        productName: item.product.name,
+        productSlug: item.product.slug,
+      }))
+      .filter((item) => !!item.roleKey);
+
+    return NextResponse.json({ success: true, data: { ...customer, ownedProductRoles } });
   } catch (error: any) {
     console.error("Customer me error:", error);
     return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });

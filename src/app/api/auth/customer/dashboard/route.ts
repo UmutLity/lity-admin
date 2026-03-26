@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Your account is not eligible." }, { status: 403 });
     }
 
-    const [activeLicenses, totalOrders, recentOrders, openTickets, recentTransactions] = await Promise.all([
+    const [activeLicenses, totalOrders, recentOrders, openTickets, recentTransactions, ownedRoles] = await Promise.all([
       prisma.license.count({
         where: {
           customerId: customer.id,
@@ -61,6 +61,16 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: "desc" },
         take: 10,
       }),
+      prisma.license.findMany({
+        where: {
+          customerId: customer.id,
+          status: "ACTIVE",
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          product: { accessRoleKey: { not: null } },
+        },
+        select: { product: { select: { accessRoleKey: true, name: true, slug: true } } },
+        distinct: ["productId"],
+      }),
     ]);
 
     return NextResponse.json({
@@ -77,6 +87,13 @@ export async function GET(req: NextRequest) {
         },
         recentOrders,
         recentTransactions,
+        ownedProductRoles: ownedRoles
+          .map((item) => ({
+            roleKey: item.product.accessRoleKey!,
+            productName: item.product.name,
+            productSlug: item.product.slug,
+          }))
+          .filter((item) => !!item.roleKey),
       },
     });
   } catch (error) {
@@ -84,4 +101,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
   }
 }
-

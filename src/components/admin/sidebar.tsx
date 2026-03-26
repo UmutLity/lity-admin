@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard, Package, Settings, FileText, Bell, DollarSign, MessageSquare,
+  LayoutDashboard, Package, Settings, FileText, Bell, DollarSign, MessageSquare, BookOpen,
   Users, Shield, LogOut, Menu,
   Download, PanelLeftClose, PanelLeft, Ticket,
 } from "lucide-react";
@@ -33,7 +33,8 @@ const navGroups: NavGroup[] = [
       { href: "/admin", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "EDITOR", "VIEWER"] },
       { href: "/admin/products", label: "Products", icon: Package, roles: ["ADMIN", "EDITOR"] },
       { href: "/admin/licenses", label: "Licenses", icon: Download, roles: ["ADMIN"] },
-      { href: "/admin/changelog", label: "Guides", icon: FileText, roles: ["ADMIN", "EDITOR"] },
+      { href: "/admin/changelog", label: "Changelogs", icon: FileText, roles: ["ADMIN", "EDITOR"] },
+      { href: "/admin/guides", label: "Guides", icon: BookOpen, roles: ["ADMIN", "EDITOR"] },
       { href: "/admin/users", label: "Users", icon: Users, roles: ["ADMIN"] },
       { href: "/admin/revenue", label: "Payments", icon: DollarSign, roles: ["ADMIN"] },
       { href: "/admin/reviews", label: "Reviews", icon: MessageSquare, roles: ["ADMIN", "EDITOR"] },

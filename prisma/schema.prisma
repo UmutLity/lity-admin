@@ -77,6 +77,7 @@ model Customer {
   orders    Order[]
   balanceTransactions BalanceTransaction[]
   communityMessages   CommunityMessage[]
+  reviews             Review[]
 }
 
 // ─── Cart Item ──────────────────────────────────────────
@@ -224,6 +225,7 @@ model Product {
   isActive             Boolean  @default(true)
   currency             String   @default("USD")
   buyUrl               String?
+  accessRoleKey        String?
   defaultLoaderUrl     String?
   sortOrder            Int      @default(0)
   displayOrder         Int      @default(0)
@@ -246,6 +248,22 @@ model Product {
   licenses       License[]
   supportTickets SupportTicket[]
   reviews        Review[]
+  guides         Guide[]
+}
+
+model Guide {
+  id          String    @id @default(cuid())
+  title       String
+  body        String
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  isDraft     Boolean   @default(true)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([productId, isDraft, publishedAt])
+  @@index([createdAt])
 }
 
 model ProductPrice {
@@ -391,6 +409,8 @@ model Review {
   sourceMessageId String
   productId       String?
   product         Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  customerId      String?
+  customer        Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   authorName      String
   authorAvatarUrl String?
   content         String
@@ -405,6 +425,8 @@ model Review {
   @@index([isVisible, createdAt])
   @@index([source, createdAt])
   @@index([productId, createdAt])
+  @@index([customerId, createdAt])
+  @@unique([customerId, productId])
 }
 
 model SupportTicket {

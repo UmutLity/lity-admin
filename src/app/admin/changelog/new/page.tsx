@@ -6,7 +6,7 @@ import { ChangelogForm } from "@/components/admin/changelog-form";
 export default function NewChangelogPage() {
   return (
     <div>
-      <Topbar title="Yeni Changelog" description="Yeni bir duyuru veya güncelleme kaydı oluşturun" />
+      <Topbar title="New Changelog" description="Create a new changelog entry" />
       <ChangelogForm />
     </div>
   );

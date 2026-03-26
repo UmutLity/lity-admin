@@ -3,13 +3,15 @@ import crypto from "crypto";
 import prisma from "@/lib/prisma";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
 
-const ALLOWED_PLANS = new Set(["DAILY", "WEEKLY", "MONTHLY", "LIFETIME"]);
+const ALLOWED_PLANS = new Set(["DAILY", "3_DAYS", "WEEKLY", "MONTHLY", "3_MONTHS", "ONETIME", "LIFETIME"]);
 
 function getPlanExpiry(plan: string): Date | null {
   const now = Date.now();
   if (plan === "DAILY") return new Date(now + 24 * 60 * 60 * 1000);
+  if (plan === "3_DAYS") return new Date(now + 3 * 24 * 60 * 60 * 1000);
   if (plan === "WEEKLY") return new Date(now + 7 * 24 * 60 * 60 * 1000);
   if (plan === "MONTHLY") return new Date(now + 30 * 24 * 60 * 60 * 1000);
+  if (plan === "3_MONTHS") return new Date(now + 90 * 24 * 60 * 60 * 1000);
   return null;
 }
 
@@ -166,4 +168,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
   }
 }
-
