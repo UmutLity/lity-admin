@@ -243,3 +243,10 @@ body {
   animation: shimmer 1.8s ease-in-out infinite;
   border-radius: 0.5rem;
 }
+
+/* Admin native select dropdown readability (OS/browser rendered menu layer) */
+.admin-shell select option,
+.admin-shell select optgroup {
+  color: #0f172a;
+  background-color: #ffffff;
+}

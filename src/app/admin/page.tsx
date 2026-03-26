@@ -1,75 +1,174 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Topbar } from "@/components/admin/topbar";
-import { StatusBadge } from "@/components/admin/status-badge";
 import {
-  Package, FileText, Image as ImageIcon, Activity,
-  TrendingUp, TrendingDown, Shield, Users, ArrowUpRight,
-  Clock, Zap,
+  AlertTriangle,
+  ArrowUpRight,
+  BadgeDollarSign,
+  Boxes,
+  CreditCard,
+  ShoppingCart,
+  Ticket,
+  UserRound,
 } from "lucide-react";
-import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-interface DashboardStats {
-  totalProducts: number;
+type AnyJson = Record<string, any>;
+
+interface DashboardData {
+  totalUsers: number;
+  totalOrders: number;
+  totalRevenue: number;
+  pendingPayments: number;
   activeProducts: number;
-  totalChangelogs: number;
-  totalMedia: number;
-  totalCustomers: number;
-  statusCounts: Record<string, number>;
-  recentProducts: any[];
-  recentChangelogs: any[];
+  openTickets: number;
+  todaySales: number;
+  todayRevenue: number;
+  todayUsers: number;
+  weekSales: number;
+  weekRevenue: number;
+  weekUsers: number;
+  monthSales: number;
+  monthRevenue: number;
+  monthUsers: number;
+  activities: Array<{
+    id: string;
+    label: string;
+    detail: string;
+    type: "ticket" | "order" | "payment";
+    status: string;
+    createdAt: string;
+  }>;
 }
 
-function KpiCard({
-  title, value, subtitle, icon: Icon, trend, trendValue, color,
+const EMPTY: DashboardData = {
+  totalUsers: 0,
+  totalOrders: 0,
+  totalRevenue: 0,
+  pendingPayments: 0,
+  activeProducts: 0,
+  openTickets: 0,
+  todaySales: 0,
+  todayRevenue: 0,
+  todayUsers: 0,
+  weekSales: 0,
+  weekRevenue: 0,
+  weekUsers: 0,
+  monthSales: 0,
+  monthRevenue: 0,
+  monthUsers: 0,
+  activities: [],
+};
+
+function safeArray<T = any>(value: any): T[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function isSuccessPayload(data: any) {
+  return !!data && data.success === true;
+}
+
+async function safeFetch(path: string): Promise<AnyJson | null> {
+  try {
+    const res = await fetch(path, { credentials: "include" });
+    const data = await res.json();
+    if (!res.ok || !isSuccessPayload(data)) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function startOfToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function daysAgo(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d;
+}
+
+function inRange(dateStr: string, from: Date) {
+  const ts = new Date(dateStr).getTime();
+  return Number.isFinite(ts) && ts >= from.getTime();
+}
+
+function timeAgo(dateStr: string) {
+  const now = Date.now();
+  const ts = new Date(dateStr).getTime();
+  if (!Number.isFinite(ts)) return "-";
+  const diffMs = Math.max(0, now - ts);
+  const min = Math.floor(diffMs / (1000 * 60));
+  const hour = Math.floor(min / 60);
+  const day = Math.floor(hour / 24);
+  if (min < 1) return "just now";
+  if (min < 60) return `${min}m ago`;
+  if (hour < 24) return `${hour}h ago`;
+  return `${day}d ago`;
+}
+
+function StatCard({
+  title,
+  value,
+  icon: Icon,
+  iconClass,
+  valueClass,
 }: {
   title: string;
   value: string | number;
-  subtitle?: string;
   icon: any;
-  trend?: "up" | "down" | "neutral";
-  trendValue?: string;
-  color: string;
+  iconClass: string;
+  valueClass?: string;
 }) {
-  const colorMap: Record<string, string> = {
-    purple: "from-violet-500/20 to-fuchsia-500/10 text-violet-300 border-violet-500/10",
-    emerald: "from-violet-500/18 to-zinc-500/10 text-violet-300 border-violet-500/10",
-    blue: "from-zinc-500/18 to-violet-500/10 text-zinc-300 border-zinc-500/10",
-    amber: "from-stone-500/18 to-zinc-500/10 text-stone-300 border-stone-500/10",
-    rose: "from-fuchsia-500/18 to-violet-500/10 text-fuchsia-300 border-fuchsia-500/10",
-  };
-
-  const iconBg: Record<string, string> = {
-    purple: "bg-violet-500/15 text-violet-300",
-    emerald: "bg-violet-500/12 text-violet-300",
-    blue: "bg-zinc-500/12 text-zinc-300",
-    amber: "bg-stone-500/14 text-stone-300",
-    rose: "bg-fuchsia-500/14 text-fuchsia-300",
-  };
-
   return (
-    <div className="kpi-card group">
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">{title}</p>
-          <p className="text-2xl font-bold mt-1.5 text-white tracking-tight">{value}</p>
-          <div className="flex items-center gap-2 mt-1.5">
-            {trend && trendValue && (
-              <span className={cn(
-                "inline-flex items-center gap-0.5 text-[11px] font-semibold",
-                trend === "up" ? "text-emerald-400" : trend === "down" ? "text-red-400" : "text-zinc-500"
-              )}>
-                {trend === "up" ? <TrendingUp className="h-3 w-3" /> : trend === "down" ? <TrendingDown className="h-3 w-3" /> : null}
-                {trendValue}
-              </span>
-            )}
-            {subtitle && <span className="text-[11px] text-zinc-600">{subtitle}</span>}
-          </div>
+    <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(15,16,24,0.95),rgba(12,13,20,0.98))] p-4 shadow-[0_16px_40px_rgba(5,6,10,0.25)]">
+      <div className="mb-4 flex items-center justify-between">
+        <p className="text-sm text-zinc-400">{title}</p>
+        <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", iconClass)}>
+          <Icon className="h-4 w-4" />
         </div>
-        <div className={cn("flex items-center justify-center w-11 h-11 rounded-xl", iconBg[color])}>
-          <Icon className="h-5 w-5" />
+      </div>
+      <p className={cn("text-[30px] font-bold leading-none tracking-tight text-white", valueClass)}>{value}</p>
+    </div>
+  );
+}
+
+function PeriodCard({
+  title,
+  sales,
+  revenue,
+  users,
+}: {
+  title: string;
+  sales: number;
+  revenue: number;
+  users: number;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,16,24,0.94),rgba(12,13,20,0.98))] px-5 py-4">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-[28px] font-semibold text-zinc-200">{title}</h3>
+        <ArrowUpRight className="h-4 w-4 text-zinc-600" />
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <p className="text-4xl font-bold text-white">{sales}</p>
+          <p className="text-xs text-zinc-500">sales</p>
+        </div>
+        <div>
+          <p className="text-4xl font-bold text-emerald-400">${revenue.toFixed(2)}</p>
+          <p className="text-xs text-zinc-500">revenue</p>
+        </div>
+        <div>
+          <p className="flex items-center gap-1 text-4xl font-bold text-blue-400">
+            <UserRound className="h-4 w-4" />
+            {users}
+          </p>
+          <p className="text-xs text-zinc-500">new users</p>
         </div>
       </div>
     </div>
@@ -77,76 +176,127 @@ function KpiCard({
 }
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<DashboardData>(EMPTY);
 
   useEffect(() => {
-    async function loadStats() {
-      try {
-        const [productsRes, changelogsRes, mediaRes, customersRes] = await Promise.all([
-          fetch("/api/admin/products", { credentials: "include" }),
-          fetch("/api/admin/changelog", { credentials: "include" }),
-          fetch("/api/admin/media", { credentials: "include" }),
-          fetch("/api/admin/customers", { credentials: "include" }),
-        ]);
+    let active = true;
 
-        const products = (await productsRes.json()).data || [];
-        const changelogs = (await changelogsRes.json()).data || [];
-        const media = (await mediaRes.json()).data || [];
-        const customers = (await customersRes.json()).data || [];
+    async function load() {
+      setLoading(true);
+      const [productsRes, customersRes, ticketsRes, paymentsRes] = await Promise.all([
+        safeFetch("/api/admin/products"),
+        safeFetch("/api/admin/customers"),
+        safeFetch("/api/admin/tickets?status=ALL"),
+        safeFetch("/api/admin/logs?type=payment&page=1&pageSize=300"),
+      ]);
 
-        const statusCounts: Record<string, number> = {};
-        products.forEach((p: any) => {
-          statusCounts[p.status] = (statusCounts[p.status] || 0) + 1;
-        });
+      const products = safeArray(productsRes?.data);
+      const customers = safeArray(customersRes?.data);
+      const tickets = safeArray(ticketsRes?.data);
+      const payments = safeArray(paymentsRes?.data);
 
-        setStats({
-          totalProducts: products.length,
-          activeProducts: products.filter((p: any) => p.isActive).length,
-          totalChangelogs: changelogs.length,
-          totalMedia: media.length,
-          totalCustomers: customers.length,
-          statusCounts,
-          recentProducts: products.slice(0, 6),
-          recentChangelogs: changelogs.slice(0, 5),
-        });
-      } catch (error) {
-        console.error("Failed to load dashboard:", error);
-      } finally {
+      const totalUsers = customers.length;
+      const totalOrders = customers.reduce((acc, c) => acc + Number(c?._count?.orders || 0), 0);
+      const totalRevenue = payments
+        .filter((p) => String(p.type || "").toUpperCase() === "DEBIT")
+        .reduce((acc, p) => acc + Number(p.amount || 0), 0);
+      const activeProducts = products.filter((p) => p.isActive).length;
+      const openTickets = tickets.filter((t) => ["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER"].includes(String(t.status))).length;
+      const pendingPayments = 0;
+
+      const todayFrom = startOfToday();
+      const weekFrom = daysAgo(7);
+      const monthFrom = daysAgo(30);
+
+      const salesToday = payments.filter((p) => String(p.type || "").toUpperCase() === "DEBIT" && inRange(String(p.createdAt || ""), todayFrom));
+      const salesWeek = payments.filter((p) => String(p.type || "").toUpperCase() === "DEBIT" && inRange(String(p.createdAt || ""), weekFrom));
+      const salesMonth = payments.filter((p) => String(p.type || "").toUpperCase() === "DEBIT" && inRange(String(p.createdAt || ""), monthFrom));
+
+      const usersToday = customers.filter((c) => inRange(String(c.createdAt || ""), todayFrom)).length;
+      const usersWeek = customers.filter((c) => inRange(String(c.createdAt || ""), weekFrom)).length;
+      const usersMonth = customers.filter((c) => inRange(String(c.createdAt || ""), monthFrom)).length;
+
+      const ticketActivities = tickets.slice(0, 6).map((t: any) => ({
+        id: `ticket-${t.id}`,
+        label: t.email || t.discordUsername || "User",
+        detail: t.subject || "Support ticket",
+        type: "ticket" as const,
+        status: String(t.status || "OPEN").toLowerCase(),
+        createdAt: String(t.createdAt || new Date().toISOString()),
+      }));
+
+      const paymentActivities = payments.slice(0, 6).map((p: any) => ({
+        id: `payment-${p.id}`,
+        label: p.customer?.username || "Customer",
+        detail: `$${Number(p.amount || 0).toFixed(2)} via ${p.reason || "wallet"}`,
+        type: "payment" as const,
+        status: String(p.type || "").toUpperCase() === "DEBIT" ? "approved" : "credit",
+        createdAt: String(p.createdAt || new Date().toISOString()),
+      }));
+
+      const activities = [...ticketActivities, ...paymentActivities]
+        .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+        .slice(0, 10);
+
+      const next: DashboardData = {
+        totalUsers,
+        totalOrders,
+        totalRevenue,
+        pendingPayments,
+        activeProducts,
+        openTickets,
+        todaySales: salesToday.length,
+        todayRevenue: salesToday.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+        todayUsers: usersToday,
+        weekSales: salesWeek.length,
+        weekRevenue: salesWeek.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+        weekUsers: usersWeek,
+        monthSales: salesMonth.length,
+        monthRevenue: salesMonth.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+        monthUsers: usersMonth,
+        activities,
+      };
+
+      if (active) {
+        setData(next);
         setLoading(false);
       }
     }
 
-    loadStats();
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const activityStatusClass = useMemo(() => {
+    return (status: string) => {
+      if (status.includes("open")) return "bg-blue-500/15 text-blue-300 border border-blue-500/25";
+      if (status.includes("progress")) return "bg-amber-500/15 text-amber-300 border border-amber-500/25";
+      if (status.includes("waiting")) return "bg-orange-500/15 text-orange-300 border border-orange-500/25";
+      if (status.includes("resolved") || status.includes("closed") || status.includes("approved")) return "bg-emerald-500/15 text-emerald-300 border border-emerald-500/25";
+      if (status.includes("credit")) return "bg-violet-500/15 text-violet-300 border border-violet-500/25";
+      return "bg-zinc-500/15 text-zinc-300 border border-zinc-500/25";
+    };
   }, []);
 
   if (loading) {
     return (
       <div>
-        <Topbar title="Dashboard" description="Overview of your platform" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-8">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="kpi-card">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="skeleton h-3 w-20 mb-3" />
-                  <div className="skeleton h-7 w-16 mb-2" />
-                  <div className="skeleton h-3 w-24" />
-                </div>
-                <div className="skeleton w-11 h-11 rounded-xl" />
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {[1, 2].map((i) => (
-            <div key={i} className="premium-card p-6">
-              <div className="skeleton h-5 w-32 mb-6" />
-              <div className="space-y-3">
-                {[1, 2, 3, 4].map((j) => <div key={j} className="skeleton h-12 w-full" />)}
-              </div>
-            </div>
-          ))}
+        <Topbar title="Admin Dashboard" description="Overview of your platform" />
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-36 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
+            ))}
+          </div>
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-40 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
+            ))}
+          </div>
+          <div className="h-96 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
         </div>
       </div>
     );
@@ -154,194 +304,67 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <Topbar title="Dashboard" description="Overview of your platform" />
+      <Topbar title="Admin Dashboard" description="Overview of your platform" />
 
-      {/* KPI Row */}
-      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-        <KpiCard
-          title="Total Products"
-          value={stats?.totalProducts || 0}
-          subtitle="all time"
-          icon={Package}
-          color="purple"
-        />
-        <KpiCard
-          title="Active Products"
-          value={stats?.activeProducts || 0}
-          subtitle="currently live"
-          icon={TrendingUp}
-          trend="up"
-          trendValue={`${stats?.totalProducts ? Math.round(((stats?.activeProducts || 0) / stats.totalProducts) * 100) : 0}%`}
-          color="emerald"
-        />
-        <KpiCard
-          title="Changelogs"
-          value={stats?.totalChangelogs || 0}
-          subtitle="published updates"
-          icon={FileText}
-          color="blue"
-        />
-        <KpiCard
-          title="Customers"
-          value={stats?.totalCustomers || 0}
-          subtitle="registered"
-          icon={Users}
-          color="amber"
-        />
-        <KpiCard
-          title="Media Files"
-          value={stats?.totalMedia || 0}
-          subtitle="uploaded"
-          icon={ImageIcon}
-          color="rose"
-        />
-      </div>
-
-      {/* Status Overview + Recent Products */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        {/* Status Overview */}
-        <div className="lg:col-span-2 premium-card overflow-hidden">
-          <div className="px-6 py-4 border-b border-white/[0.06]">
-            <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-500/15">
-                <Activity className="h-4 w-4 text-violet-300" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-white">Status Overview</h3>
-                <p className="text-[11px] text-zinc-500">Product status distribution</p>
-              </div>
-            </div>
-          </div>
-          <div className="p-4 space-y-1">
-            {Object.entries(stats?.statusCounts || {}).map(([status, count]) => (
-              <div
-                key={status}
-                className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/[0.02] transition-colors"
-              >
-                <StatusBadge status={status as any} glow />
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-white tabular-nums">{count}</span>
-                  <span className="text-[11px] text-zinc-600">
-                    {stats?.totalProducts ? `${Math.round((count / stats.totalProducts) * 100)}%` : ""}
-                  </span>
-                </div>
-              </div>
-            ))}
-            {Object.keys(stats?.statusCounts || {}).length === 0 && (
-              <div className="py-8 text-center">
-                <p className="text-sm text-zinc-600">No products yet</p>
-              </div>
-            )}
-          </div>
+      <div className="space-y-5">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
+          <StatCard title="Total Users" value={data.totalUsers} icon={UserRound} iconClass="bg-blue-500/15 text-blue-300" />
+          <StatCard title="Total Orders" value={data.totalOrders} icon={ShoppingCart} iconClass="bg-emerald-500/15 text-emerald-300" />
+          <StatCard title="Total Revenue" value={`$${data.totalRevenue.toFixed(2)}`} icon={BadgeDollarSign} iconClass="bg-emerald-500/18 text-emerald-300" valueClass="text-emerald-400" />
+          <StatCard title="Pending Payments" value={data.pendingPayments} icon={CreditCard} iconClass="bg-amber-500/15 text-amber-300" />
+          <StatCard title="Active Products" value={data.activeProducts} icon={Boxes} iconClass="bg-violet-500/18 text-violet-300" />
+          <StatCard title="Open Tickets" value={data.openTickets} icon={AlertTriangle} iconClass="bg-rose-500/15 text-rose-300" />
         </div>
 
-        {/* Recent Products */}
-        <div className="lg:col-span-3 premium-card overflow-hidden">
-          <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-500/12">
-                <Package className="h-4 w-4 text-violet-300" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-white">Recent Products</h3>
-                <p className="text-[11px] text-zinc-500">Latest added products</p>
-              </div>
-            </div>
-            <Link
-              href="/admin/products"
-              className="flex items-center gap-1 text-xs font-medium text-violet-300 transition-colors hover:text-violet-200"
-            >
-              View all <ArrowUpRight className="h-3 w-3" />
-            </Link>
-          </div>
-          <div className="divide-y divide-white/[0.04]">
-            {stats?.recentProducts.map((product, i) => (
-              <Link
-                key={product.id}
-                href={`/admin/products/${product.id}/edit`}
-                className="flex items-center justify-between px-6 py-3 hover:bg-white/[0.02] transition-all duration-150 group"
-                style={{ animationDelay: `${i * 50}ms` }}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/[0.04] text-zinc-500 group-hover:bg-violet-500/10 group-hover:text-violet-300 transition-all flex-shrink-0">
-                    <Package className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors truncate">{product.name}</p>
-                    <p className="text-[11px] text-zinc-600 truncate">{product.category}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                  <StatusBadge status={product.status} />
-                  <ArrowUpRight className="h-3.5 w-3.5 text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-              </Link>
-            ))}
-            {(stats?.recentProducts.length || 0) === 0 && (
-              <div className="py-8 text-center">
-                <p className="text-sm text-zinc-600">No products yet</p>
-              </div>
-            )}
-          </div>
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+          <PeriodCard title="Today" sales={data.todaySales} revenue={data.todayRevenue} users={data.todayUsers} />
+          <PeriodCard title="This Week" sales={data.weekSales} revenue={data.weekRevenue} users={data.weekUsers} />
+          <PeriodCard title="This Month" sales={data.monthSales} revenue={data.monthRevenue} users={data.monthUsers} />
         </div>
-      </div>
 
-      {/* Recent Changelogs */}
-      {(stats?.recentChangelogs?.length || 0) > 0 && (
-        <div className="mt-6 premium-card overflow-hidden">
-          <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-500/12">
-                <Clock className="h-4 w-4 text-violet-300" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-white">Recent Updates</h3>
-                <p className="text-[11px] text-zinc-500">Latest changelog entries</p>
-              </div>
-            </div>
-            <Link
-              href="/admin/changelog"
-              className="flex items-center gap-1 text-xs font-medium text-violet-300 transition-colors hover:text-violet-200"
-            >
-              View all <ArrowUpRight className="h-3 w-3" />
-            </Link>
+        <div className="rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(15,16,24,0.95),rgba(11,12,19,0.98))] p-5 shadow-[0_22px_60px_rgba(4,6,12,0.28)]">
+          <div className="mb-5 flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-violet-400" />
+            <h3 className="text-3xl font-semibold text-white">Recent Activity</h3>
           </div>
-          <div className="divide-y divide-white/[0.04]">
-            {stats?.recentChangelogs.map((cl: any, i: number) => {
-              const typeColors: Record<string, string> = {
-                UPDATE: "bg-violet-500/15 text-violet-300",
-                FIX: "bg-zinc-500/15 text-zinc-300",
-                WARNING: "bg-stone-500/15 text-stone-300",
-                INFO: "bg-fuchsia-500/15 text-fuchsia-300",
-              };
-              return (
-                <Link
-                  key={cl.id}
-                  href={`/admin/changelog/${cl.id}`}
-                  className="flex items-center justify-between px-6 py-3 hover:bg-white/[0.02] transition-all group"
+
+          <div className="space-y-2">
+            {data.activities.length === 0 ? (
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.01] px-4 py-5 text-zinc-500">No activity found.</div>
+            ) : (
+              data.activities.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.01] px-4 py-3 hover:bg-white/[0.03] transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className={cn(
-                      "flex items-center justify-center w-8 h-8 rounded-lg text-[10px] font-bold flex-shrink-0",
-                      typeColors[cl.type] || typeColors.UPDATE
-                    )}>
-                      {cl.type?.charAt(0) || "U"}
-                    </span>
+                    <div
+                      className={cn(
+                        "flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg",
+                        activity.type === "ticket" ? "bg-blue-500/12 text-blue-300" : "bg-violet-500/12 text-violet-300"
+                      )}
+                    >
+                      {activity.type === "ticket" ? <Ticket className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
+                    </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors truncate">{cl.title}</p>
-                      <p className="text-[11px] text-zinc-600">
-                        {cl.status === "PUBLISHED" ? "Published" : "Draft"}
-                        {cl.publishedAt && ` • ${new Date(cl.publishedAt).toLocaleDateString()}`}
-                      </p>
+                      <p className="truncate text-sm font-semibold text-zinc-100">{activity.label}</p>
+                      <p className="truncate text-xs text-zinc-500">{activity.detail}</p>
                     </div>
                   </div>
-                  <ArrowUpRight className="h-3.5 w-3.5 text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                </Link>
-              );
-            })}
+
+                  <div className="ml-4 flex items-center gap-3">
+                    <span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-semibold", activityStatusClass(activity.status))}>
+                      {activity.status}
+                    </span>
+                    <span className="text-xs text-zinc-500">{timeAgo(activity.createdAt)}</span>
+                    <ArrowUpRight className="h-3.5 w-3.5 text-zinc-700" />
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
