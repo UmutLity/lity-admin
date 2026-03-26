@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
           totalSpent: true,
         },
         orderBy: [{ totalSpent: "desc" }, { username: "asc" }],
-      }),
+      }).catch(() => []),
     ]);
 
     return NextResponse.json({
