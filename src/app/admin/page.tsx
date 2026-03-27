@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Topbar } from "@/components/admin/topbar";
 import {
   AlertTriangle,
   ArrowRight,
@@ -190,7 +189,7 @@ function StatCard({
           <Icon className="h-3.5 w-3.5" />
         </div>
       </div>
-      <p className={cn("text-[34px] font-bold leading-none tracking-tight text-white", valueClass)}>{value}</p>
+      <p className={cn("text-[46px] font-bold leading-none tracking-tight text-white", valueClass)}>{value}</p>
     </div>
   );
 }
@@ -218,7 +217,7 @@ function SummaryCard({
           <Icon className="h-3.5 w-3.5" />
         </div>
       </div>
-      <p className={cn("text-[42px] font-bold leading-none text-emerald-400", valueClass)}>{value}</p>
+      <p className={cn("text-[56px] font-bold leading-none text-emerald-400", valueClass)}>{value}</p>
       <p className="mt-1.5 text-[11px] text-zinc-500">{subtext}</p>
     </div>
   );
@@ -244,25 +243,25 @@ function PeriodCard({
   return (
     <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] px-4 py-3.5">
       <div className="mb-3.5 flex items-center justify-between">
-        <h3 className="text-[35px] font-semibold leading-none text-zinc-100">{title}</h3>
+        <h3 className="text-[48px] font-semibold leading-none text-zinc-100">{title}</h3>
         <ArrowUpRight className="h-4 w-4 text-zinc-600" />
       </div>
 
       <div className="grid grid-cols-4 gap-3">
         <div className="min-w-0">
-          <p className="text-[36px] font-bold leading-none text-white">{sales}</p>
+          <p className="text-[44px] font-bold leading-none text-white">{sales}</p>
           <p className="text-[11px] text-zinc-500">sales</p>
         </div>
         <div className="min-w-0">
-          <p className="truncate text-[36px] font-bold leading-none tabular-nums text-emerald-400">{formatMoney(revenue)}</p>
+          <p className="text-[44px] font-bold leading-none tabular-nums text-emerald-400 whitespace-nowrap">{formatMoney(revenue)}</p>
           <p className="text-[11px] text-zinc-500">product rev.</p>
         </div>
         <div className="min-w-0">
-          <p className="truncate text-[36px] font-bold leading-none tabular-nums text-cyan-400">{formatMoney(deposits)}</p>
+          <p className="text-[44px] font-bold leading-none tabular-nums text-cyan-400 whitespace-nowrap">{formatMoney(deposits)}</p>
           <p className="text-[11px] text-zinc-500">deposits</p>
         </div>
         <div className="min-w-0">
-          <p className="text-[36px] font-bold leading-none text-fuchsia-400">{boxOpens}</p>
+          <p className="text-[44px] font-bold leading-none text-fuchsia-400">{boxOpens}</p>
           <p className="text-[11px] text-zinc-500">box opens</p>
         </div>
       </div>
@@ -493,7 +492,10 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div>
-        <Topbar title="Admin Dashboard" description="Overview of your platform" />
+        <div className="mb-4">
+          <h1 className="text-[54px] font-bold leading-none text-white">Admin Dashboard</h1>
+          <p className="mt-2 text-[24px] text-zinc-400">Overview of your platform</p>
+        </div>
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -518,7 +520,10 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <Topbar title="Admin Dashboard" description="Overview of your platform" />
+      <div className="mb-4">
+        <h1 className="text-[54px] font-bold leading-none text-white">Admin Dashboard</h1>
+        <p className="mt-2 text-[24px] text-zinc-400">Overview of your platform</p>
+      </div>
 
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">

@@ -90,9 +90,9 @@ export function Sidebar() {
         href={item.href}
         onClick={() => setMobileOpen(false)}
         className={cn(
-          "group relative flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[12px] font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#b9accf]/35",
+          "group relative flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[12px] font-medium transition-all duration-200 focus:outline-none focus-visible:outline-none focus-visible:shadow-none",
           active
-            ? "bg-[linear-gradient(135deg,rgba(154,136,187,0.16),rgba(136,132,152,0.1))] text-white shadow-[0_12px_28px_rgba(20,18,26,0.32)] ring-1 ring-[#b9accf]/22"
+            ? "bg-[linear-gradient(135deg,rgba(154,136,187,0.16),rgba(136,132,152,0.1))] text-white shadow-[0_12px_28px_rgba(20,18,26,0.32)] border border-[#b9accf]/18"
             : "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.04]"
         )}
         title={collapsed ? item.label : undefined}
