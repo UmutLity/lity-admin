@@ -174,15 +174,20 @@ function StatCard({
   icon: Icon,
   iconClass,
   valueClass,
+  href,
 }: {
   title: string;
   value: string | number;
   icon: any;
   iconClass: string;
   valueClass?: string;
+  href?: string;
 }) {
-  return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] p-3.5 shadow-[0_10px_20px_rgba(0,0,0,0.26)]">
+  const card = (
+    <div className={cn(
+      "rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] p-3.5 shadow-[0_10px_20px_rgba(0,0,0,0.26)] transition-all",
+      href ? "cursor-pointer hover:border-[#b9accf]/24 hover:bg-[linear-gradient(180deg,rgba(16,17,25,0.94),rgba(12,13,19,0.98))]" : ""
+    )}>
       <div className="mb-2.5 flex items-center justify-between">
         <p className="text-xs text-zinc-500">{title}</p>
         <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg", iconClass)}>
@@ -192,6 +197,11 @@ function StatCard({
       <p className={cn("text-[15px] font-bold leading-none tracking-tight text-white sm:text-[17px]", valueClass)}>{value}</p>
     </div>
   );
+
+  if (href) {
+    return <Link href={href}>{card}</Link>;
+  }
+  return card;
 }
 
 function SummaryCard({
@@ -527,12 +537,12 @@ export default function DashboardPage() {
 
       <div className="space-y-3.5">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <StatCard title="Total Users" value={data.totalUsers} icon={UserRound} iconClass="bg-[#a996c4]/18 text-[#d7caea]" />
-          <StatCard title="Total Orders" value={data.totalOrders} icon={ShoppingCart} iconClass="bg-[#a996c4]/18 text-[#d7caea]" />
-          <StatCard title="Total Revenue" value={`$${data.totalRevenue.toFixed(2)}`} icon={BadgeDollarSign} iconClass="bg-[#a996c4]/18 text-[#d7caea]" valueClass="text-emerald-400" />
-          <StatCard title="Pending Payments" value={data.pendingPayments} icon={CreditCard} iconClass="bg-[#a996c4]/18 text-[#d7caea]" />
-          <StatCard title="Active Products" value={data.activeProducts} icon={Boxes} iconClass="bg-[#a996c4]/18 text-[#d7caea]" />
-          <StatCard title="Open Tickets" value={data.openTickets} icon={AlertTriangle} iconClass="bg-[#a996c4]/18 text-[#d7caea]" />
+          <StatCard title="Total Users" value={data.totalUsers} icon={UserRound} iconClass="bg-blue-500/15 text-blue-300" />
+          <StatCard title="Total Orders" value={data.totalOrders} icon={ShoppingCart} iconClass="bg-emerald-500/15 text-emerald-300" />
+          <StatCard title="Total Revenue" value={`$${data.totalRevenue.toFixed(2)}`} icon={BadgeDollarSign} iconClass="bg-emerald-500/15 text-emerald-300" valueClass="text-emerald-400" />
+          <StatCard title="Pending Payments" value={data.pendingPayments} icon={CreditCard} iconClass="bg-amber-500/15 text-amber-300" href="/admin/topups" />
+          <StatCard title="Active Products" value={data.activeProducts} icon={Boxes} iconClass="bg-violet-500/15 text-violet-300" href="/admin/products" />
+          <StatCard title="Open Tickets" value={data.openTickets} icon={AlertTriangle} iconClass="bg-rose-500/15 text-rose-300" href="/admin/tickets" />
         </div>
 
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
