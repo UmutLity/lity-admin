@@ -35,6 +35,8 @@ export function BlogForm({ initialData, isEditing }: BlogFormProps) {
     isDraft: initialData?.isDraft ?? true,
   });
 
+  const wordCount = form.content.trim() ? form.content.trim().split(/\s+/).length : 0;
+
   useEffect(() => {
     if (!isEditing && !form.authorName) {
       fetch("/api/auth/session")
@@ -146,6 +148,7 @@ export function BlogForm({ initialData, isEditing }: BlogFormProps) {
                   onChange={(e) => updateField("content", e.target.value)}
                   placeholder={"## Intro\nWrite your post with markdown...\n\n- Bullet points\n- Images via URL"}
                 />
+                <p className="text-xs text-muted-foreground">Word count: {wordCount}</p>
                 {errors.content && <p className="text-sm text-destructive">{errors.content}</p>}
               </div>
             </CardContent>
@@ -216,4 +219,3 @@ export function BlogForm({ initialData, isEditing }: BlogFormProps) {
     </form>
   );
 }
-
