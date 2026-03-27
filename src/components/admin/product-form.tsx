@@ -23,6 +23,21 @@ interface FeatureTab {
   description: string;
 }
 
+function splitDescriptionAndVideos(raw: string | null | undefined) {
+  const full = String(raw || "");
+  const marker = "\n\n### Videos\n";
+  const markerIndex = full.indexOf(marker);
+  if (markerIndex === -1) return { description: full, videos: [] as string[] };
+
+  const description = full.slice(0, markerIndex).trim();
+  const trailing = full.slice(markerIndex + marker.length);
+  const videos = trailing
+    .split("\n")
+    .map((line) => line.trim().replace(/^-+\s*/, ""))
+    .filter((line) => line.length > 0);
+  return { description, videos };
+}
+
 const categoryOptions = [
   { value: "VALORANT", label: "Valorant" },
   { value: "CS2", label: "CS2" },
@@ -86,11 +101,39 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [autoSlug, setAutoSlug] = useState(!isEditing);
 
+  const parsedDescription = useMemo(() => splitDescriptionAndVideos(initialData?.description), [initialData?.description]);
+  const initialPrices = useMemo<PriceEntry[]>(
+    () =>
+      Array.isArray(initialData?.prices)
+        ? initialData.prices
+            .map((p: any) => ({ plan: String(p?.plan || ""), price: Number(p?.price || 0) }))
+            .filter((p: PriceEntry) => !!p.plan)
+        : [],
+    [initialData?.prices]
+  );
+  const initialBasePrice = initialPrices[0] || { plan: "MONTHLY", price: 0 };
+  const initialExtraPrices = initialPrices.slice(1);
+  const initialGallery = useMemo(() => (Array.isArray(initialData?.gallery) ? initialData.gallery : []), [initialData?.gallery]);
+  const initialThumbnail = initialGallery.find((item: any) => item?.isThumbnail) || initialGallery[0];
+  const initialGalleryUrls = initialGallery
+    .filter((item: any) => item?.url && item.id !== initialThumbnail?.id)
+    .map((item: any) => String(item.url));
+  const initialFeatureTabs = useMemo<FeatureTab[]>(
+    () =>
+      Array.isArray(initialData?.features)
+        ? initialData.features.map((item: any) => ({
+            title: String(item?.title || "").trim(),
+            description: String(item?.description || "").trim(),
+          }))
+        : [],
+    [initialData?.features]
+  );
+
   const [form, setForm] = useState({
     name: initialData?.name || "",
     slug: initialData?.slug || "",
     shortDescription: initialData?.shortDescription || "",
-    description: initialData?.description || "",
+    description: parsedDescription.description || "",
     category: initialData?.category || "OTHER",
     status: initialData?.status || "UNDETECTED",
     currency: initialData?.currency || "USD",
@@ -102,19 +145,19 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
     sortOrder: initialData?.sortOrder ?? 0,
   });
 
-  const [basePlan, setBasePlan] = useState("MONTHLY");
-  const [basePrice, setBasePrice] = useState<number>(Number(initialData?.prices?.[0]?.price || 0));
-  const [extraPrices, setExtraPrices] = useState<PriceEntry[]>([]);
+  const [basePlan, setBasePlan] = useState(initialBasePrice.plan || "MONTHLY");
+  const [basePrice, setBasePrice] = useState<number>(Number(initialBasePrice.price || 0));
+  const [extraPrices, setExtraPrices] = useState<PriceEntry[]>(initialExtraPrices);
 
-  const [mainImageUrl, setMainImageUrl] = useState("");
+  const [mainImageUrl, setMainImageUrl] = useState(String(initialThumbnail?.url || ""));
   const [galleryInput, setGalleryInput] = useState("");
-  const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
+  const [galleryUrls, setGalleryUrls] = useState<string[]>(initialGalleryUrls);
   const [videoInput, setVideoInput] = useState("");
-  const [videoUrls, setVideoUrls] = useState<string[]>([]);
+  const [videoUrls, setVideoUrls] = useState<string[]>(parsedDescription.videos);
 
   const [tabTitle, setTabTitle] = useState("");
   const [tabDescription, setTabDescription] = useState("");
-  const [featureTabs, setFeatureTabs] = useState<FeatureTab[]>([]);
+  const [featureTabs, setFeatureTabs] = useState<FeatureTab[]>(initialFeatureTabs);
 
   const computedSlug = useMemo(() => (autoSlug ? slugify(form.name || "") : form.slug), [form.name, form.slug, autoSlug]);
 
@@ -212,6 +255,44 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
     });
   }
 
+  async function syncGallery(productId: string) {
+    const existingRes = await fetch(`/api/admin/products/${productId}/gallery`, { credentials: "include" });
+    const existingData = await existingRes.json();
+    const existing = Array.isArray(existingData?.data) ? existingData.data : [];
+
+    await Promise.all(
+      existing.map((item: any) =>
+        fetch(`/api/admin/products/${productId}/gallery`, {
+          method: "DELETE",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageId: item.id }),
+        })
+      )
+    );
+
+    await createGallery(productId);
+  }
+
+  async function syncFeatureTabs(productId: string) {
+    const existingRes = await fetch(`/api/admin/products/${productId}/features`, { credentials: "include" });
+    const existingData = await existingRes.json();
+    const existing = Array.isArray(existingData?.data) ? existingData.data : [];
+
+    await Promise.all(
+      existing.map((item: any) =>
+        fetch(`/api/admin/products/${productId}/features`, {
+          method: "DELETE",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ featureId: item.id }),
+        })
+      )
+    );
+
+    await createFeatureTabs(productId);
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setLoading(true);
@@ -255,16 +336,18 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
       }
 
       const productId = data?.data?.id || initialData?.id;
-      if (productId && !isEditing) {
+      if (productId) {
         let mediaFailed = false;
         try {
-          await createGallery(productId);
+          if (isEditing) await syncGallery(productId);
+          else await createGallery(productId);
         } catch (mediaError) {
           console.error("Product gallery creation failed:", mediaError);
           mediaFailed = true;
         }
         try {
-          await createFeatureTabs(productId);
+          if (isEditing) await syncFeatureTabs(productId);
+          else await createFeatureTabs(productId);
         } catch (featureError) {
           console.error("Product feature tabs creation failed:", featureError);
           mediaFailed = true;

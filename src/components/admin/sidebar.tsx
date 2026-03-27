@@ -129,7 +129,7 @@ export function Sidebar() {
               <Shield className="h-4 w-4 text-white" />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-bold tracking-tight text-white">Lity Admin</span>
+              <span className="text-sm font-bold tracking-tight text-white">Lity Software</span>
               <span className="text-[10px] font-medium uppercase tracking-[0.24em] text-zinc-500">Control Surface</span>
             </div>
           </Link>

@@ -182,14 +182,14 @@ function StatCard({
   valueClass?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] p-4 shadow-[0_10px_20px_rgba(0,0,0,0.26)]">
-      <div className="mb-3 flex items-center justify-between">
+    <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] p-3.5 shadow-[0_10px_20px_rgba(0,0,0,0.26)]">
+      <div className="mb-2.5 flex items-center justify-between">
         <p className="text-xs text-zinc-500">{title}</p>
         <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg", iconClass)}>
           <Icon className="h-3.5 w-3.5" />
         </div>
       </div>
-      <p className={cn("text-[18px] font-bold leading-none tracking-tight text-white sm:text-[20px]", valueClass)}>{value}</p>
+      <p className={cn("text-[15px] font-bold leading-none tracking-tight text-white sm:text-[17px]", valueClass)}>{value}</p>
     </div>
   );
 }
@@ -210,14 +210,14 @@ function SummaryCard({
   valueClass?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] p-4 shadow-[0_10px_20px_rgba(0,0,0,0.26)]">
-      <div className="mb-3 flex items-center justify-between">
+    <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] p-3.5 shadow-[0_10px_20px_rgba(0,0,0,0.26)]">
+      <div className="mb-2.5 flex items-center justify-between">
         <h3 className="text-sm font-medium text-zinc-300">{title}</h3>
         <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg", iconClass)}>
           <Icon className="h-3.5 w-3.5" />
         </div>
       </div>
-      <p className={cn("text-[30px] font-bold leading-none text-emerald-400 sm:text-[34px]", valueClass)}>{value}</p>
+      <p className={cn("text-[22px] font-bold leading-none text-emerald-400 sm:text-[24px]", valueClass)}>{value}</p>
       <p className="mt-1.5 text-[11px] text-zinc-500">{subtext}</p>
     </div>
   );
@@ -241,27 +241,27 @@ function PeriodCard({
   const formatMoney = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] px-4 py-3.5">
-      <div className="mb-3.5 flex items-center justify-between">
-        <h3 className="text-[22px] font-semibold leading-none text-zinc-100 sm:text-[26px]">{title}</h3>
+    <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] px-3.5 py-3">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-[18px] font-semibold leading-none text-zinc-100 sm:text-[21px]">{title}</h3>
         <ArrowUpRight className="h-4 w-4 text-zinc-600" />
       </div>
 
       <div className="grid grid-cols-4 gap-3">
         <div className="min-w-0">
-          <p className="text-[30px] font-bold leading-none text-white sm:text-[34px]">{sales}</p>
+          <p className="text-[22px] font-bold leading-none text-white sm:text-[24px]">{sales}</p>
           <p className="text-[11px] text-zinc-500">sales</p>
         </div>
         <div className="min-w-0">
-          <p className="text-[28px] font-bold leading-none tabular-nums text-emerald-400 whitespace-nowrap sm:text-[32px]">{formatMoney(revenue)}</p>
+          <p className="text-[20px] font-bold leading-none tabular-nums text-emerald-400 whitespace-nowrap sm:text-[22px]">{formatMoney(revenue)}</p>
           <p className="text-[11px] text-zinc-500">product rev.</p>
         </div>
         <div className="min-w-0">
-          <p className="text-[28px] font-bold leading-none tabular-nums text-cyan-400 whitespace-nowrap sm:text-[32px]">{formatMoney(deposits)}</p>
+          <p className="text-[20px] font-bold leading-none tabular-nums text-[#c7bdd8] whitespace-nowrap sm:text-[22px]">{formatMoney(deposits)}</p>
           <p className="text-[11px] text-zinc-500">deposits</p>
         </div>
         <div className="min-w-0">
-          <p className="text-[30px] font-bold leading-none text-fuchsia-400 sm:text-[34px]">{boxOpens}</p>
+          <p className="text-[22px] font-bold leading-none text-[#c7bdd8] sm:text-[24px]">{boxOpens}</p>
           <p className="text-[11px] text-zinc-500">box opens</p>
         </div>
       </div>
@@ -521,18 +521,18 @@ export default function DashboardPage() {
   return (
     <div>
       <div className="mb-4">
-        <h1 className="text-[36px] font-bold leading-none text-white sm:text-[40px]">Admin Dashboard</h1>
-        <p className="mt-2 text-[16px] text-zinc-400 sm:text-[18px]">Overview of your platform</p>
+        <h1 className="text-[30px] font-bold leading-none text-white sm:text-[34px]">Admin Dashboard</h1>
+        <p className="mt-1.5 text-[14px] text-zinc-400 sm:text-[16px]">Overview of your platform</p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3.5">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <StatCard title="Total Users" value={data.totalUsers} icon={UserRound} iconClass="bg-blue-500/15 text-blue-300" />
-          <StatCard title="Total Orders" value={data.totalOrders} icon={ShoppingCart} iconClass="bg-emerald-500/15 text-emerald-300" />
-          <StatCard title="Total Revenue" value={`$${data.totalRevenue.toFixed(2)}`} icon={BadgeDollarSign} iconClass="bg-emerald-500/15 text-emerald-300" valueClass="text-emerald-400" />
-          <StatCard title="Pending Payments" value={data.pendingPayments} icon={CreditCard} iconClass="bg-amber-500/15 text-amber-300" />
-          <StatCard title="Active Products" value={data.activeProducts} icon={Boxes} iconClass="bg-violet-500/15 text-violet-300" />
-          <StatCard title="Open Tickets" value={data.openTickets} icon={AlertTriangle} iconClass="bg-rose-500/15 text-rose-300" />
+          <StatCard title="Total Users" value={data.totalUsers} icon={UserRound} iconClass="bg-[#a996c4]/18 text-[#d7caea]" />
+          <StatCard title="Total Orders" value={data.totalOrders} icon={ShoppingCart} iconClass="bg-[#a996c4]/18 text-[#d7caea]" />
+          <StatCard title="Total Revenue" value={`$${data.totalRevenue.toFixed(2)}`} icon={BadgeDollarSign} iconClass="bg-[#a996c4]/18 text-[#d7caea]" valueClass="text-emerald-400" />
+          <StatCard title="Pending Payments" value={data.pendingPayments} icon={CreditCard} iconClass="bg-[#a996c4]/18 text-[#d7caea]" />
+          <StatCard title="Active Products" value={data.activeProducts} icon={Boxes} iconClass="bg-[#a996c4]/18 text-[#d7caea]" />
+          <StatCard title="Open Tickets" value={data.openTickets} icon={AlertTriangle} iconClass="bg-[#a996c4]/18 text-[#d7caea]" />
         </div>
 
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
@@ -555,8 +555,8 @@ export default function DashboardPage() {
             value={`$${data.mysteryBoxRevenue.toFixed(2)}`}
             subtext={`${data.monthBoxOpens} total opens this month`}
             icon={Gift}
-            iconClass="bg-fuchsia-500/15 text-fuchsia-300"
-            valueClass="text-fuchsia-400"
+            iconClass="bg-[#a996c4]/18 text-[#d7caea]"
+            valueClass="text-[#d7caea]"
           />
         </div>
 
@@ -587,10 +587,10 @@ export default function DashboardPage() {
           />
         </div>
 
-        <div className="rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(14,15,22,0.94),rgba(11,12,18,0.98))] p-4 shadow-[0_14px_30px_rgba(0,0,0,0.3)]">
+        <div className="rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(14,15,22,0.94),rgba(11,12,18,0.98))] p-3.5 shadow-[0_14px_30px_rgba(0,0,0,0.3)]">
           <div className="mb-4 flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-violet-400" />
-            <h3 className="text-[28px] font-semibold text-white">Recent Activity</h3>
+            <span className="h-2 w-2 rounded-full bg-[#c7bdd8]" />
+            <h3 className="text-[22px] font-semibold text-white">Recent Activity</h3>
           </div>
 
           <div className="space-y-2">
@@ -630,9 +630,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <section className="rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(14,15,22,0.94),rgba(11,12,18,0.98))] p-4 shadow-[0_14px_30px_rgba(0,0,0,0.3)]">
+        <section className="rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(14,15,22,0.94),rgba(11,12,18,0.98))] p-3.5 shadow-[0_14px_30px_rgba(0,0,0,0.3)]">
           <div className="mb-4">
-            <h3 className="text-[28px] font-semibold text-white">Blog</h3>
+            <h3 className="text-[22px] font-semibold text-white">Blog</h3>
             <p className="text-sm text-zinc-400">Gaming tips, guides and updates</p>
           </div>
 
@@ -668,9 +668,9 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(14,15,22,0.94),rgba(11,12,18,0.98))] p-4 shadow-[0_14px_30px_rgba(0,0,0,0.3)]">
+        <section className="rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(14,15,22,0.94),rgba(11,12,18,0.98))] p-3.5 shadow-[0_14px_30px_rgba(0,0,0,0.3)]">
           <div className="mb-4">
-            <h3 className="text-[28px] font-semibold text-white">Leaderboard</h3>
+            <h3 className="text-[22px] font-semibold text-white">Leaderboard</h3>
             <p className="text-sm text-zinc-400">Top spenders and rank thresholds</p>
           </div>
 
