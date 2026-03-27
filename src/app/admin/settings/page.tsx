@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
 import {
   Save, Globe, Palette, Layout, Share2, MessageSquare, AlertTriangle,
-  Send, CheckCircle, XCircle, Shield, ShoppingCart, Wifi, WifiOff, Landmark,
+  Send, CheckCircle, XCircle, Shield, ShoppingCart, Wifi, WifiOff, Landmark, Megaphone,
 } from "lucide-react";
 
 interface Setting {
@@ -43,6 +43,9 @@ export default function SettingsPage() {
           setSettings(data.data);
           const v: Record<string, string> = {};
           data.data.forEach((s: Setting) => { v[s.key] = s.value; });
+          if (v.announcement_active === undefined) v.announcement_active = "true";
+          if (!v.announcement_type) v.announcement_type = "promo";
+          if (!v.announcement_text) v.announcement_text = "NEW UPDATE AVAILABLE";
           setValues(v);
           if (v.discord_webhook_last_test) {
             try { setLastTestResult(JSON.parse(v.discord_webhook_last_test)); } catch {}
@@ -166,6 +169,7 @@ const handleTestWebhook = async () => {
           <TabsTrigger value="hero" className="gap-2"><Layout className="h-4 w-4" /> Hero</TabsTrigger>
           <TabsTrigger value="social" className="gap-2"><Share2 className="h-4 w-4" /> Social</TabsTrigger>
           <TabsTrigger value="theme" className="gap-2"><Palette className="h-4 w-4" /> Theme</TabsTrigger>
+          <TabsTrigger value="announcement" className="gap-2"><Megaphone className="h-4 w-4" /> Announcement</TabsTrigger>
           <TabsTrigger value="payments" className="gap-2"><Landmark className="h-4 w-4" /> Payments</TabsTrigger>
           <TabsTrigger value="discord" className="gap-2"><MessageSquare className="h-4 w-4" /> Discord</TabsTrigger>
           <TabsTrigger value="emergency" className="gap-2"><AlertTriangle className="h-4 w-4" /> Emergency Controls</TabsTrigger>
@@ -192,6 +196,61 @@ const handleTestWebhook = async () => {
             </Card>
           </TabsContent>
         ))}
+
+        {/* Announcement Strip */}
+        <TabsContent value="announcement">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Megaphone className="h-5 w-5" /> Top Announcement Strip</CardTitle>
+              <CardDescription>Manage the full-width strip shown at the very top of the public website.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between p-4 rounded-lg border">
+                <div>
+                  <p className="font-medium">Announcement Active</p>
+                  <p className="text-sm text-muted-foreground">Show/hide the strip for all visitors</p>
+                </div>
+                <Switch
+                  checked={values.announcement_active === "true"}
+                  onCheckedChange={(checked) => setBoolValue("announcement_active", checked)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Announcement Text</Label>
+                <Input
+                  value={values.announcement_text || ""}
+                  onChange={(e) => updateValue("announcement_text", e.target.value)}
+                  placeholder="🔥 Byteon.cc Available Now!"
+                />
+                <p className="text-xs text-muted-foreground font-mono">announcement_text</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Announcement Type</Label>
+                <select
+                  value={values.announcement_type || "promo"}
+                  onChange={(e) => updateValue("announcement_type", e.target.value)}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="info">Info (Blue)</option>
+                  <option value="success">Success (Green)</option>
+                  <option value="warning">Warning (Yellow)</option>
+                  <option value="alert">Alert (Red)</option>
+                  <option value="promo">Promo (Purple)</option>
+                </select>
+                <p className="text-xs text-muted-foreground font-mono">announcement_type</p>
+              </div>
+
+              <div className="rounded-lg border p-4 bg-muted/20">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Preview</p>
+                <div className="h-9 rounded border border-violet-300/30 bg-violet-900/40 flex items-center justify-center text-sm font-semibold text-white">
+                  {values.announcement_text || "NEW UPDATE AVAILABLE"}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Discord Integration */}
         <TabsContent value="payments">
