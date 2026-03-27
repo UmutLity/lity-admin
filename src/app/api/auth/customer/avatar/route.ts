@@ -45,8 +45,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    if (isManagedUpload(current?.avatar) && current?.avatar !== uploaded.url) {
-      await deleteFile(current.avatar);
+    const previousAvatar = current?.avatar;
+    if (previousAvatar && isManagedUpload(previousAvatar) && previousAvatar !== uploaded.url) {
+      await deleteFile(previousAvatar);
     }
 
     return NextResponse.json({ success: true, data: updated });
@@ -85,8 +86,9 @@ export async function DELETE(req: NextRequest) {
       },
     });
 
-    if (isManagedUpload(current?.avatar)) {
-      await deleteFile(current!.avatar!);
+    const previousAvatar = current?.avatar;
+    if (previousAvatar && isManagedUpload(previousAvatar)) {
+      await deleteFile(previousAvatar);
     }
 
     return NextResponse.json({ success: true, data: updated });
@@ -95,4 +97,3 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
   }
 }
-
