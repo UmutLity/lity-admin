@@ -62,7 +62,8 @@ export async function uploadFile(file: File): Promise<UploadResult> {
 
 export async function deleteFile(url: string): Promise<void> {
   try {
-    const filepath = path.join(process.cwd(), "public", url);
+    const normalized = url.replace(/^\/+/, "");
+    const filepath = path.join(process.cwd(), "public", normalized);
     if (existsSync(filepath)) {
       await unlink(filepath);
     }
