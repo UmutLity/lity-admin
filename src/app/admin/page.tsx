@@ -238,28 +238,30 @@ function PeriodCard({
   users: number;
   boxOpens: number;
 }) {
+  const formatMoney = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
   return (
     <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] px-4 py-3.5">
       <div className="mb-3.5 flex items-center justify-between">
-        <h3 className="text-[30px] font-semibold leading-none text-zinc-100">{title}</h3>
+        <h3 className="text-[28px] font-semibold leading-none text-zinc-100">{title}</h3>
         <ArrowUpRight className="h-4 w-4 text-zinc-600" />
       </div>
 
       <div className="grid grid-cols-4 gap-3">
-        <div>
-          <p className="text-[34px] font-bold leading-none text-white">{sales}</p>
+        <div className="min-w-0">
+          <p className="text-[32px] font-bold leading-none text-white">{sales}</p>
           <p className="text-[11px] text-zinc-500">sales</p>
         </div>
-        <div>
-          <p className="text-[34px] font-bold leading-none tabular-nums whitespace-nowrap text-emerald-400">${revenue.toFixed(2)}</p>
+        <div className="min-w-0">
+          <p className="truncate text-[32px] font-bold leading-none tabular-nums text-emerald-400">{formatMoney(revenue)}</p>
           <p className="text-[11px] text-zinc-500">product rev.</p>
         </div>
-        <div>
-          <p className="text-[34px] font-bold leading-none tabular-nums whitespace-nowrap text-cyan-400">${deposits.toFixed(2)}</p>
+        <div className="min-w-0">
+          <p className="truncate text-[32px] font-bold leading-none tabular-nums text-cyan-400">{formatMoney(deposits)}</p>
           <p className="text-[11px] text-zinc-500">deposits</p>
         </div>
-        <div>
-          <p className="text-[34px] font-bold leading-none text-fuchsia-400">{boxOpens}</p>
+        <div className="min-w-0">
+          <p className="text-[32px] font-bold leading-none text-fuchsia-400">{boxOpens}</p>
           <p className="text-[11px] text-zinc-500">box opens</p>
         </div>
       </div>
