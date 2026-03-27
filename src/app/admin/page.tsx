@@ -4,13 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import { Topbar } from "@/components/admin/topbar";
 import {
   AlertTriangle,
+  ArrowRight,
   ArrowUpRight,
   BadgeDollarSign,
   Boxes,
   CreditCard,
+  Gift,
   ShoppingCart,
   Ticket,
   UserRound,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,15 +26,24 @@ interface DashboardData {
   pendingPayments: number;
   activeProducts: number;
   openTickets: number;
+  totalDeposits: number;
+  productSales: number;
+  mysteryBoxRevenue: number;
   todaySales: number;
   todayRevenue: number;
+  todayDeposits: number;
   todayUsers: number;
+  todayBoxOpens: number;
   weekSales: number;
   weekRevenue: number;
+  weekDeposits: number;
   weekUsers: number;
+  weekBoxOpens: number;
   monthSales: number;
   monthRevenue: number;
+  monthDeposits: number;
   monthUsers: number;
+  monthBoxOpens: number;
   activities: Array<{
     id: string;
     label: string;
@@ -49,15 +61,24 @@ const EMPTY: DashboardData = {
   pendingPayments: 0,
   activeProducts: 0,
   openTickets: 0,
+  totalDeposits: 0,
+  productSales: 0,
+  mysteryBoxRevenue: 0,
   todaySales: 0,
   todayRevenue: 0,
+  todayDeposits: 0,
   todayUsers: 0,
+  todayBoxOpens: 0,
   weekSales: 0,
   weekRevenue: 0,
+  weekDeposits: 0,
   weekUsers: 0,
+  weekBoxOpens: 0,
   monthSales: 0,
   monthRevenue: 0,
+  monthDeposits: 0,
   monthUsers: 0,
+  monthBoxOpens: 0,
   activities: [],
 };
 
@@ -125,14 +146,43 @@ function StatCard({
   valueClass?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(15,16,24,0.95),rgba(12,13,20,0.98))] p-4 shadow-[0_16px_40px_rgba(5,6,10,0.25)]">
+    <div className="rounded-xl border border-[#232733] bg-[#0d1016]/90 p-4 shadow-[0_12px_28px_rgba(0,0,0,0.34)]">
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm text-zinc-400">{title}</p>
+        <p className="text-xs text-zinc-500">{title}</p>
         <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", iconClass)}>
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <p className={cn("text-[30px] font-bold leading-none tracking-tight text-white", valueClass)}>{value}</p>
+      <p className={cn("text-3xl font-bold leading-none tracking-tight text-white", valueClass)}>{value}</p>
+    </div>
+  );
+}
+
+function SummaryCard({
+  title,
+  value,
+  subtext,
+  icon: Icon,
+  iconClass,
+  valueClass,
+}: {
+  title: string;
+  value: string;
+  subtext: string;
+  icon: any;
+  iconClass: string;
+  valueClass?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-[#232733] bg-[#0d1016]/90 p-5 shadow-[0_12px_28px_rgba(0,0,0,0.34)]">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-base font-medium text-zinc-300">{title}</h3>
+        <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", iconClass)}>
+          <Icon className="h-4 w-4" />
+        </div>
+      </div>
+      <p className={cn("text-4xl font-bold leading-none text-emerald-400", valueClass)}>{value}</p>
+      <p className="mt-2 text-xs text-zinc-500">{subtext}</p>
     </div>
   );
 }
@@ -141,35 +191,48 @@ function PeriodCard({
   title,
   sales,
   revenue,
+  deposits,
   users,
+  boxOpens,
 }: {
   title: string;
   sales: number;
   revenue: number;
+  deposits: number;
   users: number;
+  boxOpens: number;
 }) {
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,16,24,0.94),rgba(12,13,20,0.98))] px-5 py-4">
+    <div className="rounded-xl border border-[#232733] bg-[#0d1016]/90 px-5 py-4">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-[28px] font-semibold text-zinc-200">{title}</h3>
+        <h3 className="text-2xl font-semibold text-zinc-100">{title}</h3>
         <ArrowUpRight className="h-4 w-4 text-zinc-600" />
       </div>
-      <div className="grid grid-cols-3 gap-4">
+
+      <div className="grid grid-cols-4 gap-3">
         <div>
-          <p className="text-4xl font-bold text-white">{sales}</p>
-          <p className="text-xs text-zinc-500">sales</p>
+          <p className="text-3xl font-bold text-white">{sales}</p>
+          <p className="text-[11px] text-zinc-500">sales</p>
         </div>
         <div>
-          <p className="text-[2rem] font-bold leading-none tabular-nums text-emerald-400 whitespace-nowrap">${revenue.toFixed(2)}</p>
-          <p className="text-xs text-zinc-500">revenue</p>
+          <p className="text-3xl font-bold tabular-nums whitespace-nowrap text-emerald-400">${revenue.toFixed(2)}</p>
+          <p className="text-[11px] text-zinc-500">product rev.</p>
         </div>
         <div>
-          <p className="flex items-center gap-1 text-4xl font-bold text-blue-400">
-            <UserRound className="h-4 w-4" />
-            {users}
-          </p>
-          <p className="text-xs text-zinc-500">new users</p>
+          <p className="text-3xl font-bold tabular-nums whitespace-nowrap text-cyan-400">${deposits.toFixed(2)}</p>
+          <p className="text-[11px] text-zinc-500">deposits</p>
         </div>
+        <div>
+          <p className="text-3xl font-bold text-fuchsia-400">{boxOpens}</p>
+          <p className="text-[11px] text-zinc-500">box opens</p>
+        </div>
+      </div>
+
+      <div className="mt-4 border-t border-white/[0.06] pt-3">
+        <p className="flex items-center gap-1 text-xs text-zinc-400">
+          <UserRound className="h-3.5 w-3.5 text-blue-400" />
+          {users} new users
+        </p>
       </div>
     </div>
   );
@@ -196,28 +259,41 @@ export default function DashboardPage() {
       const tickets = safeArray(ticketsRes?.data);
       const payments = safeArray(paymentsRes?.data);
 
+      const debitPayments = payments.filter((p) => String(p.type || "").toUpperCase() === "DEBIT");
+      const creditPayments = payments.filter((p) => String(p.type || "").toUpperCase() === "CREDIT");
+      const mysteryPayments = debitPayments.filter((p) => String(p.reason || "").toLowerCase().includes("mystery"));
+
       const totalUsers = customers.length;
       const totalOrders = customers.reduce((acc, c) => acc + Number(c?._count?.orders || 0), 0);
-      const totalRevenue = payments
-        .filter((p) => String(p.type || "").toUpperCase() === "DEBIT")
-        .reduce((acc, p) => acc + Number(p.amount || 0), 0);
+      const totalRevenue = debitPayments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
       const activeProducts = products.filter((p) => p.isActive).length;
       const openTickets = tickets.filter((t) => ["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER"].includes(String(t.status))).length;
-      const pendingPayments = 0;
+      const pendingPayments = creditPayments.filter((p) => String(p.status || "").toUpperCase() === "PENDING").length;
+      const totalDeposits = creditPayments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
+      const productSales = totalRevenue;
+      const mysteryBoxRevenue = mysteryPayments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
 
       const todayFrom = startOfToday();
       const weekFrom = daysAgo(7);
       const monthFrom = daysAgo(30);
 
-      const salesToday = payments.filter((p) => String(p.type || "").toUpperCase() === "DEBIT" && inRange(String(p.createdAt || ""), todayFrom));
-      const salesWeek = payments.filter((p) => String(p.type || "").toUpperCase() === "DEBIT" && inRange(String(p.createdAt || ""), weekFrom));
-      const salesMonth = payments.filter((p) => String(p.type || "").toUpperCase() === "DEBIT" && inRange(String(p.createdAt || ""), monthFrom));
+      const salesToday = debitPayments.filter((p) => inRange(String(p.createdAt || ""), todayFrom));
+      const salesWeek = debitPayments.filter((p) => inRange(String(p.createdAt || ""), weekFrom));
+      const salesMonth = debitPayments.filter((p) => inRange(String(p.createdAt || ""), monthFrom));
+
+      const depositsToday = creditPayments.filter((p) => inRange(String(p.createdAt || ""), todayFrom));
+      const depositsWeek = creditPayments.filter((p) => inRange(String(p.createdAt || ""), weekFrom));
+      const depositsMonth = creditPayments.filter((p) => inRange(String(p.createdAt || ""), monthFrom));
 
       const usersToday = customers.filter((c) => inRange(String(c.createdAt || ""), todayFrom)).length;
       const usersWeek = customers.filter((c) => inRange(String(c.createdAt || ""), weekFrom)).length;
       const usersMonth = customers.filter((c) => inRange(String(c.createdAt || ""), monthFrom)).length;
 
-      const ticketActivities = tickets.slice(0, 6).map((t: any) => ({
+      const mysteryToday = mysteryPayments.filter((p) => inRange(String(p.createdAt || ""), todayFrom)).length;
+      const mysteryWeek = mysteryPayments.filter((p) => inRange(String(p.createdAt || ""), weekFrom)).length;
+      const mysteryMonth = mysteryPayments.filter((p) => inRange(String(p.createdAt || ""), monthFrom)).length;
+
+      const ticketActivities = tickets.slice(0, 8).map((t: any) => ({
         id: `ticket-${t.id}`,
         label: t.email || t.discordUsername || "User",
         detail: t.subject || "Support ticket",
@@ -226,12 +302,12 @@ export default function DashboardPage() {
         createdAt: String(t.createdAt || new Date().toISOString()),
       }));
 
-      const paymentActivities = payments.slice(0, 6).map((p: any) => ({
+      const paymentActivities = payments.slice(0, 8).map((p: any) => ({
         id: `payment-${p.id}`,
         label: p.customer?.username || "Customer",
         detail: `$${Number(p.amount || 0).toFixed(2)} via ${p.reason || "wallet"}`,
         type: "payment" as const,
-        status: String(p.type || "").toUpperCase() === "DEBIT" ? "approved" : "credit",
+        status: String(p.type || "").toUpperCase() === "DEBIT" ? "active" : "awaiting",
         createdAt: String(p.createdAt || new Date().toISOString()),
       }));
 
@@ -246,15 +322,24 @@ export default function DashboardPage() {
         pendingPayments,
         activeProducts,
         openTickets,
+        totalDeposits,
+        productSales,
+        mysteryBoxRevenue,
         todaySales: salesToday.length,
         todayRevenue: salesToday.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+        todayDeposits: depositsToday.reduce((acc, s) => acc + Number(s.amount || 0), 0),
         todayUsers: usersToday,
+        todayBoxOpens: mysteryToday,
         weekSales: salesWeek.length,
         weekRevenue: salesWeek.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+        weekDeposits: depositsWeek.reduce((acc, s) => acc + Number(s.amount || 0), 0),
         weekUsers: usersWeek,
+        weekBoxOpens: mysteryWeek,
         monthSales: salesMonth.length,
         monthRevenue: salesMonth.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+        monthDeposits: depositsMonth.reduce((acc, s) => acc + Number(s.amount || 0), 0),
         monthUsers: usersMonth,
+        monthBoxOpens: mysteryMonth,
         activities,
       };
 
@@ -274,9 +359,9 @@ export default function DashboardPage() {
     return (status: string) => {
       if (status.includes("open")) return "bg-blue-500/15 text-blue-300 border border-blue-500/25";
       if (status.includes("progress")) return "bg-amber-500/15 text-amber-300 border border-amber-500/25";
-      if (status.includes("waiting")) return "bg-orange-500/15 text-orange-300 border border-orange-500/25";
-      if (status.includes("resolved") || status.includes("closed") || status.includes("approved")) return "bg-emerald-500/15 text-emerald-300 border border-emerald-500/25";
-      if (status.includes("credit")) return "bg-violet-500/15 text-violet-300 border border-violet-500/25";
+      if (status.includes("waiting") || status.includes("awaiting")) return "bg-yellow-500/15 text-yellow-300 border border-yellow-500/25";
+      if (status.includes("resolved") || status.includes("closed")) return "bg-emerald-500/15 text-emerald-300 border border-emerald-500/25";
+      if (status.includes("active")) return "bg-teal-500/15 text-teal-300 border border-teal-500/25";
       return "bg-zinc-500/15 text-zinc-300 border border-zinc-500/25";
     };
   }, []);
@@ -288,15 +373,20 @@ export default function DashboardPage() {
         <div className="space-y-5">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-36 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
+              <div key={i} className="h-32 rounded-xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
             ))}
           </div>
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-40 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
+              <div key={i} className="h-36 rounded-xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
             ))}
           </div>
-          <div className="h-96 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-52 rounded-xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
+            ))}
+          </div>
+          <div className="h-96 rounded-xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
         </div>
       </div>
     );
@@ -310,22 +400,68 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
           <StatCard title="Total Users" value={data.totalUsers} icon={UserRound} iconClass="bg-blue-500/15 text-blue-300" />
           <StatCard title="Total Orders" value={data.totalOrders} icon={ShoppingCart} iconClass="bg-emerald-500/15 text-emerald-300" />
-          <StatCard title="Total Revenue" value={`$${data.totalRevenue.toFixed(2)}`} icon={BadgeDollarSign} iconClass="bg-emerald-500/18 text-emerald-300" valueClass="text-emerald-400" />
+          <StatCard title="Total Revenue" value={`$${data.totalRevenue.toFixed(2)}`} icon={BadgeDollarSign} iconClass="bg-emerald-500/15 text-emerald-300" valueClass="text-emerald-400" />
           <StatCard title="Pending Payments" value={data.pendingPayments} icon={CreditCard} iconClass="bg-amber-500/15 text-amber-300" />
-          <StatCard title="Active Products" value={data.activeProducts} icon={Boxes} iconClass="bg-violet-500/18 text-violet-300" />
+          <StatCard title="Active Products" value={data.activeProducts} icon={Boxes} iconClass="bg-violet-500/15 text-violet-300" />
           <StatCard title="Open Tickets" value={data.openTickets} icon={AlertTriangle} iconClass="bg-rose-500/15 text-rose-300" />
         </div>
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-          <PeriodCard title="Today" sales={data.todaySales} revenue={data.todayRevenue} users={data.todayUsers} />
-          <PeriodCard title="This Week" sales={data.weekSales} revenue={data.weekRevenue} users={data.weekUsers} />
-          <PeriodCard title="This Month" sales={data.monthSales} revenue={data.monthRevenue} users={data.monthUsers} />
+          <SummaryCard
+            title="Balance Deposits"
+            value={`$${data.totalDeposits.toFixed(2)}`}
+            subtext="Total approved deposits"
+            icon={Wallet}
+            iconClass="bg-emerald-500/15 text-emerald-300"
+          />
+          <SummaryCard
+            title="Product Sales"
+            value={`$${data.productSales.toFixed(2)}`}
+            subtext="Revenue from product purchases"
+            icon={ShoppingCart}
+            iconClass="bg-teal-500/15 text-teal-300"
+          />
+          <SummaryCard
+            title="Mystery Box"
+            value={`$${data.mysteryBoxRevenue.toFixed(2)}`}
+            subtext={`${data.monthBoxOpens} total opens this month`}
+            icon={Gift}
+            iconClass="bg-fuchsia-500/15 text-fuchsia-300"
+            valueClass="text-fuchsia-400"
+          />
         </div>
 
-        <div className="rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(15,16,24,0.95),rgba(11,12,19,0.98))] p-5 shadow-[0_22px_60px_rgba(4,6,12,0.28)]">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+          <PeriodCard
+            title="Today"
+            sales={data.todaySales}
+            revenue={data.todayRevenue}
+            deposits={data.todayDeposits}
+            users={data.todayUsers}
+            boxOpens={data.todayBoxOpens}
+          />
+          <PeriodCard
+            title="This Week"
+            sales={data.weekSales}
+            revenue={data.weekRevenue}
+            deposits={data.weekDeposits}
+            users={data.weekUsers}
+            boxOpens={data.weekBoxOpens}
+          />
+          <PeriodCard
+            title="This Month"
+            sales={data.monthSales}
+            revenue={data.monthRevenue}
+            deposits={data.monthDeposits}
+            users={data.monthUsers}
+            boxOpens={data.monthBoxOpens}
+          />
+        </div>
+
+        <div className="rounded-xl border border-[#232733] bg-[#0d1016]/90 p-5 shadow-[0_18px_48px_rgba(0,0,0,0.35)]">
           <div className="mb-5 flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-violet-400" />
-            <h3 className="text-3xl font-semibold text-white">Recent Activity</h3>
+            <span className="h-2 w-2 rounded-full bg-rose-400" />
+            <h3 className="text-2xl font-semibold text-white">Recent Activity</h3>
           </div>
 
           <div className="space-y-2">
@@ -335,13 +471,13 @@ export default function DashboardPage() {
               data.activities.map((activity) => (
                 <div
                   key={activity.id}
-                  className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.01] px-4 py-3 hover:bg-white/[0.03] transition-colors"
+                  className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.01] px-4 py-3 transition-colors hover:bg-white/[0.03]"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="min-w-0 flex items-center gap-3">
                     <div
                       className={cn(
                         "flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg",
-                        activity.type === "ticket" ? "bg-blue-500/12 text-blue-300" : "bg-violet-500/12 text-violet-300"
+                        activity.type === "ticket" ? "bg-blue-500/12 text-blue-300" : "bg-emerald-500/12 text-emerald-300"
                       )}
                     >
                       {activity.type === "ticket" ? <Ticket className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
@@ -357,7 +493,7 @@ export default function DashboardPage() {
                       {activity.status}
                     </span>
                     <span className="text-xs text-zinc-500">{timeAgo(activity.createdAt)}</span>
-                    <ArrowUpRight className="h-3.5 w-3.5 text-zinc-700" />
+                    <ArrowRight className="h-3.5 w-3.5 text-zinc-700" />
                   </div>
                 </div>
               ))
