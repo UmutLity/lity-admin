@@ -59,7 +59,7 @@ function formatMoney(value: number) {
 }
 
 function formatPlan(plan: string) {
-  return String(plan || "").replaceAll("_", " ");
+  return String(plan || "").split("_").join(" ");
 }
 
 function formatDateTime(date: string) {
