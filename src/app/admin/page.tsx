@@ -257,21 +257,21 @@ function PeriodCard({
         <ArrowUpRight className="h-4 w-4 text-zinc-600" />
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="min-w-0">
-          <p className="text-[22px] font-bold leading-none text-white sm:text-[24px]">{sales}</p>
+          <p className="text-[20px] font-bold leading-none text-white sm:text-[22px]">{sales}</p>
           <p className="text-[11px] text-zinc-500">sales</p>
         </div>
         <div className="min-w-0">
-          <p className="text-[20px] font-bold leading-none tabular-nums text-emerald-400 whitespace-nowrap sm:text-[22px]">{formatMoney(revenue)}</p>
+          <p className="text-[18px] font-bold leading-none tabular-nums text-emerald-400 sm:text-[20px]">{formatMoney(revenue)}</p>
           <p className="text-[11px] text-zinc-500">product rev.</p>
         </div>
         <div className="min-w-0">
-          <p className="text-[20px] font-bold leading-none tabular-nums text-[#c7bdd8] whitespace-nowrap sm:text-[22px]">{formatMoney(deposits)}</p>
+          <p className="text-[18px] font-bold leading-none tabular-nums text-[#c7bdd8] sm:text-[20px]">{formatMoney(deposits)}</p>
           <p className="text-[11px] text-zinc-500">deposits</p>
         </div>
         <div className="min-w-0">
-          <p className="text-[22px] font-bold leading-none text-[#c7bdd8] sm:text-[24px]">{boxOpens}</p>
+          <p className="text-[20px] font-bold leading-none text-[#c7bdd8] sm:text-[22px]">{boxOpens}</p>
           <p className="text-[11px] text-zinc-500">box opens</p>
         </div>
       </div>
