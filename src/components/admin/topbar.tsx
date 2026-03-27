@@ -97,6 +97,7 @@ export function AdminHeader() {
     { label: "Guides", path: "/admin/guides", keywords: "how to docs product guides" },
     { label: "Blog", path: "/admin/blog", keywords: "articles posts author cover" },
     { label: "Payments", path: "/admin/revenue", keywords: "revenue sales money" },
+    { label: "Orders", path: "/admin/orders", keywords: "order purchases transactions" },
     { label: "Reviews", path: "/admin/reviews", keywords: "feedback" },
     { label: "Community", path: "/admin/notifications", keywords: "announcements notifications" },
     { label: "Settings", path: "/admin/settings", keywords: "config" },
@@ -110,7 +111,7 @@ export function AdminHeader() {
     : [];
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/[0.05] bg-[linear-gradient(180deg,rgba(20,19,26,0.92),rgba(15,15,21,0.78))] px-6 backdrop-blur-2xl">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/[0.05] bg-[linear-gradient(180deg,rgba(20,19,26,0.92),rgba(15,15,21,0.78))] pr-4 pl-16 lg:px-6 backdrop-blur-2xl">
       {/* Left: Search */}
       <div className="relative flex-1 max-w-md">
         <div className="relative">

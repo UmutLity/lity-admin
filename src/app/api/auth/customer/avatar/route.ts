@@ -4,7 +4,8 @@ import { deleteFile, uploadFile } from "@/lib/upload";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
 
 function isManagedUpload(url: string | null | undefined): boolean {
-  return !!url && url.startsWith("/uploads/");
+  if (!url) return false;
+  return url.startsWith("/uploads/") || url.includes("res.cloudinary.com/");
 }
 
 export async function POST(req: NextRequest) {

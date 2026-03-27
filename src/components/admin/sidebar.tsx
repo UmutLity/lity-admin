@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Package, Settings, FileText, Bell, DollarSign, MessageSquare, BookOpen,
   Users, Shield, LogOut, Menu, ClipboardList,
-  Download, PanelLeftClose, PanelLeft, Ticket, Landmark, Newspaper,
+  Download, PanelLeftClose, PanelLeft, Ticket, Landmark, Newspaper, ShoppingCart,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
-import { useState, createContext, useContext } from "react";
+import { useState, createContext, useContext, useEffect } from "react";
 
 type Role = "ADMIN" | "EDITOR" | "VIEWER";
 
@@ -38,6 +38,7 @@ const navGroups: NavGroup[] = [
       { href: "/admin/blog", label: "Blog", icon: Newspaper, roles: ["ADMIN", "EDITOR"] },
       { href: "/admin/users", label: "Users", icon: Users, roles: ["ADMIN"] },
       { href: "/admin/revenue", label: "Payments", icon: DollarSign, roles: ["ADMIN"] },
+      { href: "/admin/orders", label: "Orders", icon: ShoppingCart, roles: ["ADMIN"] },
       { href: "/admin/topups", label: "Top-up Requests", icon: Landmark, roles: ["ADMIN"] },
       { href: "/admin/reviews", label: "Reviews", icon: MessageSquare, roles: ["ADMIN", "EDITOR"] },
       { href: "/admin/notifications", label: "Community", icon: Bell, roles: ["ADMIN", "EDITOR"] },
@@ -73,6 +74,18 @@ export function Sidebar() {
   const { collapsed, setCollapsed } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
   const userRole = (session?.user as any)?.role as Role | undefined;
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   const filteredGroups = navGroups.map((group) => ({
     ...group,
@@ -214,7 +227,7 @@ export function Sidebar() {
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity"
+          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] transition-opacity"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -222,7 +235,7 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 h-full flex flex-col transition-all duration-300 ease-in-out",
+          "fixed left-0 top-0 z-[70] h-full flex flex-col transition-all duration-300 ease-in-out",
           "border-r border-white/[0.06] bg-[linear-gradient(180deg,rgba(17,18,24,0.97),rgba(13,14,19,0.96))] backdrop-blur-xl",
           collapsed ? "w-[72px]" : "w-[260px]",
           // Mobile
@@ -237,7 +250,8 @@ export function Sidebar() {
       <button
         onClick={() => setMobileOpen(true)}
         className={cn(
-          "lg:hidden fixed top-4 left-4 z-30 h-10 w-10 flex items-center justify-center rounded-xl",
+          "lg:hidden fixed left-4 z-[80] h-10 w-10 flex items-center justify-center rounded-xl",
+          "top-[calc(env(safe-area-inset-top,0px)+0.75rem)]",
           "bg-[#12131a] border border-white/[0.08] text-zinc-400 hover:text-white shadow-lg transition-all",
           mobileOpen && "opacity-0 pointer-events-none"
         )}
