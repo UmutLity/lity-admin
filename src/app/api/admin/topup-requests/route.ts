@@ -4,6 +4,8 @@ import { requireAdmin } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
 import { getClientIp } from "@/lib/ip-utils";
 
+const AUTO_PROMOTE_ROLES = new Set(["MEMBER", "USER", "CUSTOMER"]);
+
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin();
@@ -92,10 +94,15 @@ export async function PATCH(req: NextRequest) {
         const before = Number(request.customer.balance || 0);
         const amount = Number(request.amount || 0);
         const after = before + amount;
+        const normalizedRole = String(request.customer.role || "").toUpperCase();
+        const shouldPromoteToCustomer = AUTO_PROMOTE_ROLES.has(normalizedRole);
 
         await tx.customer.update({
           where: { id: request.customer.id },
-          data: { balance: after },
+          data: {
+            balance: after,
+            ...(shouldPromoteToCustomer ? { role: "CUSTOMER" } : {}),
+          },
         });
 
         await tx.balanceTransaction.create({

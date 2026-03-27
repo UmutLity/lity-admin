@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
 
 const ALLOWED_PLANS = new Set(["DAILY", "3_DAYS", "WEEKLY", "MONTHLY", "3_MONTHS", "ONETIME", "LIFETIME"]);
+const AUTO_PROMOTE_ROLES = new Set(["MEMBER", "USER", "CUSTOMER"]);
 
 function getPlanExpiry(plan: string): Date | null {
   const now = Date.now();
@@ -82,7 +83,7 @@ export async function POST(req: NextRequest) {
     const result = await prisma.$transaction(async (tx) => {
       const current = await tx.customer.findUnique({
         where: { id: customer.id },
-        select: { id: true, balance: true, totalSpent: true },
+        select: { id: true, balance: true, totalSpent: true, role: true },
       });
       if (!current) throw new Error("Customer not found");
       if (current.balance < amount) throw new Error("Insufficient balance");
@@ -90,13 +91,17 @@ export async function POST(req: NextRequest) {
       const before = current.balance;
       const after = Math.max(0, before - amount);
 
+      const normalizedRole = String(current.role || "").toUpperCase();
+      const shouldPromoteToCustomer = AUTO_PROMOTE_ROLES.has(normalizedRole);
+
       const updatedCustomer = await tx.customer.update({
         where: { id: customer.id },
         data: {
           balance: after,
           totalSpent: { increment: amount },
+          ...(shouldPromoteToCustomer ? { role: "CUSTOMER" } : {}),
         },
-        select: { id: true, balance: true, totalSpent: true },
+        select: { id: true, balance: true, totalSpent: true, role: true },
       });
 
       const order = await tx.order.create({
@@ -158,6 +163,7 @@ export async function POST(req: NextRequest) {
         licenseKey: result.license.key,
         balance: result.updatedCustomer.balance,
         totalSpent: result.updatedCustomer.totalSpent,
+        role: result.updatedCustomer.role,
       },
     });
   } catch (error: any) {

@@ -8,9 +8,13 @@ import {
   ArrowUpRight,
   BadgeDollarSign,
   Boxes,
+  Crown,
   CreditCard,
+  Gem,
   Gift,
+  Search,
   ShoppingCart,
+  Sparkles,
   Ticket,
   UserRound,
   Wallet,
@@ -52,6 +56,12 @@ interface DashboardData {
     status: string;
     createdAt: string;
   }>;
+  leaderboard: Array<{
+    id: string;
+    user: string;
+    spent: number;
+    rank: string;
+  }>;
 }
 
 const EMPTY: DashboardData = {
@@ -80,7 +90,33 @@ const EMPTY: DashboardData = {
   monthUsers: 0,
   monthBoxOpens: 0,
   activities: [],
+  leaderboard: [],
 };
+
+const RANK_TIERS = [
+  { name: "Bronze", min: 10, text: "text-amber-500", chip: "border-amber-500/25 bg-amber-500/10 text-amber-300" },
+  { name: "Silver", min: 25, text: "text-slate-300", chip: "border-slate-400/25 bg-slate-400/10 text-slate-200" },
+  { name: "Gold", min: 50, text: "text-yellow-400", chip: "border-yellow-500/25 bg-yellow-500/10 text-yellow-300" },
+  { name: "Platinum", min: 100, text: "text-cyan-300", chip: "border-cyan-500/25 bg-cyan-500/10 text-cyan-300" },
+  { name: "Diamond", min: 250, text: "text-sky-300", chip: "border-sky-500/25 bg-sky-500/10 text-sky-300" },
+  { name: "Ascendant", min: 500, text: "text-violet-300", chip: "border-violet-500/30 bg-violet-500/12 text-violet-300" },
+  { name: "Sovereign", min: 1000, text: "text-orange-300", chip: "border-orange-500/30 bg-orange-500/12 text-orange-300" },
+  { name: "Celestial", min: 2500, text: "text-fuchsia-300", chip: "border-fuchsia-500/30 bg-fuchsia-500/12 text-fuchsia-300" },
+] as const;
+
+function resolveRank(spent: number) {
+  let current = "Unranked";
+  for (const tier of RANK_TIERS) {
+    if (spent >= tier.min) current = tier.name;
+  }
+  return current;
+}
+
+function tierStyles(rank: string) {
+  const matched = RANK_TIERS.find((t) => t.name === rank);
+  if (!matched) return { text: "text-zinc-500", chip: "border-zinc-500/20 bg-zinc-500/10 text-zinc-400" };
+  return matched;
+}
 
 function safeArray<T = any>(value: any): T[] {
   return Array.isArray(value) ? value : [];
@@ -146,14 +182,14 @@ function StatCard({
   valueClass?: string;
 }) {
   return (
-    <div className="rounded-xl border border-[#232733] bg-[#0d1016]/90 p-4 shadow-[0_12px_28px_rgba(0,0,0,0.34)]">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] p-3.5 shadow-[0_10px_20px_rgba(0,0,0,0.26)]">
+      <div className="mb-3 flex items-center justify-between">
         <p className="text-xs text-zinc-500">{title}</p>
-        <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", iconClass)}>
-          <Icon className="h-4 w-4" />
+        <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg", iconClass)}>
+          <Icon className="h-3.5 w-3.5" />
         </div>
       </div>
-      <p className={cn("text-3xl font-bold leading-none tracking-tight text-white", valueClass)}>{value}</p>
+      <p className={cn("text-[31px] font-bold leading-none tracking-tight text-white", valueClass)}>{value}</p>
     </div>
   );
 }
@@ -174,15 +210,15 @@ function SummaryCard({
   valueClass?: string;
 }) {
   return (
-    <div className="rounded-xl border border-[#232733] bg-[#0d1016]/90 p-5 shadow-[0_12px_28px_rgba(0,0,0,0.34)]">
+    <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] p-4 shadow-[0_10px_20px_rgba(0,0,0,0.26)]">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-base font-medium text-zinc-300">{title}</h3>
-        <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", iconClass)}>
-          <Icon className="h-4 w-4" />
+        <h3 className="text-sm font-medium text-zinc-300">{title}</h3>
+        <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg", iconClass)}>
+          <Icon className="h-3.5 w-3.5" />
         </div>
       </div>
-      <p className={cn("text-4xl font-bold leading-none text-emerald-400", valueClass)}>{value}</p>
-      <p className="mt-2 text-xs text-zinc-500">{subtext}</p>
+      <p className={cn("text-[36px] font-bold leading-none text-emerald-400", valueClass)}>{value}</p>
+      <p className="mt-1.5 text-[11px] text-zinc-500">{subtext}</p>
     </div>
   );
 }
@@ -203,32 +239,32 @@ function PeriodCard({
   boxOpens: number;
 }) {
   return (
-    <div className="rounded-xl border border-[#232733] bg-[#0d1016]/90 px-5 py-4">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-2xl font-semibold text-zinc-100">{title}</h3>
+    <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] px-4 py-3.5">
+      <div className="mb-3.5 flex items-center justify-between">
+        <h3 className="text-[30px] font-semibold leading-none text-zinc-100">{title}</h3>
         <ArrowUpRight className="h-4 w-4 text-zinc-600" />
       </div>
 
       <div className="grid grid-cols-4 gap-3">
         <div>
-          <p className="text-3xl font-bold text-white">{sales}</p>
+          <p className="text-[34px] font-bold leading-none text-white">{sales}</p>
           <p className="text-[11px] text-zinc-500">sales</p>
         </div>
         <div>
-          <p className="text-3xl font-bold tabular-nums whitespace-nowrap text-emerald-400">${revenue.toFixed(2)}</p>
+          <p className="text-[34px] font-bold leading-none tabular-nums whitespace-nowrap text-emerald-400">${revenue.toFixed(2)}</p>
           <p className="text-[11px] text-zinc-500">product rev.</p>
         </div>
         <div>
-          <p className="text-3xl font-bold tabular-nums whitespace-nowrap text-cyan-400">${deposits.toFixed(2)}</p>
+          <p className="text-[34px] font-bold leading-none tabular-nums whitespace-nowrap text-cyan-400">${deposits.toFixed(2)}</p>
           <p className="text-[11px] text-zinc-500">deposits</p>
         </div>
         <div>
-          <p className="text-3xl font-bold text-fuchsia-400">{boxOpens}</p>
+          <p className="text-[34px] font-bold leading-none text-fuchsia-400">{boxOpens}</p>
           <p className="text-[11px] text-zinc-500">box opens</p>
         </div>
       </div>
 
-      <div className="mt-4 border-t border-white/[0.06] pt-3">
+      <div className="mt-3.5 border-t border-white/[0.06] pt-2.5">
         <p className="flex items-center gap-1 text-xs text-zinc-400">
           <UserRound className="h-3.5 w-3.5 text-blue-400" />
           {users} new users
@@ -238,9 +274,70 @@ function PeriodCard({
   );
 }
 
+const BLOG_POSTS = [
+  {
+    id: "1",
+    title: "What Is a Spoofer? The Ultimate 2026 Guide",
+    excerpt: "What is an HWID spoofer, how does it work, and why is it useful? Learn the fundamentals in minutes.",
+    category: "Guides",
+    meta: "March 27, 2026",
+    readTime: "14 min",
+  },
+  {
+    id: "2",
+    title: "Top 5 Settings to Boost Your FPS in Apex Legends",
+    excerpt: "Quick tweaks to improve frame stability and lower input delay without sacrificing visual clarity.",
+    category: "Apex Legends",
+    meta: "March 27, 2026",
+    readTime: "19 min",
+  },
+  {
+    id: "3",
+    title: "Valorant Anti-Cheat: Vanguard Explained",
+    excerpt: "How Vanguard works under the hood, what it detects, and what users should know for safer setups.",
+    category: "Valorant",
+    meta: "March 27, 2026",
+    readTime: "12 min",
+  },
+];
+
+function BlogCard({
+  title,
+  excerpt,
+  category,
+  meta,
+  readTime,
+}: {
+  title: string;
+  excerpt: string;
+  category: string;
+  meta: string;
+  readTime: string;
+}) {
+  return (
+    <article className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(17,16,24,0.92),rgba(12,12,18,0.98))] shadow-[0_12px_28px_rgba(0,0,0,0.28)]">
+      <div className="relative h-40 bg-[radial-gradient(circle_at_30%_20%,rgba(169,150,196,0.24),transparent_55%),linear-gradient(135deg,rgba(95,78,125,0.45),rgba(20,18,30,0.2))]">
+        <span className="absolute left-3 top-3 rounded-full border border-[#b9accf]/35 bg-[#a996c4]/14 px-2.5 py-0.5 text-[10px] font-semibold text-[#d8cee8]">
+          {category}
+        </span>
+      </div>
+      <div className="space-y-2 p-4">
+        <h4 className="line-clamp-2 text-xl font-semibold text-zinc-100">{title}</h4>
+        <p className="line-clamp-2 text-sm text-zinc-400">{excerpt}</p>
+        <p className="text-xs text-zinc-500">
+          {meta} • {readTime}
+        </p>
+      </div>
+    </article>
+  );
+}
+
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<DashboardData>(EMPTY);
+  const [blogSearch, setBlogSearch] = useState("");
+  const [blogFilter, setBlogFilter] = useState("All");
+  const [rankSearch, setRankSearch] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -315,6 +412,37 @@ export default function DashboardPage() {
         .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
         .slice(0, 10);
 
+      const spenderMap = new Map<string, { id: string; user: string; spent: number }>();
+      for (const payment of debitPayments) {
+        const cid = String(payment.customerId || payment.customer?.id || payment.customer?.email || payment.id);
+        const user = payment.customer?.username || payment.customer?.email || "Guest User";
+        const prev = spenderMap.get(cid);
+        if (prev) {
+          prev.spent += Number(payment.amount || 0);
+        } else {
+          spenderMap.set(cid, { id: cid, user, spent: Number(payment.amount || 0) });
+        }
+      }
+
+      if (spenderMap.size === 0) {
+        customers.slice(0, 6).forEach((c: any, idx: number) => {
+          const cid = String(c.id || idx + 1);
+          spenderMap.set(cid, {
+            id: cid,
+            user: c.username || c.email || `User ${idx + 1}`,
+            spent: 0,
+          });
+        });
+      }
+
+      const leaderboard = Array.from(spenderMap.values())
+        .sort((a, b) => b.spent - a.spent)
+        .slice(0, 8)
+        .map((row) => ({
+          ...row,
+          rank: resolveRank(row.spent),
+        }));
+
       const next: DashboardData = {
         totalUsers,
         totalOrders,
@@ -341,6 +469,7 @@ export default function DashboardPage() {
         monthUsers: usersMonth,
         monthBoxOpens: mysteryMonth,
         activities,
+        leaderboard,
       };
 
       if (active) {
@@ -366,22 +495,37 @@ export default function DashboardPage() {
     };
   }, []);
 
+  const filteredPosts = useMemo(() => {
+    return BLOG_POSTS.filter((post) => {
+      const byCategory = blogFilter === "All" ? true : post.category === blogFilter;
+      const bySearch =
+        blogSearch.trim().length === 0
+          ? true
+          : `${post.title} ${post.excerpt}`.toLowerCase().includes(blogSearch.toLowerCase());
+      return byCategory && bySearch;
+    });
+  }, [blogFilter, blogSearch]);
+
+  const filteredLeaderboard = useMemo(() => {
+    return data.leaderboard.filter((row) => row.user.toLowerCase().includes(rankSearch.toLowerCase()));
+  }, [data.leaderboard, rankSearch]);
+
   if (loading) {
     return (
       <div>
         <Topbar title="Admin Dashboard" description="Overview of your platform" />
-        <div className="space-y-5">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="h-32 rounded-xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
             ))}
           </div>
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="h-36 rounded-xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
             ))}
           </div>
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="h-52 rounded-xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
             ))}
@@ -396,8 +540,8 @@ export default function DashboardPage() {
     <div>
       <Topbar title="Admin Dashboard" description="Overview of your platform" />
 
-      <div className="space-y-5">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
           <StatCard title="Total Users" value={data.totalUsers} icon={UserRound} iconClass="bg-blue-500/15 text-blue-300" />
           <StatCard title="Total Orders" value={data.totalOrders} icon={ShoppingCart} iconClass="bg-emerald-500/15 text-emerald-300" />
           <StatCard title="Total Revenue" value={`$${data.totalRevenue.toFixed(2)}`} icon={BadgeDollarSign} iconClass="bg-emerald-500/15 text-emerald-300" valueClass="text-emerald-400" />
@@ -406,7 +550,7 @@ export default function DashboardPage() {
           <StatCard title="Open Tickets" value={data.openTickets} icon={AlertTriangle} iconClass="bg-rose-500/15 text-rose-300" />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
           <SummaryCard
             title="Balance Deposits"
             value={`$${data.totalDeposits.toFixed(2)}`}
@@ -431,7 +575,7 @@ export default function DashboardPage() {
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
           <PeriodCard
             title="Today"
             sales={data.todaySales}
@@ -458,10 +602,10 @@ export default function DashboardPage() {
           />
         </div>
 
-        <div className="rounded-xl border border-[#232733] bg-[#0d1016]/90 p-5 shadow-[0_18px_48px_rgba(0,0,0,0.35)]">
-          <div className="mb-5 flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-rose-400" />
-            <h3 className="text-2xl font-semibold text-white">Recent Activity</h3>
+        <div className="rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(14,15,22,0.94),rgba(11,12,18,0.98))] p-4 shadow-[0_14px_30px_rgba(0,0,0,0.3)]">
+          <div className="mb-4 flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-violet-400" />
+            <h3 className="text-[28px] font-semibold text-white">Recent Activity</h3>
           </div>
 
           <div className="space-y-2">
@@ -471,16 +615,16 @@ export default function DashboardPage() {
               data.activities.map((activity) => (
                 <div
                   key={activity.id}
-                  className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.01] px-4 py-3 transition-colors hover:bg-white/[0.03]"
+                  className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.01] px-3.5 py-2.5 transition-colors hover:bg-white/[0.03]"
                 >
                   <div className="min-w-0 flex items-center gap-3">
                     <div
                       className={cn(
-                        "flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg",
+                        "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg",
                         activity.type === "ticket" ? "bg-blue-500/12 text-blue-300" : "bg-emerald-500/12 text-emerald-300"
                       )}
                     >
-                      {activity.type === "ticket" ? <Ticket className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
+                      {activity.type === "ticket" ? <Ticket className="h-3.5 w-3.5" /> : <CreditCard className="h-3.5 w-3.5" />}
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-zinc-100">{activity.label}</p>
@@ -500,6 +644,112 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
+
+        <section className="rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(14,15,22,0.94),rgba(11,12,18,0.98))] p-4 shadow-[0_14px_30px_rgba(0,0,0,0.3)]">
+          <div className="mb-4">
+            <h3 className="text-[28px] font-semibold text-white">Blog</h3>
+            <p className="text-sm text-zinc-400">Gaming tips, guides and updates</p>
+          </div>
+
+          <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <label className="relative w-full xl:max-w-[620px]">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+              <input
+                value={blogSearch}
+                onChange={(e) => setBlogSearch(e.target.value)}
+                placeholder="Search articles..."
+                className="h-10 w-full rounded-xl border border-white/[0.07] bg-white/[0.02] pl-10 pr-3 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none transition focus:border-[#b9accf]/35 focus:bg-white/[0.03]"
+              />
+            </label>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {["All", "Apex Legends", "Guides", "Valorant"].map((item) => (
+                <button
+                  key={item}
+                  onClick={() => setBlogFilter(item)}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-xs font-medium transition",
+                    blogFilter === item
+                      ? "border-[#b9accf]/35 bg-[#a996c4]/14 text-[#d8cee8]"
+                      : "border-white/[0.07] bg-white/[0.02] text-zinc-400 hover:text-zinc-200"
+                  )}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+            {filteredPosts.map((post) => (
+              <BlogCard key={post.id} {...post} />
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(14,15,22,0.94),rgba(11,12,18,0.98))] p-4 shadow-[0_14px_30px_rgba(0,0,0,0.3)]">
+          <div className="mb-4">
+            <h3 className="text-[28px] font-semibold text-white">Leaderboard</h3>
+            <p className="text-sm text-zinc-400">Top spenders and rank thresholds</p>
+          </div>
+
+          <div className="mb-4 flex flex-wrap gap-2">
+            {RANK_TIERS.map((tier) => (
+              <span key={tier.name} className={cn("rounded-lg border px-2.5 py-1 text-xs font-medium", tier.chip)}>
+                {tier.name} ${tier.min}+
+              </span>
+            ))}
+          </div>
+
+          <label className="relative mb-4 block">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+            <input
+              value={rankSearch}
+              onChange={(e) => setRankSearch(e.target.value)}
+              placeholder="Search users..."
+              className="h-10 w-full rounded-xl border border-white/[0.07] bg-white/[0.02] pl-10 pr-3 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none transition focus:border-[#b9accf]/35 focus:bg-white/[0.03]"
+            />
+          </label>
+
+          <div className="overflow-x-auto rounded-xl border border-white/[0.06]">
+            <table className="w-full min-w-[720px] text-left">
+              <thead className="bg-white/[0.02]">
+                <tr className="text-xs uppercase tracking-wide text-zinc-500">
+                  <th className="px-4 py-2.5">#</th>
+                  <th className="px-4 py-2.5">User</th>
+                  <th className="px-4 py-2.5">Rank</th>
+                  <th className="px-4 py-2.5 text-right">Total Spent</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredLeaderboard.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-6 text-center text-sm text-zinc-500">
+                      No users found.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredLeaderboard.map((row, idx) => {
+                    const style = tierStyles(row.rank);
+                    return (
+                      <tr key={row.id} className="border-t border-white/[0.05] text-sm text-zinc-200">
+                        <td className="px-4 py-3">{idx + 1}</td>
+                        <td className="px-4 py-3 font-medium text-zinc-100">{row.user}</td>
+                        <td className="px-4 py-3">
+                          <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold", style.chip)}>
+                            {row.rank === "Celestial" ? <Crown className="h-3 w-3" /> : row.rank === "Diamond" ? <Gem className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
+                            <span className={style.text}>{row.rank}</span>
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold text-white">${row.spent.toFixed(2)}</td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
     </div>
   );

@@ -21,7 +21,7 @@ export function Topbar({ title, description, children }: TopbarProps) {
   const role = (session?.user as any)?.role;
 
   return (
-    <div className="mb-8 flex flex-col gap-4 rounded-[28px] border border-white/[0.06] bg-[linear-gradient(135deg,rgba(31,30,38,0.72),rgba(23,23,29,0.48))] px-6 py-5 shadow-[0_22px_52px_rgba(7,7,12,0.24)] backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between animate-fade-in">
+    <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-white/[0.06] bg-[linear-gradient(135deg,rgba(31,30,38,0.68),rgba(23,23,29,0.45))] px-5 py-4 shadow-[0_16px_36px_rgba(7,7,12,0.2)] backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between animate-fade-in">
       <div>
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold tracking-tight text-white">{title}</h1>
@@ -31,7 +31,7 @@ export function Topbar({ title, description, children }: TopbarProps) {
               className={cn(
                 "border text-[10px] font-semibold uppercase tracking-[0.22em]",
                 role === "ADMIN"
-                  ? "border-red-400/30 bg-red-500/10 text-red-300"
+                  ? "border-[#b9accf]/30 bg-[#a996c4]/12 text-[#c7bdd8]"
                   : "border-white/[0.08] bg-white/[0.04] text-zinc-300"
               )}
             >
@@ -40,7 +40,7 @@ export function Topbar({ title, description, children }: TopbarProps) {
           )}
         </div>
         {description && (
-          <p className="mt-1 text-sm text-zinc-400">{description}</p>
+          <p className="mt-0.5 text-sm text-zinc-400">{description}</p>
         )}
       </div>
       {children && <div className="flex items-center gap-2">{children}</div>}
@@ -121,7 +121,7 @@ export function AdminHeader() {
             onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
             onFocus={() => setSearchOpen(true)}
             onBlur={() => setTimeout(() => setSearchOpen(false), 200)}
-            className="h-10 w-full rounded-2xl border border-white/[0.06] bg-white/[0.04] pl-10 pr-12 text-sm text-zinc-300 placeholder:text-zinc-600 transition-all focus:border-red-400/35 focus:bg-white/[0.06] focus:outline-none"
+            className="h-10 w-full rounded-2xl border border-white/[0.06] bg-white/[0.04] pl-10 pr-12 text-sm text-zinc-300 placeholder:text-zinc-600 transition-all focus:border-[#b9accf]/35 focus:bg-white/[0.06] focus:outline-none"
           />
           <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-0.5 text-[10px] text-zinc-600 font-medium bg-white/[0.04] px-1.5 py-0.5 rounded">
             <Command className="h-2.5 w-2.5" />K
@@ -153,7 +153,7 @@ export function AdminHeader() {
           >
             <Bell className="h-[18px] w-[18px]" />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-400 ring-2 ring-[#0a0f1e]" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#b9accf] ring-2 ring-[#0a0f1e]" />
             )}
           </button>
           {notifOpen && (
@@ -162,7 +162,7 @@ export function AdminHeader() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-white">Notifications</span>
                   {unreadCount > 0 && (
-                      <Badge variant="default" className="border-red-400/30 bg-red-500/10 text-[10px] text-red-300">
+                      <Badge variant="default" className="border-[#b9accf]/30 bg-[#a996c4]/12 text-[10px] text-[#c7bdd8]">
                         {unreadCount} new
                       </Badge>
                   )}
@@ -176,7 +176,7 @@ export function AdminHeader() {
                     key={n.id}
                     className={cn(
                       "px-4 py-3 border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors cursor-pointer",
-                      !n.readAt && "bg-red-500/5"
+                      !n.readAt && "bg-[#a996c4]/[0.05]"
                     )}
                   >
                     <p className="text-xs font-medium text-zinc-300 line-clamp-1">{n.title}</p>
@@ -186,7 +186,7 @@ export function AdminHeader() {
               </div>
               <button
                 onMouseDown={() => router.push("/admin/notifications")}
-                className="w-full py-2.5 text-xs font-medium text-red-300 transition-colors hover:bg-white/[0.02] hover:text-red-200"
+                className="w-full py-2.5 text-xs font-medium text-[#c7bdd8] transition-colors hover:bg-white/[0.02] hover:text-[#ddd4ea]"
               >
                 View all notifications
               </button>
@@ -203,7 +203,7 @@ export function AdminHeader() {
             onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }}
             className="flex h-10 items-center gap-2 rounded-2xl pl-1.5 pr-2 transition-all hover:bg-white/[0.04]"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#ef4444,#7f1d1d)] text-[11px] font-bold text-white shadow-[0_10px_24px_rgba(57,16,16,0.34)]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#8f7ab0,#77688f)] text-[11px] font-bold text-white shadow-[0_10px_24px_rgba(55,49,71,0.24)]">
               {(session?.user?.name || "A").charAt(0).toUpperCase()}
             </div>
             {!session?.user?.name ? null : (
@@ -228,7 +228,7 @@ export function AdminHeader() {
                 </button>
                 <button
                   onMouseDown={() => signOut({ callbackUrl: "/admin/login" })}
-                  className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-300/80 hover:text-red-200 hover:bg-red-500/12 transition-colors"
+                  className="flex items-center gap-3 w-full px-4 py-2 text-sm text-[#c9bddb]/80 hover:text-[#ddd4ea] hover:bg-[#a996c4]/[0.12] transition-colors"
                 >
                   <LogOut className="h-4 w-4" /> Logout
                 </button>

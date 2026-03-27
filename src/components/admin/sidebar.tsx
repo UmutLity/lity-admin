@@ -89,9 +89,9 @@ export function Sidebar() {
         href={item.href}
         onClick={() => setMobileOpen(false)}
         className={cn(
-          "group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200",
+          "group relative flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[12px] font-medium transition-all duration-200",
           active
-            ? "bg-[linear-gradient(135deg,rgba(220,38,38,0.18),rgba(127,29,29,0.16))] text-white shadow-[0_14px_34px_rgba(30,12,12,0.44)] ring-1 ring-[#ef4444]/25"
+            ? "bg-[linear-gradient(135deg,rgba(154,136,187,0.16),rgba(136,132,152,0.1))] text-white shadow-[0_12px_28px_rgba(20,18,26,0.32)] ring-1 ring-[#b9accf]/22"
             : "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.04]"
         )}
         title={collapsed ? item.label : undefined}
@@ -103,10 +103,10 @@ export function Sidebar() {
         <div className={cn(
           "flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl transition-all duration-200",
           active
-            ? "bg-[linear-gradient(135deg,rgba(220,38,38,0.16),rgba(127,29,29,0.12))] text-red-300"
+            ? "bg-[linear-gradient(135deg,rgba(154,136,187,0.16),rgba(136,132,152,0.12))] text-[#c1b5d4]"
             : "text-zinc-500 group-hover:bg-white/[0.04] group-hover:text-zinc-200"
         )}>
-          <item.icon className="h-[18px] w-[18px]" />
+          <item.icon className="h-4 w-4" />
         </div>
         {!collapsed && (
           <span className="truncate">{item.label}</span>
@@ -124,7 +124,7 @@ export function Sidebar() {
       )}>
         {!collapsed ? (
           <Link href="/admin" className="flex items-center gap-2.5 group">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ef4444,#7f1d1d)] shadow-[0_14px_30px_rgba(57,16,16,0.34)]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#8f7ab0,#77688f)] shadow-[0_12px_28px_rgba(40,36,52,0.28)]">
               <Shield className="h-4 w-4 text-white" />
             </div>
             <div className="flex flex-col">
@@ -134,7 +134,7 @@ export function Sidebar() {
           </Link>
         ) : (
           <Link href="/admin">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ef4444,#7f1d1d)] shadow-[0_14px_30px_rgba(57,16,16,0.34)]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#8f7ab0,#77688f)] shadow-[0_12px_28px_rgba(40,36,52,0.28)]">
               <Shield className="h-4.5 w-4.5 text-white" />
             </div>
           </Link>
@@ -184,7 +184,7 @@ export function Sidebar() {
         <div className="border-t border-white/[0.06] p-3 flex-shrink-0">
           {!collapsed && session?.user && (
           <div className="mb-1 flex items-center gap-3 rounded-2xl border border-white/[0.05] bg-white/[0.02] px-3 py-3">
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,rgba(220,38,38,0.16),rgba(127,29,29,0.1))] text-xs font-bold text-red-300">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,rgba(154,136,187,0.16),rgba(136,132,152,0.1))] text-xs font-bold text-[#c1b5d4]">
               {(session.user.name || "A").charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -196,7 +196,7 @@ export function Sidebar() {
         <button
           onClick={() => signOut({ callbackUrl: "/admin/login" })}
           className={cn(
-            "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium text-zinc-500 transition-all duration-200 hover:bg-red-500/10 hover:text-red-300",
+            "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium text-zinc-500 transition-all duration-200 hover:bg-[#a996c4]/10 hover:text-[#c7bdd8]",
             collapsed && "justify-center"
           )}
           title={collapsed ? "Logout" : undefined}
