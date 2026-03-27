@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     const auth = await requireActiveCustomer(req);
     if ("error" in auth) return auth.error;
 
-    const [messages, announcements, onlineRecent] = await Promise.all([
+    const [messages, rawAnnouncements, onlineRecent] = await Promise.all([
       prisma.communityMessage.findMany({
         include: {
           customer: { select: { id: true, username: true, role: true, avatar: true } },
@@ -35,8 +35,8 @@ export async function GET(req: NextRequest) {
       prisma.adminNotification.findMany({
         where: { type: "SYSTEM", severity: { in: ["INFO", "WARNING"] } },
         orderBy: { createdAt: "desc" },
-        take: 8,
-        select: { id: true, title: true, message: true, createdAt: true },
+        take: 24,
+        select: { id: true, title: true, message: true, createdAt: true, meta: true },
       }),
       prisma.communityMessage.findMany({
         where: { createdAt: { gt: new Date(Date.now() - 10 * 60 * 1000) } },
@@ -45,6 +45,22 @@ export async function GET(req: NextRequest) {
     ]);
 
     const online = new Set(onlineRecent.map((item) => item.customerId)).size;
+    const announcements = rawAnnouncements
+      .filter((item) => {
+        try {
+          const meta = item.meta ? JSON.parse(item.meta) : {};
+          const hasTicketPayload = !!(meta?.ticketId || meta?.ticketNumber || meta?.fallback || meta?.channel === "tickets");
+          if (hasTicketPayload) return false;
+        } catch {}
+        return true;
+      })
+      .slice(0, 8)
+      .map((item) => ({
+        id: item.id,
+        title: item.title,
+        message: item.message,
+        createdAt: item.createdAt,
+      }));
 
     return NextResponse.json({
       success: true,
@@ -88,4 +104,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
   }
 }
-

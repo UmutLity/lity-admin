@@ -282,6 +282,7 @@ export async function POST(req: NextRequest) {
         title: usedFallback ? `New support request #${fallbackTicketNumber}` : `New ticket #${ticket.ticketNumber}`,
         message: `${subject} from ${customer.username}`,
         meta: JSON.stringify({
+          channel: "tickets",
           ticketId: ticket?.id || null,
           ticketNumber: ticket?.ticketNumber || fallbackTicketNumber,
           customerId: customer.id,
