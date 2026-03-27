@@ -47,7 +47,7 @@ export type RelatedProductData = {
 };
 
 function planLabel(plan: string) {
-  return plan.replaceAll("_", " ");
+  return plan.split("_").join(" ");
 }
 
 function statusVariant(status: string): "success" | "warning" | "error" | "default" {
