@@ -94,9 +94,9 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
   const faq = useMemo(() => buildFaq(product), [product]);
 
   return (
-    <main className="mx-auto w-full max-w-7xl space-y-10 px-4 pb-16 pt-8 sm:px-6 lg:px-8">
-      <section className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-        <Card className="border-white/10 bg-[linear-gradient(180deg,rgba(18,20,30,0.94),rgba(12,14,21,0.98))]">
+    <main className="page-enter mx-auto w-full max-w-[1480px] space-y-6 p-5 lg:p-8">
+      <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <Card className="premium-card border-white/10">
           <CardHeader className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={statusVariant(product.status)}>{product.status}</Badge>
@@ -110,7 +110,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
               </CardDescription>
             </div>
           </CardHeader>
-          <CardContent className="space-y-5">
+          <CardContent className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl border border-white/8 bg-white/[0.03] p-3">
                 <p className="text-xs uppercase tracking-[0.14em] text-zinc-500">Selected Price</p>
@@ -143,15 +143,15 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
             </div>
 
             <div className="grid gap-2 sm:grid-cols-3">
-              <div className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-zinc-300">
+              <div className="rounded-lg border border-white/10 bg-muted/20 px-3 py-2 text-sm text-zinc-300">
                 <Shield className="mb-1 h-4 w-4 text-primary" />
                 Secure checkout
               </div>
-              <div className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-zinc-300">
+              <div className="rounded-lg border border-white/10 bg-muted/20 px-3 py-2 text-sm text-zinc-300">
                 <Clock3 className="mb-1 h-4 w-4 text-primary" />
                 Instant delivery
               </div>
-              <div className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-zinc-300">
+              <div className="rounded-lg border border-white/10 bg-muted/20 px-3 py-2 text-sm text-zinc-300">
                 <Rocket className="mb-1 h-4 w-4 text-primary" />
                 Fast activation
               </div>
@@ -159,7 +159,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(18,20,30,0.9),rgba(12,14,21,0.98))]">
+        <Card className="premium-card overflow-hidden border-white/10">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Product Preview</CardTitle>
           </CardHeader>
@@ -195,7 +195,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
           { label: "Support", value: "24/7", icon: Sparkles },
           { label: "Uptime", value: "99.95%", icon: CheckCircle2 },
         ].map((item) => (
-          <Card key={item.label} className="border-white/8 bg-white/[0.02]">
+          <Card key={item.label} className="kpi-card border-white/8">
             <CardContent className="flex items-center justify-between p-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.14em] text-zinc-500">{item.label}</p>
@@ -210,7 +210,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {product.features.length ? (
           product.features.map((feature) => (
-            <Card key={feature.id} className="border-white/8 bg-white/[0.02]">
+            <Card key={feature.id} className="premium-card border-white/8">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">{feature.title}</CardTitle>
               </CardHeader>
@@ -220,7 +220,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
             </Card>
           ))
         ) : (
-          <Card className="border-white/8 bg-white/[0.02] md:col-span-2 xl:col-span-3">
+          <Card className="premium-card border-white/8 md:col-span-2 xl:col-span-3">
             <CardContent className="p-5 text-sm text-zinc-400">
               Feature list is being prepared. This product uses the same premium delivery and update standards.
             </CardContent>
@@ -228,9 +228,9 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
         )}
       </section>
 
-      <section className="rounded-2xl border border-white/8 bg-[linear-gradient(180deg,rgba(16,18,26,0.95),rgba(12,14,20,0.98))] p-4 md:p-6">
+      <section className="premium-card rounded-2xl border border-white/8 p-4 md:p-6">
         <Tabs defaultValue="features" className="w-full">
-          <TabsList className="w-full justify-start overflow-x-auto bg-white/[0.03]">
+            <TabsList className="w-full justify-start overflow-x-auto bg-muted/70">
             <TabsTrigger value="features">Features</TabsTrigger>
             <TabsTrigger value="requirements">Requirements</TabsTrigger>
             <TabsTrigger value="changelog">Changelog</TabsTrigger>
@@ -238,10 +238,10 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
           </TabsList>
 
           <TabsContent value="features">
-            <Card className="mt-3 border-white/8 bg-white/[0.02]">
+            <Card className="mt-3 border-white/8 bg-muted/20">
               <CardContent className="space-y-2 p-4">
                 {(product.features.length ? product.features : [{ id: "default", title: "Stable Core", description: product.description }]).map((item) => (
-                  <div key={item.id} className="flex items-start gap-2 rounded-lg border border-white/6 bg-white/[0.02] p-3">
+                  <div key={item.id} className="flex items-start gap-2 rounded-lg border border-white/8 bg-muted/20 p-3">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                     <div>
                       <p className="text-sm font-medium">{item.title}</p>
@@ -254,10 +254,10 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
           </TabsContent>
 
           <TabsContent value="requirements">
-            <Card className="mt-3 border-white/8 bg-white/[0.02]">
+            <Card className="mt-3 border-white/8 bg-muted/20">
               <CardContent className="space-y-2 p-4">
                 {(product.specifications.length ? product.specifications : [{ id: "r", label: "Environment", value: "Windows 10/11 64-bit" }]).map((item) => (
-                  <div key={item.id} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/[0.02] px-3 py-2">
+                  <div key={item.id} className="flex items-center justify-between rounded-lg border border-white/8 bg-muted/20 px-3 py-2">
                     <span className="text-sm text-zinc-400">{item.label}</span>
                     <span className="text-sm font-medium text-zinc-100">{item.value}</span>
                   </div>
@@ -267,10 +267,10 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
           </TabsContent>
 
           <TabsContent value="changelog">
-            <Card className="mt-3 border-white/8 bg-white/[0.02]">
+            <Card className="mt-3 border-white/8 bg-muted/20">
               <CardContent className="space-y-3 p-4">
                 {(product.changelog.length ? product.changelog : [{ id: "none", title: "Initial Release", body: "No changelog published yet.", type: "INFO", publishedAt: null }]).map((log) => (
-                  <div key={log.id} className="rounded-lg border border-white/6 bg-white/[0.02] p-3">
+                  <div key={log.id} className="rounded-lg border border-white/8 bg-muted/20 p-3">
                     <div className="mb-1 flex items-center gap-2">
                       <Badge variant="outline">{log.type}</Badge>
                       <span className="text-xs text-zinc-500">{log.publishedAt ? formatDate(log.publishedAt) : "Pending"}</span>
@@ -284,10 +284,10 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
           </TabsContent>
 
           <TabsContent value="faq">
-            <Card className="mt-3 border-white/8 bg-white/[0.02]">
+            <Card className="mt-3 border-white/8 bg-muted/20">
               <CardContent className="space-y-2 p-4">
                 {faq.map((item) => (
-                  <details key={item.q} className="group rounded-lg border border-white/6 bg-white/[0.02] p-3">
+                  <details key={item.q} className="group rounded-lg border border-white/8 bg-muted/20 p-3">
                     <summary className="cursor-pointer list-none text-sm font-medium text-zinc-200">{item.q}</summary>
                     <p className="mt-2 text-sm text-zinc-400">{item.a}</p>
                   </details>
@@ -310,7 +310,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
               type="button"
               onClick={() => setActiveImage(image.url)}
               className={cn(
-                "overflow-hidden rounded-xl border bg-black/25 text-left transition",
+                "overflow-hidden rounded-xl border bg-background/40 text-left transition",
                 activeImage === image.url ? "border-primary/60 ring-1 ring-primary/30" : "border-white/10 hover:border-primary/35"
               )}
             >
@@ -331,7 +331,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
             <Card
               key={item.id}
               className={cn(
-                "border-white/8 bg-white/[0.02]",
+                "premium-card border-white/8",
                 selectedPrice?.id === item.id && "border-primary/45 shadow-[0_0_0_1px_rgba(169,150,196,0.2)]"
               )}
             >
@@ -360,7 +360,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
         </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {relatedProducts.map((item) => (
-            <Card key={item.id} className="border-white/8 bg-white/[0.02]">
+            <Card key={item.id} className="premium-card border-white/8">
               <CardContent className="space-y-3 p-4">
                 <div className="overflow-hidden rounded-lg border border-white/10 bg-black/30">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -385,7 +385,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
         </div>
       </section>
 
-      <section className="rounded-2xl border border-primary/25 bg-[linear-gradient(120deg,rgba(169,150,196,0.14),rgba(14,16,24,0.96))] p-6">
+      <section className="rounded-2xl border border-primary/25 bg-primary/10 p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 className="text-xl font-semibold">Ready to get started with {product.name}?</h3>
