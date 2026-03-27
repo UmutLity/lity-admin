@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Topbar } from "@/components/admin/topbar";
 import {
   AlertTriangle,
@@ -182,14 +183,14 @@ function StatCard({
   valueClass?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] p-3.5 shadow-[0_10px_20px_rgba(0,0,0,0.26)]">
+    <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] p-4 shadow-[0_10px_20px_rgba(0,0,0,0.26)]">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-xs text-zinc-500">{title}</p>
         <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg", iconClass)}>
           <Icon className="h-3.5 w-3.5" />
         </div>
       </div>
-      <p className={cn("text-[31px] font-bold leading-none tracking-tight text-white", valueClass)}>{value}</p>
+      <p className={cn("text-[34px] font-bold leading-none tracking-tight text-white", valueClass)}>{value}</p>
     </div>
   );
 }
@@ -217,7 +218,7 @@ function SummaryCard({
           <Icon className="h-3.5 w-3.5" />
         </div>
       </div>
-      <p className={cn("text-[36px] font-bold leading-none text-emerald-400", valueClass)}>{value}</p>
+      <p className={cn("text-[42px] font-bold leading-none text-emerald-400", valueClass)}>{value}</p>
       <p className="mt-1.5 text-[11px] text-zinc-500">{subtext}</p>
     </div>
   );
@@ -243,25 +244,25 @@ function PeriodCard({
   return (
     <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] px-4 py-3.5">
       <div className="mb-3.5 flex items-center justify-between">
-        <h3 className="text-[28px] font-semibold leading-none text-zinc-100">{title}</h3>
+        <h3 className="text-[35px] font-semibold leading-none text-zinc-100">{title}</h3>
         <ArrowUpRight className="h-4 w-4 text-zinc-600" />
       </div>
 
       <div className="grid grid-cols-4 gap-3">
         <div className="min-w-0">
-          <p className="text-[32px] font-bold leading-none text-white">{sales}</p>
+          <p className="text-[36px] font-bold leading-none text-white">{sales}</p>
           <p className="text-[11px] text-zinc-500">sales</p>
         </div>
         <div className="min-w-0">
-          <p className="truncate text-[32px] font-bold leading-none tabular-nums text-emerald-400">{formatMoney(revenue)}</p>
+          <p className="truncate text-[36px] font-bold leading-none tabular-nums text-emerald-400">{formatMoney(revenue)}</p>
           <p className="text-[11px] text-zinc-500">product rev.</p>
         </div>
         <div className="min-w-0">
-          <p className="truncate text-[32px] font-bold leading-none tabular-nums text-cyan-400">{formatMoney(deposits)}</p>
+          <p className="truncate text-[36px] font-bold leading-none tabular-nums text-cyan-400">{formatMoney(deposits)}</p>
           <p className="text-[11px] text-zinc-500">deposits</p>
         </div>
         <div className="min-w-0">
-          <p className="text-[32px] font-bold leading-none text-fuchsia-400">{boxOpens}</p>
+          <p className="text-[36px] font-bold leading-none text-fuchsia-400">{boxOpens}</p>
           <p className="text-[11px] text-zinc-500">box opens</p>
         </div>
       </div>
@@ -276,59 +277,33 @@ function PeriodCard({
   );
 }
 
-const BLOG_POSTS = [
-  {
-    id: "1",
-    title: "What Is a Spoofer? The Ultimate 2026 Guide",
-    excerpt: "What is an HWID spoofer, how does it work, and why is it useful? Learn the fundamentals in minutes.",
-    category: "Guides",
-    meta: "March 27, 2026",
-    readTime: "14 min",
-  },
-  {
-    id: "2",
-    title: "Top 5 Settings to Boost Your FPS in Apex Legends",
-    excerpt: "Quick tweaks to improve frame stability and lower input delay without sacrificing visual clarity.",
-    category: "Apex Legends",
-    meta: "March 27, 2026",
-    readTime: "19 min",
-  },
-  {
-    id: "3",
-    title: "Valorant Anti-Cheat: Vanguard Explained",
-    excerpt: "How Vanguard works under the hood, what it detects, and what users should know for safer setups.",
-    category: "Valorant",
-    meta: "March 27, 2026",
-    readTime: "12 min",
-  },
-];
+const BLOG_POSTS: any[] = [];
 
 function BlogCard({
   title,
   excerpt,
-  category,
-  meta,
-  readTime,
+  authorName,
+  date,
 }: {
   title: string;
   excerpt: string;
-  category: string;
-  meta: string;
-  readTime: string;
+  authorName: string;
+  date: string;
 }) {
   return (
     <article className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(17,16,24,0.92),rgba(12,12,18,0.98))] shadow-[0_12px_28px_rgba(0,0,0,0.28)]">
       <div className="relative h-40 bg-[radial-gradient(circle_at_30%_20%,rgba(169,150,196,0.24),transparent_55%),linear-gradient(135deg,rgba(95,78,125,0.45),rgba(20,18,30,0.2))]">
-        <span className="absolute left-3 top-3 rounded-full border border-[#b9accf]/35 bg-[#a996c4]/14 px-2.5 py-0.5 text-[10px] font-semibold text-[#d8cee8]">
-          {category}
-        </span>
+        <span className="absolute left-3 top-3 rounded-full border border-[#b9accf]/35 bg-[#a996c4]/14 px-2.5 py-0.5 text-[10px] font-semibold text-[#d8cee8]">Blog</span>
       </div>
       <div className="space-y-2 p-4">
         <h4 className="line-clamp-2 text-xl font-semibold text-zinc-100">{title}</h4>
         <p className="line-clamp-2 text-sm text-zinc-400">{excerpt}</p>
         <p className="text-xs text-zinc-500">
-          {meta} • {readTime}
+          {date} • by {authorName}
         </p>
+        <span className="inline-flex items-center gap-1 text-xs font-medium text-[#d8cee8]">
+          Live article
+        </span>
       </div>
     </article>
   );
@@ -338,7 +313,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<DashboardData>(EMPTY);
   const [blogSearch, setBlogSearch] = useState("");
-  const [blogFilter, setBlogFilter] = useState("All");
+  const [blogPosts, setBlogPosts] = useState<any[]>([]);
   const [rankSearch, setRankSearch] = useState("");
 
   useEffect(() => {
@@ -346,17 +321,19 @@ export default function DashboardPage() {
 
     async function load() {
       setLoading(true);
-      const [productsRes, customersRes, ticketsRes, paymentsRes] = await Promise.all([
+      const [productsRes, customersRes, ticketsRes, paymentsRes, blogRes] = await Promise.all([
         safeFetch("/api/admin/products"),
         safeFetch("/api/admin/customers"),
         safeFetch("/api/admin/tickets?status=ALL"),
         safeFetch("/api/admin/logs?type=payment&page=1&pageSize=300"),
+        safeFetch("/api/admin/blog"),
       ]);
 
       const products = safeArray(productsRes?.data);
       const customers = safeArray(customersRes?.data);
       const tickets = safeArray(ticketsRes?.data);
       const payments = safeArray(paymentsRes?.data);
+      const blog = safeArray(blogRes?.data);
 
       const debitPayments = payments.filter((p) => String(p.type || "").toUpperCase() === "DEBIT");
       const creditPayments = payments.filter((p) => String(p.type || "").toUpperCase() === "CREDIT");
@@ -476,6 +453,7 @@ export default function DashboardPage() {
 
       if (active) {
         setData(next);
+        setBlogPosts(blog);
         setLoading(false);
       }
     }
@@ -498,15 +476,15 @@ export default function DashboardPage() {
   }, []);
 
   const filteredPosts = useMemo(() => {
-    return BLOG_POSTS.filter((post) => {
-      const byCategory = blogFilter === "All" ? true : post.category === blogFilter;
-      const bySearch =
-        blogSearch.trim().length === 0
-          ? true
-          : `${post.title} ${post.excerpt}`.toLowerCase().includes(blogSearch.toLowerCase());
-      return byCategory && bySearch;
-    });
-  }, [blogFilter, blogSearch]);
+    const query = blogSearch.trim().toLowerCase();
+    return (blogPosts.length ? blogPosts : BLOG_POSTS)
+      .filter((post: any) => !post.isDraft)
+      .filter((post: any) => {
+        if (!query) return true;
+        return `${post.title || ""} ${post.excerpt || ""}`.toLowerCase().includes(query);
+      })
+      .slice(0, 12);
+  }, [blogPosts, blogSearch]);
 
   const filteredLeaderboard = useMemo(() => {
     return data.leaderboard.filter((row) => row.user.toLowerCase().includes(rankSearch.toLowerCase()));
@@ -663,28 +641,24 @@ export default function DashboardPage() {
                 className="h-10 w-full rounded-xl border border-white/[0.07] bg-white/[0.02] pl-10 pr-3 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none transition focus:border-[#b9accf]/35 focus:bg-white/[0.03]"
               />
             </label>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {["All", "Apex Legends", "Guides", "Valorant"].map((item) => (
-                <button
-                  key={item}
-                  onClick={() => setBlogFilter(item)}
-                  className={cn(
-                    "rounded-full border px-3 py-1.5 text-xs font-medium transition",
-                    blogFilter === item
-                      ? "border-[#b9accf]/35 bg-[#a996c4]/14 text-[#d8cee8]"
-                      : "border-white/[0.07] bg-white/[0.02] text-zinc-400 hover:text-zinc-200"
-                  )}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
+            <Link href="/admin/blog/new" className="rounded-xl border border-[#b9accf]/35 bg-[#a996c4]/14 px-4 py-2 text-xs font-semibold text-[#d8cee8] transition hover:bg-[#a996c4]/20">
+              Write New Post
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
-            {filteredPosts.map((post) => (
-              <BlogCard key={post.id} {...post} />
+            {filteredPosts.map((post: any) => (
+              <BlogCard
+                key={post.id}
+                title={post.title}
+                excerpt={post.excerpt || "No excerpt."}
+                authorName={post.authorName || "Lity Team"}
+                date={new Date(post.publishedAt || post.createdAt).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })}
+              />
             ))}
           </div>
         </section>

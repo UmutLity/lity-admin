@@ -69,6 +69,19 @@ body {
   background: #0d0e12;
 }
 
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px rgba(185, 172, 207, 0.35), 0 0 0 4px rgba(169, 150, 196, 0.12);
+}
+
 /* ━━━ Premium Scrollbar ━━━ */
 ::-webkit-scrollbar {
   width: 6px;

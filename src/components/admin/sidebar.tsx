@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Package, Settings, FileText, Bell, DollarSign, MessageSquare, BookOpen,
   Users, Shield, LogOut, Menu, ClipboardList,
-  Download, PanelLeftClose, PanelLeft, Ticket, Landmark,
+  Download, PanelLeftClose, PanelLeft, Ticket, Landmark, Newspaper,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useState, createContext, useContext } from "react";
@@ -35,6 +35,7 @@ const navGroups: NavGroup[] = [
       { href: "/admin/licenses", label: "Licenses", icon: Download, roles: ["ADMIN"] },
       { href: "/admin/changelog", label: "Changelogs", icon: FileText, roles: ["ADMIN", "EDITOR"] },
       { href: "/admin/guides", label: "Guides", icon: BookOpen, roles: ["ADMIN", "EDITOR"] },
+      { href: "/admin/blog", label: "Blog", icon: Newspaper, roles: ["ADMIN", "EDITOR"] },
       { href: "/admin/users", label: "Users", icon: Users, roles: ["ADMIN"] },
       { href: "/admin/revenue", label: "Payments", icon: DollarSign, roles: ["ADMIN"] },
       { href: "/admin/topups", label: "Top-up Requests", icon: Landmark, roles: ["ADMIN"] },
@@ -89,7 +90,7 @@ export function Sidebar() {
         href={item.href}
         onClick={() => setMobileOpen(false)}
         className={cn(
-          "group relative flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[12px] font-medium transition-all duration-200",
+          "group relative flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[12px] font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#b9accf]/35",
           active
             ? "bg-[linear-gradient(135deg,rgba(154,136,187,0.16),rgba(136,132,152,0.1))] text-white shadow-[0_12px_28px_rgba(20,18,26,0.32)] ring-1 ring-[#b9accf]/22"
             : "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.04]"

@@ -95,6 +95,7 @@ export function AdminHeader() {
     { label: "Licenses", path: "/admin/licenses", keywords: "keys plans" },
     { label: "Changelogs", path: "/admin/changelog", keywords: "changelog docs updates" },
     { label: "Guides", path: "/admin/guides", keywords: "how to docs product guides" },
+    { label: "Blog", path: "/admin/blog", keywords: "articles posts author cover" },
     { label: "Payments", path: "/admin/revenue", keywords: "revenue sales money" },
     { label: "Reviews", path: "/admin/reviews", keywords: "feedback" },
     { label: "Community", path: "/admin/notifications", keywords: "announcements notifications" },

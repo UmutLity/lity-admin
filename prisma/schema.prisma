@@ -47,6 +47,7 @@ model User {
   adminSessions  AdminSession[]
   notifications  AdminNotification[]
   reviewedTopUpRequests TopUpRequest[] @relation("TopUpReviewedBy")
+  blogPosts      BlogPost[]
 }
 
 // ─── Customer (Public Site Users) ───────────────────────
@@ -391,6 +392,25 @@ model ChangelogProduct {
   product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([changelogId, productId])
+}
+
+model BlogPost {
+  id            String    @id @default(cuid())
+  title         String
+  slug          String    @unique
+  excerpt       String?
+  content       String
+  coverImageUrl String?
+  authorId      String?
+  authorName    String
+  author        User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  isDraft       Boolean   @default(true)
+  publishedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([isDraft, publishedAt])
+  @@index([createdAt])
 }
 
 // ─── Site Settings ───────────────────────────────────────
