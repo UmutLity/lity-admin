@@ -20,6 +20,10 @@ const ALLOWED_TYPES = [
   "image/webp",
   "image/svg+xml",
   "image/x-icon",
+  "application/pdf",
+  "text/plain",
+  "application/zip",
+  "application/x-zip-compressed",
 ];
 
 export interface UploadResult {
