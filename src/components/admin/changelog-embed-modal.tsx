@@ -90,12 +90,9 @@ export function ChangelogEmbedModal({ changelogId, onClose }: ChangelogEmbedModa
                         <span className="text-white font-semibold text-sm">{embedData?.fullPayload?.username || "Lity Software"}</span>
                         <Badge className="bg-[#5865F2] text-white text-[10px] px-1 py-0">BOT</Badge>
                       </div>
-<<<<<<< HEAD
-=======
                       {embedData?.fullPayload?.content ? (
                         <p className="text-[#dbdee1] text-sm mb-2">{embedData.fullPayload.content}</p>
                       ) : null}
->>>>>>> 74b4186 (Initial commit after format)
 
                       {/* Embed */}
                       {embed && (
