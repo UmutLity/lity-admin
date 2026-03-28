@@ -5,7 +5,7 @@ import { requireAuth } from "@/lib/auth";
 // GET /api/admin/analytics
 export async function GET(req: NextRequest) {
   try {
-    const session = await requireAuth();
+    await requireAuth();
     const url = new URL(req.url);
     const days = parseInt(url.searchParams.get("days") || "30");
 
@@ -147,6 +147,70 @@ export async function GET(req: NextRequest) {
       prisma.customer.count({ where: { createdAt: { gte: startDate } } }),
     ]);
 
+    const [ordersSummary, paidOrders, ticketSummary, recentTickets, topProductsRaw] = await Promise.all([
+      prisma.order.aggregate({
+        where: { createdAt: { gte: startDate }, status: { not: "CANCELED" } },
+        _sum: { totalAmount: true },
+        _count: { _all: true },
+      }),
+      prisma.order.findMany({
+        where: { createdAt: { gte: startDate }, status: { not: "CANCELED" } },
+        select: { totalAmount: true, status: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 200,
+      }),
+      prisma.supportTicket.groupBy({
+        by: ["status"],
+        where: { createdAt: { gte: startDate } },
+        _count: { _all: true },
+      }).catch(() => []),
+      prisma.supportTicket.findMany({
+        where: { createdAt: { gte: startDate } },
+        select: { id: true, status: true, priority: true, createdAt: true, subject: true },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }).catch(() => []),
+      prisma.orderItem.groupBy({
+        by: ["productId"],
+        where: {
+          order: {
+            createdAt: { gte: startDate },
+            status: { not: "CANCELED" },
+          },
+        },
+        _count: { _all: true },
+        _sum: { amount: true },
+        orderBy: { _sum: { amount: "desc" } },
+        take: 6,
+      }).catch(() => []),
+    ]);
+
+    const topProducts = topProductsRaw.length
+      ? await prisma.product.findMany({
+          where: { id: { in: topProductsRaw.map((item) => item.productId) } },
+          select: { id: true, name: true, slug: true },
+        }).then((products) => {
+          const productMap = new Map(products.map((item) => [item.id, item]));
+          return topProductsRaw.map((item) => ({
+            productId: item.productId,
+            name: productMap.get(item.productId)?.name || "Unknown product",
+            slug: productMap.get(item.productId)?.slug || null,
+            orderCount: Number(item._count?._all || 0),
+            revenue: Number(item._sum?.amount || 0),
+          }));
+        })
+      : [];
+
+    const totalRevenue = Number(ordersSummary._sum.totalAmount || 0);
+    const totalOrders = Number(ordersSummary._count._all || 0);
+    const paidOrderCount = paidOrders.filter((order) => order.status === "PAID").length;
+    const conversionRate = funnelCheckout > 0 ? (paidOrderCount / funnelCheckout) * 100 : 0;
+    const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    const totalTickets = ticketSummary.reduce((sum, item) => sum + Number(item._count?._all || 0), 0);
+    const openTickets = ticketSummary
+      .filter((item) => ["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER"].includes(item.status))
+      .reduce((sum, item) => sum + Number(item._count?._all || 0), 0);
+
     // ── Funnel data ───────────────────────────────────────
     const funnelHomepage = await prisma.pageView.count({
       where: { path: "/", createdAt: { gte: startDate } },
@@ -202,6 +266,23 @@ export async function GET(req: NextRequest) {
           total: totalCustomers,
           newInPeriod: newCustomers,
         },
+        sales: {
+          revenue: totalRevenue,
+          totalOrders,
+          paidOrderCount,
+          avgOrderValue: Math.round(avgOrderValue * 100) / 100,
+          conversionRate: Math.round(conversionRate * 10) / 10,
+        },
+        tickets: {
+          total: totalTickets,
+          open: openTickets,
+          byStatus: ticketSummary.map((item) => ({
+            status: item.status,
+            count: Number(item._count?._all || 0),
+          })),
+          recent: recentTickets,
+        },
+        topProducts,
         funnel: {
           homepage: funnelHomepage,
           productView: funnelProductView,

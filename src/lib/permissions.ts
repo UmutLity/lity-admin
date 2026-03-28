@@ -122,6 +122,32 @@ export const PERMISSION_GROUPS: Record<string, { label: string; permissions: Per
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<string, Permission[]> = {
   ADMIN: [...ALL_PERMISSIONS],
+  MODERATOR: [
+    "product.view",
+    "changelog.view",
+    "category.view",
+    "customer.view",
+    "ticket.view",
+    "ticket.manage",
+    "notification.view",
+  ],
+  SUPPORT: [
+    "customer.view",
+    "customer.manage",
+    "ticket.view",
+    "ticket.manage",
+    "notification.view",
+    "analytics.view",
+  ],
+  ANALYST: [
+    "product.view",
+    "changelog.view",
+    "category.view",
+    "analytics.view",
+    "audit.view",
+    "notification.view",
+    "system.view",
+  ],
   EDITOR: [
     "product.view", "product.create", "product.update", "product.status.change",
     "changelog.view", "changelog.create", "changelog.update", "changelog.publish",

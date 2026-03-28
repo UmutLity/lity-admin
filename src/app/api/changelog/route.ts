@@ -16,10 +16,34 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1");
     const pageSize = Math.min(parseInt(searchParams.get("pageSize") || "20"), 50);
+    const q = (searchParams.get("q") || "").trim();
+    const type = (searchParams.get("type") || "").trim();
+    const product = (searchParams.get("product") || "").trim();
+
+    const where: any = { isDraft: false, publishedAt: { not: null } };
+    if (type) where.type = type.toUpperCase();
+    if (q) {
+      where.OR = [
+        { title: { contains: q, mode: "insensitive" } },
+        { body: { contains: q, mode: "insensitive" } },
+      ];
+    }
+    if (product) {
+      where.products = {
+        some: {
+          product: {
+            OR: [
+              { slug: { equals: product, mode: "insensitive" } },
+              { name: { contains: product, mode: "insensitive" } },
+            ],
+          },
+        },
+      };
+    }
 
     const [changelogs, total] = await Promise.all([
       prisma.changelog.findMany({
-        where: { isDraft: false, publishedAt: { not: null } },
+        where,
         include: {
           products: {
             include: { product: { select: { id: true, name: true, slug: true } } },
@@ -30,7 +54,7 @@ export async function GET(req: NextRequest) {
         take: pageSize,
       }),
       prisma.changelog.count({
-        where: { isDraft: false, publishedAt: { not: null } },
+        where,
       }),
     ]);
 

@@ -22,14 +22,26 @@ interface RoleData {
 const PERMISSION_GROUPS: Record<string, { label: string; perms: string[] }> = {
   product: { label: "Products", perms: ["product.view","product.create","product.update","product.delete","product.status.change"] },
   changelog: { label: "Changelog", perms: ["changelog.view","changelog.create","changelog.update","changelog.delete","changelog.publish"] },
+  category: { label: "Categories", perms: ["category.view","category.create","category.update","category.delete"] },
   settings: { label: "Settings", perms: ["settings.view","settings.update"] },
   media: { label: "Media", perms: ["media.view","media.upload","media.delete"] },
   user: { label: "Users", perms: ["user.view","user.manage"] },
+  customer: { label: "Customers", perms: ["customer.view","customer.manage"] },
   role: { label: "Roles", perms: ["role.view","role.manage"] },
   audit: { label: "Audit", perms: ["audit.view"] },
   security: { label: "Security", perms: ["security.view","security.manage"] },
   webhook: { label: "Discord", perms: ["webhook.test","webhook.manage"] },
+  analytics: { label: "Analytics", perms: ["analytics.view"] },
+  notifications: { label: "Notifications", perms: ["notification.view"] },
+  tickets: { label: "Tickets", perms: ["ticket.view","ticket.manage"] },
+  system: { label: "System", perms: ["system.view"] },
 };
+
+const ROLE_TEMPLATES = [
+  { name: "MODERATOR", label: "Moderator", permissions: ["product.view", "changelog.view", "category.view", "customer.view", "ticket.view", "ticket.manage", "notification.view"] },
+  { name: "SUPPORT", label: "Support", permissions: ["customer.view", "customer.manage", "ticket.view", "ticket.manage", "notification.view", "analytics.view"] },
+  { name: "ANALYST", label: "Analyst", permissions: ["product.view", "changelog.view", "category.view", "analytics.view", "audit.view", "notification.view", "system.view"] },
+];
 
 export default function RolesPage() {
   const { addToast } = useToast();
@@ -98,6 +110,21 @@ export default function RolesPage() {
     }
   };
 
+  const createFromTemplate = async (template: { name: string; label: string; permissions: string[] }) => {
+    const res = await fetch("/api/admin/roles", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(template),
+    });
+    if (res.ok) {
+      addToast({ type: "success", title: `${template.label} role created` });
+      loadRoles();
+    } else {
+      const err = await res.json();
+      addToast({ type: "error", title: err.error || "Error" });
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this role?")) return;
     const res = await fetch(`/api/admin/roles/${id}`, { method: "DELETE" });
@@ -143,6 +170,20 @@ export default function RolesPage() {
           </CardContent>
         </Card>
       )}
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Recommended Staff Roles</CardTitle>
+          <CardDescription>Quick-create common admin ranks for moderation, support, and analytics access.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-3">
+          {ROLE_TEMPLATES.map((template) => (
+            <Button key={template.name} variant="outline" onClick={() => createFromTemplate(template)}>
+              <Plus className="h-4 w-4" /> {template.label}
+            </Button>
+          ))}
+        </CardContent>
+      </Card>
 
       <div className="space-y-4">
         {roles.map((role) => (

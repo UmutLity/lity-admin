@@ -21,17 +21,18 @@ function safeArray(input: any): any[] {
 }
 
 function parseThreadFromAdminNotes(adminNotes: string | null) {
-  if (!adminNotes) return { notes: null as string | null, replies: [] as any[] };
+  if (!adminNotes) return { notes: null as string | null, replies: [] as any[], statusHistory: [] as any[] };
   try {
     const parsed = JSON.parse(adminNotes);
     if (parsed && typeof parsed === "object" && Array.isArray(parsed.replies)) {
       return {
         notes: typeof parsed.notes === "string" ? parsed.notes : null,
         replies: safeArray(parsed.replies),
+        statusHistory: safeArray(parsed.statusHistory),
       };
     }
   } catch {}
-  return { notes: adminNotes, replies: [] as any[] };
+  return { notes: adminNotes, replies: [] as any[], statusHistory: [] as any[] };
 }
 
 export async function PATCH(
@@ -64,6 +65,19 @@ export async function PATCH(
 
       const currentMeta: any = safeParseMeta(notification.meta);
       const currentReplies = safeArray(currentMeta.replies);
+      const currentStatusHistory = safeArray(currentMeta.statusHistory);
+      const nextStatusHistory = status && status !== currentMeta.status
+        ? [
+            ...currentStatusHistory,
+            {
+              id: `s-${Date.now()}`,
+              from: currentMeta.status || "OPEN",
+              to: status,
+              at: new Date().toISOString(),
+              by: (session.user as any).name || (session.user as any).email || "Admin",
+            },
+          ]
+        : currentStatusHistory;
       const nextReplies = replyMessage
         ? [
             ...currentReplies,
@@ -82,6 +96,7 @@ export async function PATCH(
         priority: priority || currentMeta.priority || "NORMAL",
         adminNotes: adminNotes !== undefined ? adminNotes : (currentMeta.adminNotes || null),
         replies: nextReplies,
+        statusHistory: nextStatusHistory,
         lastAdminUpdateAt: new Date().toISOString(),
         fallback: true,
       };
@@ -127,6 +142,7 @@ export async function PATCH(
           priority: updatedMeta.priority,
           adminNotes: updatedMeta.adminNotes,
           replies: nextReplies,
+          statusHistory: nextStatusHistory,
           conversation: [
             {
               id: `${params.id}-customer`,
@@ -152,6 +168,18 @@ export async function PATCH(
     }
 
     const parsedThread = parseThreadFromAdminNotes(existing.adminNotes);
+    const nextStatusHistory = status && status !== existing.status
+      ? [
+          ...parsedThread.statusHistory,
+          {
+            id: `s-${Date.now()}`,
+            from: existing.status,
+            to: status,
+            at: new Date().toISOString(),
+            by: (session.user as any).name || (session.user as any).email || "Admin",
+          },
+        ]
+      : parsedThread.statusHistory;
     const nextReplies = replyMessage
       ? [
           ...parsedThread.replies,
@@ -174,6 +202,7 @@ export async function PATCH(
         adminNotes: JSON.stringify({
           notes: nextNotes,
           replies: nextReplies,
+          statusHistory: nextStatusHistory,
         }),
       },
     });
@@ -193,6 +222,7 @@ export async function PATCH(
         priority: updated.priority,
         adminNotes: nextNotes,
         replyAdded: !!replyMessage,
+        statusHistoryCount: nextStatusHistory.length,
       },
       ip: getClientIp(req),
       userAgent: req.headers.get("user-agent") || undefined,
@@ -204,6 +234,7 @@ export async function PATCH(
         ...updated,
         adminNotes: nextNotes,
         replies: nextReplies,
+        statusHistory: nextStatusHistory,
         conversation: [
           {
             id: `${updated.id}-customer`,

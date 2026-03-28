@@ -25,6 +25,8 @@ export async function GET(req: NextRequest) {
         isActive: true,
         balance: true,
         totalSpent: true,
+        lastLoginAt: true,
+        twoFactorEnabled: true,
         mustChangePassword: true,
         createdAt: true,
       },
@@ -62,7 +64,41 @@ export async function GET(req: NextRequest) {
       }))
       .filter((item) => !!item.roleKey);
 
-    return NextResponse.json({ success: true, data: { ...customer, ownedProductRoles } });
+    const [recentOrders, recentTickets] = await Promise.all([
+      prisma.order.findMany({
+        where: { customerId: customer.id },
+        select: { id: true, status: true, totalAmount: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      }).catch(() => []),
+      prisma.supportTicket.findMany({
+        where: {
+          OR: [
+            { email: { equals: customer.email, mode: "insensitive" } },
+            { discordUsername: { equals: customer.username, mode: "insensitive" } },
+          ],
+        },
+        select: { id: true, ticketNumber: true, subject: true, status: true, updatedAt: true },
+        orderBy: { updatedAt: "desc" },
+        take: 5,
+      }).catch(() => []),
+    ]);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...customer,
+        security: {
+          twoFactorEnabled: customer.twoFactorEnabled,
+          lastLoginAt: customer.lastLoginAt,
+          sessionIssuedAt: new Date(payload.iat * 1000).toISOString(),
+          sessionExpiresAt: new Date(payload.exp * 1000).toISOString(),
+        },
+        recentOrders,
+        recentTickets,
+        ownedProductRoles,
+      },
+    });
   } catch (error: any) {
     console.error("Customer me error:", error);
     return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });

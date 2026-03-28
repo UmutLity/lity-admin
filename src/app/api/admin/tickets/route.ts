@@ -16,17 +16,18 @@ function safeJsonParse(input: string | null) {
 }
 
 function parseThreadFromAdminNotes(adminNotes: string | null) {
-  if (!adminNotes) return { notes: null as string | null, replies: [] as any[] };
+  if (!adminNotes) return { notes: null as string | null, replies: [] as any[], statusHistory: [] as any[] };
   try {
     const parsed = JSON.parse(adminNotes);
     if (parsed && typeof parsed === "object" && Array.isArray(parsed.replies)) {
       return {
         notes: typeof parsed.notes === "string" ? parsed.notes : null,
         replies: safeArray(parsed.replies),
+        statusHistory: safeArray(parsed.statusHistory),
       };
     }
   } catch {}
-  return { notes: adminNotes, replies: [] as any[] };
+  return { notes: adminNotes, replies: [] as any[], statusHistory: [] as any[] };
 }
 
 function matchesQuery(ticket: any, q: string) {
@@ -85,6 +86,7 @@ export async function GET(req: NextRequest) {
           ...ticket,
           adminNotes: parsed.notes,
           replies: parsed.replies,
+          statusHistory: parsed.statusHistory,
           conversation,
         };
       });
@@ -131,6 +133,7 @@ export async function GET(req: NextRequest) {
           source: "FALLBACK_NOTIFICATION",
           adminNotes: meta?.adminNotes || null,
           replies: safeArray(meta?.replies),
+          statusHistory: safeArray(meta?.statusHistory),
           conversation: [
             {
               id: `fallback-${notification.id}-customer`,

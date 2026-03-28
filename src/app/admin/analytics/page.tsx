@@ -330,6 +330,62 @@ export default function AnalyticsPage() {
           <p className="text-xs text-emerald-400">+{data.customers.newInPeriod} new</p>
         </div>
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="bg-card border rounded-xl p-5">
+          <h3 className="text-sm text-muted-foreground mb-1">Revenue</h3>
+          <div className="text-2xl font-bold">${Number(data.sales.revenue || 0).toFixed(2)}</div>
+          <p className="text-xs text-muted-foreground">{data.sales.totalOrders} non-cancelled orders</p>
+        </div>
+        <div className="bg-card border rounded-xl p-5">
+          <h3 className="text-sm text-muted-foreground mb-1">Avg Order Value</h3>
+          <div className="text-2xl font-bold">${Number(data.sales.avgOrderValue || 0).toFixed(2)}</div>
+          <p className="text-xs text-muted-foreground">{data.sales.paidOrderCount} paid orders</p>
+        </div>
+        <div className="bg-card border rounded-xl p-5">
+          <h3 className="text-sm text-muted-foreground mb-1">Checkout Conversion</h3>
+          <div className="text-2xl font-bold">{Number(data.sales.conversionRate || 0).toFixed(1)}%</div>
+          <p className="text-xs text-muted-foreground">Paid orders / checkout clicks</p>
+        </div>
+        <div className="bg-card border rounded-xl p-5">
+          <h3 className="text-sm text-muted-foreground mb-1">Ticket Load</h3>
+          <div className="text-2xl font-bold">{data.tickets.open}</div>
+          <p className="text-xs text-muted-foreground">{data.tickets.total} total tickets in {days} days</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-card border rounded-xl p-5">
+          <h3 className="text-sm font-semibold mb-4">Top Products By Revenue</h3>
+          <div className="space-y-3">
+            {data.topProducts?.length ? data.topProducts.map((item: any, index: number) => (
+              <div key={item.productId || index} className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2">
+                <div>
+                  <div className="text-sm font-medium">{item.name}</div>
+                  <div className="text-xs text-muted-foreground">{item.orderCount} orders</div>
+                </div>
+                <div className="text-sm font-semibold text-emerald-400">${Number(item.revenue || 0).toFixed(2)}</div>
+              </div>
+            )) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No sales data yet</p>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-card border rounded-xl p-5">
+          <h3 className="text-sm font-semibold mb-4">Ticket Status Load</h3>
+          <div className="space-y-3">
+            {data.tickets?.byStatus?.length ? data.tickets.byStatus.map((item: any) => (
+              <div key={item.status} className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2">
+                <div className="text-sm">{item.status}</div>
+                <div className="text-sm font-semibold">{item.count}</div>
+              </div>
+            )) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No ticket data yet</p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

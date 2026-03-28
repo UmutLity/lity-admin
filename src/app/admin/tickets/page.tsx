@@ -27,6 +27,7 @@ interface AdminTicket {
   createdAt: string;
   updatedAt: string;
   conversation: TicketMessage[];
+  statusHistory?: Array<{ id: string; from: string; to: string; at: string; by: string }>;
 }
 
 const statusOptions: TicketStatus[] = ["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER", "RESOLVED", "CLOSED"];
@@ -246,6 +247,25 @@ export default function AdminTicketsPage() {
                   ))
                 ) : (
                   <div className="text-sm text-zinc-500">No messages yet.</div>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+                <div className="mb-3 text-sm font-semibold text-zinc-200">Status History</div>
+                {selectedTicket.statusHistory?.length ? (
+                  <div className="space-y-2">
+                    {selectedTicket.statusHistory.map((item) => (
+                      <div key={item.id} className="flex items-start justify-between gap-3 rounded-lg border border-white/[0.05] bg-white/[0.02] px-3 py-2">
+                        <div>
+                          <div className="text-sm text-zinc-100">{item.from} → {item.to}</div>
+                          <div className="text-xs text-zinc-500">{item.by}</div>
+                        </div>
+                        <div className="text-xs text-zinc-500">{new Date(item.at).toLocaleString()}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-zinc-500">No status transitions recorded yet.</div>
                 )}
               </div>
 

@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
     const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
     const pageSize = Math.min(Math.max(parseInt(searchParams.get("pageSize") || "9", 10), 1), 50);
     const q = (searchParams.get("q") || "").trim();
+    const featuredOnly = searchParams.get("featured") === "true";
 
     const where: any = {
       isDraft: false,
@@ -27,6 +28,16 @@ export async function GET(req: NextRequest) {
         { excerpt: { contains: q, mode: "insensitive" } },
         { content: { contains: q, mode: "insensitive" } },
         { authorName: { contains: q, mode: "insensitive" } },
+      ];
+    }
+
+    if (featuredOnly) {
+      where.OR = [
+        ...(where.OR || []),
+        { title: { contains: "guide", mode: "insensitive" } },
+        { title: { contains: "tutorial", mode: "insensitive" } },
+        { excerpt: { contains: "guide", mode: "insensitive" } },
+        { excerpt: { contains: "tutorial", mode: "insensitive" } },
       ];
     }
 
