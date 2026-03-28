@@ -43,7 +43,12 @@ export async function POST(req: NextRequest) {
     const fullPayload = buildWebhookPayload(
       embed,
       usernameSetting?.value || undefined,
+<<<<<<< HEAD
       avatarSetting?.value || undefined
+=======
+      avatarSetting?.value || undefined,
+      true
+>>>>>>> 74b4186 (Initial commit after format)
     );
 
     return NextResponse.json({
