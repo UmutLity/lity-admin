@@ -201,16 +201,6 @@ export async function GET(req: NextRequest) {
         })
       : [];
 
-    const totalRevenue = Number(ordersSummary._sum.totalAmount || 0);
-    const totalOrders = Number(ordersSummary._count._all || 0);
-    const paidOrderCount = paidOrders.filter((order) => order.status === "PAID").length;
-    const conversionRate = funnelCheckout > 0 ? (paidOrderCount / funnelCheckout) * 100 : 0;
-    const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-    const totalTickets = ticketSummary.reduce((sum, item) => sum + Number(item._count?._all || 0), 0);
-    const openTickets = ticketSummary
-      .filter((item) => ["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER"].includes(item.status))
-      .reduce((sum, item) => sum + Number(item._count?._all || 0), 0);
-
     // ── Funnel data ───────────────────────────────────────
     const funnelHomepage = await prisma.pageView.count({
       where: { path: "/", createdAt: { gte: startDate } },
@@ -226,6 +216,16 @@ export async function GET(req: NextRequest) {
     });
 
     // ── Events summary ────────────────────────────────────
+    const totalRevenue = Number(ordersSummary._sum.totalAmount || 0);
+    const totalOrders = Number(ordersSummary._count._all || 0);
+    const paidOrderCount = paidOrders.filter((order) => order.status === "PAID").length;
+    const conversionRate = funnelCheckout > 0 ? (paidOrderCount / funnelCheckout) * 100 : 0;
+    const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    const totalTickets = ticketSummary.reduce((sum, item) => sum + Number(item._count?._all || 0), 0);
+    const openTickets = ticketSummary
+      .filter((item) => ["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER"].includes(item.status))
+      .reduce((sum, item) => sum + Number(item._count?._all || 0), 0);
+
     const eventsSummary = await prisma.analyticsEvent.groupBy({
       by: ["name"],
       where: { createdAt: { gte: startDate } },
