@@ -5,10 +5,6 @@ import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer
 
 const AUTO_PROMOTE_ROLES = new Set(["MEMBER", "USER", "CUSTOMER"]);
 
-function isManualDeliveryProduct(product: { defaultLoaderUrl?: string | null }) {
-  return !String(product?.defaultLoaderUrl || "").trim();
-}
-
 function getPlanExpiry(plan: string): Date | null {
   const normalized = String(plan || "").toUpperCase().trim();
   const now = Date.now();
@@ -85,7 +81,7 @@ export async function POST(req: NextRequest) {
     const selectedPlan = priceRow.plan;
 
     const amount = Number(priceRow.price || 0);
-    const manualDelivery = isManualDeliveryProduct(product);
+    const manualDelivery = true;
     if (amount <= 0) return NextResponse.json({ success: false, error: "Invalid product price." }, { status: 400 });
     if (customer.balance < amount) {
       return NextResponse.json({ success: false, error: "Insufficient balance." }, { status: 400 });
