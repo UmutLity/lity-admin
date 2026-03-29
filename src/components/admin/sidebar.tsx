@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Package, Settings, FileText, Bell, DollarSign, MessageSquare, BookOpen,
@@ -70,9 +70,11 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session } = useSession();
   const { collapsed, setCollapsed } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const userRole = (session?.user as any)?.role as Role | undefined;
 
   useEffect(() => {
@@ -86,6 +88,19 @@ export function Sidebar() {
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const res = await fetch("/api/admin/notifications?limit=5", { credentials: "include" });
+        const data = await res.json();
+        if (data?.success) setUnreadCount(Number(data.unreadCount || 0));
+      } catch {}
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const filteredGroups = navGroups.map((group) => ({
     ...group,
@@ -195,29 +210,77 @@ export function Sidebar() {
       )}
 
       {/* User Footer */}
-        <div className="border-t border-white/[0.06] p-3 flex-shrink-0">
-          {!collapsed && session?.user && (
-          <div className="mb-1 flex items-center gap-3 rounded-2xl border border-white/[0.05] bg-white/[0.02] px-3 py-3">
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,rgba(154,136,187,0.16),rgba(136,132,152,0.1))] text-xs font-bold text-[#c1b5d4]">
-              {(session.user.name || "A").charAt(0).toUpperCase()}
+      <div className="border-t border-white/[0.06] p-3 flex-shrink-0">
+        {!collapsed && session?.user ? (
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => router.push("/admin/notifications")}
+              className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-left transition-colors hover:bg-white/[0.03]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="relative flex h-6 w-6 items-center justify-center text-zinc-500">
+                  <Bell className="h-[17px] w-[17px]" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -right-1.5 -top-1.5 flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-[#8f1627] px-1 text-[10px] font-bold text-white">
+                      {unreadCount}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[15px] font-medium text-[#c2b0a2]">Notifications</span>
+              </div>
+              <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-[#1a0f14] px-2 text-[10px] font-semibold text-[#9d2c3f]">
+                {unreadCount}
+              </span>
+            </button>
+
+            <div className="mx-1 h-px bg-white/[0.06]" />
+
+            <div className="flex items-center gap-3 px-3 py-3">
+              <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(249,195,122,0.22),rgba(64,46,34,0.95))] ring-1 ring-white/[0.06]">
+                <div className="flex h-full w-full items-center justify-center text-xs font-bold text-[#f5d8b2]">
+                  {(session.user.name || "A").charAt(0).toUpperCase()}
+                </div>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[26px] font-semibold leading-none text-[#ff7b7b]">
+                  {session.user.name}
+                </p>
+                <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff4d5f]">
+                  {userRole || "ADMIN"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => router.push("/admin/settings")}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
+                title="Settings"
+              >
+                <Settings className="h-4 w-4" />
+              </button>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-white truncate">{session.user.name}</p>
-              <p className="text-[10px] text-zinc-500 truncate">{session.user.email}</p>
-            </div>
+
+            <button
+              onClick={() => signOut({ callbackUrl: "/admin/login" })}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium text-[#c6d3f0] transition-colors hover:bg-white/[0.03] hover:text-white"
+            >
+              <LogOut className="h-[18px] w-[18px] flex-shrink-0" />
+              <span>Logout</span>
+            </button>
           </div>
+        ) : (
+          <button
+            onClick={() => signOut({ callbackUrl: "/admin/login" })}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium text-zinc-500 transition-all duration-200 hover:bg-[#a996c4]/10 hover:text-[#c7bdd8]",
+              collapsed && "justify-center"
+            )}
+            title={collapsed ? "Logout" : undefined}
+          >
+            <LogOut className="h-[18px] w-[18px] flex-shrink-0" />
+            {collapsed && <span className="sr-only">Logout</span>}
+          </button>
         )}
-        <button
-          onClick={() => signOut({ callbackUrl: "/admin/login" })}
-          className={cn(
-            "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium text-zinc-500 transition-all duration-200 hover:bg-[#a996c4]/10 hover:text-[#c7bdd8]",
-            collapsed && "justify-center"
-          )}
-          title={collapsed ? "Logout" : undefined}
-        >
-          <LogOut className="h-[18px] w-[18px] flex-shrink-0" />
-          {!collapsed && <span>Logout</span>}
-        </button>
       </div>
     </>
   );
