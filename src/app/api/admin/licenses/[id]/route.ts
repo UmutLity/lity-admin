@@ -8,6 +8,7 @@ const updateLicenseSchema = z.object({
   productId: z.string().cuid(),
   plan: z.enum(["DAILY", "LIFETIME"]).default("LIFETIME"),
   key: z.string().min(3).max(120).regex(/^[a-zA-Z0-9_.-]+$/),
+  status: z.enum(["ACTIVE", "PENDING", "REVOKED"]).default("ACTIVE"),
   note: z.string().max(500).optional().nullable(),
 });
 
@@ -50,10 +51,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    if (!product.defaultLoaderUrl) {
-      return NextResponse.json({ error: "Selected product does not have a default Mega loader link yet" }, { status: 400 });
-    }
-
     const normalizedKey = data.key.trim();
     const duplicate = await prisma.license.findFirst({
       where: {
@@ -74,8 +71,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         productId: data.productId,
         plan: data.plan.toUpperCase(),
         key: normalizedKey,
-        status: expiresAt && expiresAt.getTime() < Date.now() ? "EXPIRED" : "ACTIVE",
-        downloadUrl: product.defaultLoaderUrl,
+        status: data.status === "REVOKED" ? "REVOKED" : (data.status === "PENDING" ? "PENDING" : (expiresAt && expiresAt.getTime() < Date.now() ? "EXPIRED" : "ACTIVE")),
+        downloadUrl: data.status === "ACTIVE" ? (product.defaultLoaderUrl || null) : null,
         note: data.note || null,
         expiresAt,
       },

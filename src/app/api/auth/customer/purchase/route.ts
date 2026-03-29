@@ -5,6 +5,10 @@ import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer
 
 const AUTO_PROMOTE_ROLES = new Set(["MEMBER", "USER", "CUSTOMER"]);
 
+function isManualDeliveryProduct(product: { defaultLoaderUrl?: string | null }) {
+  return !String(product?.defaultLoaderUrl || "").trim();
+}
+
 function getPlanExpiry(plan: string): Date | null {
   const normalized = String(plan || "").toUpperCase().trim();
   const now = Date.now();
@@ -81,6 +85,7 @@ export async function POST(req: NextRequest) {
     const selectedPlan = priceRow.plan;
 
     const amount = Number(priceRow.price || 0);
+    const manualDelivery = isManualDeliveryProduct(product);
     if (amount <= 0) return NextResponse.json({ success: false, error: "Invalid product price." }, { status: 400 });
     if (customer.balance < amount) {
       return NextResponse.json({ success: false, error: "Insufficient balance." }, { status: 400 });
@@ -138,9 +143,9 @@ export async function POST(req: NextRequest) {
           productId: product.id,
           plan: selectedPlan,
           key: licenseKey,
-          status: "ACTIVE",
-          downloadUrl: product.defaultLoaderUrl || null,
-          note: "Purchased with wallet balance",
+          status: manualDelivery ? "PENDING" : "ACTIVE",
+          downloadUrl: manualDelivery ? null : (product.defaultLoaderUrl || null),
+          note: manualDelivery ? "Manual delivery pending. Our team will contact you after review." : "Purchased with wallet balance",
           expiresAt,
         },
       });
@@ -170,6 +175,8 @@ export async function POST(req: NextRequest) {
         orderId: result.order.id,
         licenseId: result.license.id,
         licenseKey: result.license.key,
+        licenseStatus: result.license.status,
+        manualDelivery,
         balance: result.updatedCustomer.balance,
         totalSpent: result.updatedCustomer.totalSpent,
         role: result.updatedCustomer.role,

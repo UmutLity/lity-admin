@@ -9,6 +9,7 @@ const licenseSchema = z.object({
   plan: z.enum(["DAILY", "LIFETIME"]).default("LIFETIME"),
   key: z.string().min(3).max(120).regex(/^[a-zA-Z0-9_.-]+$/, "License key can only contain letters, numbers, dot, underscore and dash").optional(),
   keys: z.array(z.string().min(3).max(120).regex(/^[a-zA-Z0-9_.-]+$/)).optional(),
+  status: z.enum(["ACTIVE", "PENDING", "REVOKED"]).default("ACTIVE"),
   note: z.string().max(500).optional().nullable(),
 }).refine((value) => Boolean(value.key || (value.keys && value.keys.length > 0)), {
   message: "At least one license key is required",
@@ -77,10 +78,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    if (!product.defaultLoaderUrl) {
-      return NextResponse.json({ error: "Selected product does not have a default Mega loader link yet" }, { status: 400 });
-    }
-
     const inputKeys = Array.from(new Set((data.keys?.length ? data.keys : [data.key!]).map((item) => item.trim()).filter(Boolean)));
     const expiresAt = data.plan === "DAILY"
       ? new Date(Date.now() + 24 * 60 * 60 * 1000)
@@ -103,8 +100,8 @@ export async function POST(req: NextRequest) {
           productId: data.productId,
           plan: data.plan.toUpperCase(),
           key: licenseKey,
-          status: "ACTIVE",
-          downloadUrl: product.defaultLoaderUrl,
+          status: data.status,
+          downloadUrl: data.status === "ACTIVE" ? (product.defaultLoaderUrl || null) : null,
           note: data.note || null,
           expiresAt,
         },

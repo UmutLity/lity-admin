@@ -32,7 +32,7 @@ type LicenseRecord = {
   id: string;
   key: string;
   plan: string;
-  status: "ACTIVE" | "EXPIRED" | "REVOKED";
+  status: "ACTIVE" | "EXPIRED" | "REVOKED" | "PENDING";
   downloadUrl: string | null;
   note: string | null;
   downloadCount: number;
@@ -46,6 +46,7 @@ type LicenseRecord = {
 const emptyForm = {
   productId: "",
   plan: "LIFETIME",
+  status: "ACTIVE",
   keyInput: "",
   note: "",
 };
@@ -54,6 +55,7 @@ const statusStyles: Record<LicenseRecord["status"], string> = {
   ACTIVE: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
   EXPIRED: "border-amber-500/20 bg-amber-500/10 text-amber-300",
   REVOKED: "border-red-500/20 bg-red-500/10 text-red-300",
+  PENDING: "border-sky-500/20 bg-sky-500/10 text-sky-300",
 };
 
 function truncateLink(url: string | null) {
@@ -62,6 +64,7 @@ function truncateLink(url: string | null) {
 }
 
 function getDisplayStatus(license: LicenseRecord) {
+  if (license.status === "PENDING") return "PENDING" as const;
   if (license.status === "REVOKED") return "REVOKED" as const;
   if (license.expiresAt && new Date(license.expiresAt).getTime() < Date.now()) return "EXPIRED" as const;
   return "ACTIVE" as const;
@@ -144,6 +147,7 @@ export default function LicensesPage() {
     setForm({
       productId: license.product.id,
       plan: license.plan,
+      status: license.status,
       keyInput: license.key,
       note: license.note || "",
     });
@@ -157,11 +161,6 @@ export default function LicensesPage() {
       return;
     }
 
-    if (!selectedProduct?.defaultLoaderUrl) {
-      addToast({ type: "error", title: "Missing loader link", description: "Selected product does not have a default Mega link yet" });
-      return;
-    }
-
     if (editing && parsedKeys.length !== 1) {
       addToast({ type: "error", title: "Edit mode", description: "You can only edit one license key at a time" });
       return;
@@ -172,6 +171,7 @@ export default function LicensesPage() {
       const payload = {
         productId: form.productId,
         plan: form.plan,
+        status: form.status,
         key: parsedKeys[0],
         keys: !editing ? parsedKeys : undefined,
         note: form.note.trim() || null,
@@ -338,7 +338,7 @@ export default function LicensesPage() {
                             <Badge variant="outline" className={cn("border text-[10px] tracking-[0.18em]", statusStyles[displayStatus])}>
                               {displayStatus === "ACTIVE" ? "AVAILABLE" : displayStatus}
                             </Badge>
-                            <span className="text-xs uppercase tracking-[0.18em] text-zinc-500">{license.plan === "DAILY" ? "1 DAY" : "LIFETIME"}</span>
+                            <span className="text-xs uppercase tracking-[0.18em] text-zinc-500">{license.plan === "DAILY" ? "1 DAY" : license.plan.replaceAll("_", " ")}</span>
                           </div>
                         </div>
                       </div>
@@ -355,7 +355,7 @@ export default function LicensesPage() {
                           <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-zinc-600" />
                         </a>
                       ) : (
-                        <span className="text-sm text-zinc-600">No loader link</span>
+                        <span className="text-sm text-zinc-600">{displayStatus === "PENDING" ? "Manual delivery" : "No loader link"}</span>
                       )}
                     </td>
                     <td className="px-6 py-4">
@@ -464,9 +464,15 @@ export default function LicensesPage() {
 
               <div className="space-y-2">
                 <Label>Status</Label>
-                <div className="flex h-10 items-center rounded-md border border-white/[0.08] bg-[#111827] px-3 text-sm text-zinc-400">
-                  Available when created
-                </div>
+                <Select
+                  value={form.status}
+                  onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as typeof prev.status }))}
+                  options={[
+                    { value: "ACTIVE", label: "Active" },
+                    { value: "PENDING", label: "Pending Manual Delivery" },
+                    { value: "REVOKED", label: "Revoked" },
+                  ]}
+                />
               </div>
 
               <div className="space-y-2 sm:col-span-2">
@@ -475,18 +481,18 @@ export default function LicensesPage() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-violet-500/15 bg-violet-500/5 p-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-violet-200">
-                <Link2 className="h-4 w-4" />
-                Product Loader Link
-              </div>
+              <div className="rounded-2xl border border-violet-500/15 bg-violet-500/5 p-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-violet-200">
+                  <Link2 className="h-4 w-4" />
+                Delivery Source
+                </div>
               {selectedProduct?.defaultLoaderUrl ? (
                 <a href={selectedProduct.defaultLoaderUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex max-w-full items-center gap-2 text-sm text-zinc-300 hover:text-white">
                   <span className="truncate">{selectedProduct.defaultLoaderUrl}</span>
                   <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
                 </a>
               ) : (
-                <p className="mt-2 text-sm text-zinc-500">Select a product with a configured default Mega link.</p>
+                <p className="mt-2 text-sm text-zinc-500">This product has no loader link, so it will work as manual delivery.</p>
               )}
             </div>
           </div>
