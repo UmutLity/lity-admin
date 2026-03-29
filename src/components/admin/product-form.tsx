@@ -16,6 +16,7 @@ type TabKey = "general" | "media" | "tabs" | "pricing";
 interface PriceEntry {
   plan: string;
   price: number;
+  customLabel?: string;
 }
 
 interface FeatureTab {
@@ -64,6 +65,7 @@ const planOptions = [
   { value: "ONETIME", label: "One Time" },
   { value: "LIFETIME", label: "Lifetime" },
 ];
+const CUSTOM_PLAN_VALUE = "__CUSTOM__";
 
 const currencyOptions = [
   { value: "USD", label: "USD" },
@@ -106,7 +108,15 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
     () =>
       Array.isArray(initialData?.prices)
         ? initialData.prices
-            .map((p: any) => ({ plan: String(p?.plan || ""), price: Number(p?.price || 0) }))
+            .map((p: any) => {
+              const rawPlan = String(p?.plan || "");
+              const isStandard = planOptions.some((item) => item.value === rawPlan);
+              return {
+                plan: isStandard ? rawPlan : CUSTOM_PLAN_VALUE,
+                customLabel: isStandard ? "" : rawPlan,
+                price: Number(p?.price || 0),
+              };
+            })
             .filter((p: PriceEntry) => !!p.plan)
         : [],
     [initialData?.prices]
@@ -146,6 +156,7 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
   });
 
   const [basePlan, setBasePlan] = useState(initialBasePrice.plan || "MONTHLY");
+  const [baseCustomPlan, setBaseCustomPlan] = useState(initialBasePrice.customLabel || "");
   const [basePrice, setBasePrice] = useState<number>(Number(initialBasePrice.price || 0));
   const [extraPrices, setExtraPrices] = useState<PriceEntry[]>(initialExtraPrices);
 
@@ -167,10 +178,12 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
   };
 
   const addExtraPrice = () => {
-    const used = new Set([basePlan, ...extraPrices.map((p) => p.plan)]);
+    const used = new Set([
+      basePlan === CUSTOM_PLAN_VALUE ? null : basePlan,
+      ...extraPrices.map((p) => (p.plan === CUSTOM_PLAN_VALUE ? null : p.plan)),
+    ]);
     const available = planOptions.find((p) => !used.has(p.value));
-    if (!available) return;
-    setExtraPrices((prev) => [...prev, { plan: available.value, price: 0 }]);
+    setExtraPrices((prev) => [...prev, { plan: available?.value || CUSTOM_PLAN_VALUE, customLabel: "", price: 0 }]);
   };
 
   const addGalleryUrl = () => {
@@ -298,8 +311,15 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
     setLoading(true);
     setErrors({});
 
-    const mergedPrices: PriceEntry[] = [{ plan: basePlan, price: Number(basePrice) }, ...extraPrices.map((p) => ({ ...p, price: Number(p.price) }))];
+    const mergedPrices: PriceEntry[] = [
+      { plan: basePlan, customLabel: baseCustomPlan, price: Number(basePrice) },
+      ...extraPrices.map((p) => ({ ...p, price: Number(p.price) })),
+    ];
     const uniquePrices = mergedPrices
+      .map((item) => ({
+        plan: item.plan === CUSTOM_PLAN_VALUE ? String(item.customLabel || "").trim() : item.plan,
+        price: Number(item.price),
+      }))
       .filter((item) => item.plan && Number.isFinite(item.price))
       .filter((item, index, list) => list.findIndex((x) => x.plan === item.plan) === index);
 
@@ -624,16 +644,22 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
             <div className="space-y-6">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-zinc-300">Pricing Plans</label>
-                <p className="text-xs text-zinc-500">You can use standard plans or custom labels like game names.</p>
+                <p className="text-xs text-zinc-500">Standard options stay available. Choose Custom for game-based pricing.</p>
               </div>
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-[220px_1fr]">
-                <input
+                <select
                   value={basePlan}
                   onChange={(event) => setBasePlan(event.target.value)}
                   className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
-                  placeholder="MONTHLY or Fortnite"
-                />
+                >
+                  {planOptions.map((plan) => (
+                    <option key={plan.value} value={plan.value}>
+                      {plan.label}
+                    </option>
+                  ))}
+                  <option value={CUSTOM_PLAN_VALUE}>Custom</option>
+                </select>
                 <input
                   type="number"
                   step="0.01"
@@ -644,18 +670,42 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                   placeholder="0.00"
                 />
               </div>
+              {basePlan === CUSTOM_PLAN_VALUE && (
+                <input
+                  value={baseCustomPlan}
+                  onChange={(event) => setBaseCustomPlan(event.target.value)}
+                  className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  placeholder="Game name, e.g. Escape From Tarkov"
+                />
+              )}
 
               <div className="space-y-2">
                 {extraPrices.map((price, index) => (
-                  <div key={`extra-price-${index}`} className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr_auto]">
-                    <input
+                  <div key={`extra-price-${index}`} className={`grid grid-cols-1 gap-2 ${price.plan === CUSTOM_PLAN_VALUE ? "md:grid-cols-[180px_1fr_1fr_auto]" : "md:grid-cols-[220px_1fr_auto]"}`}>
+                    <select
                       value={price.plan}
                       onChange={(event) =>
                         setExtraPrices((prev) => prev.map((item, i) => (i === index ? { ...item, plan: event.target.value } : item)))
                       }
                       className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none"
-                      placeholder="WEEKLY or Rust"
-                    />
+                    >
+                      {planOptions.map((plan) => (
+                        <option key={plan.value} value={plan.value}>
+                          {plan.label}
+                        </option>
+                      ))}
+                      <option value={CUSTOM_PLAN_VALUE}>Custom</option>
+                    </select>
+                    {price.plan === CUSTOM_PLAN_VALUE && (
+                      <input
+                        value={price.customLabel || ""}
+                        onChange={(event) =>
+                          setExtraPrices((prev) => prev.map((item, i) => (i === index ? { ...item, customLabel: event.target.value } : item)))
+                        }
+                        className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none"
+                        placeholder="Game name"
+                      />
+                    )}
                     <input
                       type="number"
                       step="0.01"
