@@ -3,24 +3,25 @@ import crypto from "crypto";
 import prisma from "@/lib/prisma";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
 
-const ALLOWED_PLANS = new Set(["DAILY", "3_DAYS", "WEEKLY", "MONTHLY", "3_MONTHS", "ONETIME", "LIFETIME"]);
 const AUTO_PROMOTE_ROLES = new Set(["MEMBER", "USER", "CUSTOMER"]);
 
 function getPlanExpiry(plan: string): Date | null {
+  const normalized = String(plan || "").toUpperCase().trim();
   const now = Date.now();
-  if (plan === "DAILY") return new Date(now + 24 * 60 * 60 * 1000);
-  if (plan === "3_DAYS") return new Date(now + 3 * 24 * 60 * 60 * 1000);
-  if (plan === "WEEKLY") return new Date(now + 7 * 24 * 60 * 60 * 1000);
-  if (plan === "MONTHLY") return new Date(now + 30 * 24 * 60 * 60 * 1000);
-  if (plan === "3_MONTHS") return new Date(now + 90 * 24 * 60 * 60 * 1000);
+  if (normalized === "DAILY") return new Date(now + 24 * 60 * 60 * 1000);
+  if (normalized === "3_DAYS") return new Date(now + 3 * 24 * 60 * 60 * 1000);
+  if (normalized === "WEEKLY") return new Date(now + 7 * 24 * 60 * 60 * 1000);
+  if (normalized === "MONTHLY") return new Date(now + 30 * 24 * 60 * 60 * 1000);
+  if (normalized === "3_MONTHS") return new Date(now + 90 * 24 * 60 * 60 * 1000);
   return null;
 }
 
 function buildLicenseKey(productSlug: string, plan: string): string {
+  const planKey = String(plan || "").replace(/[^A-Z0-9]+/gi, "").toUpperCase() || "GEN";
   const partA = crypto.randomBytes(4).toString("hex").toUpperCase();
   const partB = crypto.randomBytes(4).toString("hex").toUpperCase();
   const partC = crypto.randomBytes(4).toString("hex").toUpperCase();
-  return `${productSlug.slice(0, 4).toUpperCase()}-${plan.slice(0, 3).toUpperCase()}-${partA}-${partB}-${partC}`;
+  return `${productSlug.slice(0, 4).toUpperCase()}-${planKey.slice(0, 3)}-${partA}-${partB}-${partC}`;
 }
 
 async function createUniqueLicenseKey(productSlug: string, plan: string): Promise<string> {
@@ -41,13 +42,15 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const productId = typeof body?.productId === "string" ? body.productId : "";
-    const rawPlan = typeof body?.plan === "string" ? body.plan.toUpperCase().trim() : "";
+    const requestedPlan = typeof body?.plan === "string" ? body.plan.trim() : "";
 
-    if (!productId || !rawPlan || !ALLOWED_PLANS.has(rawPlan)) {
+    if (!productId || !requestedPlan) {
       return NextResponse.json({ success: false, error: "Valid product and plan required" }, { status: 400 });
     }
 
-    const [customer, product, priceRow] = await Promise.all([
+    const normalizedPlan = requestedPlan.toUpperCase();
+
+    const [customer, product] = await Promise.all([
       prisma.customer.findUnique({
         where: { id: payload.id },
         select: { id: true, email: true, username: true, role: true, isActive: true, balance: true, totalSpent: true },
@@ -55,9 +58,6 @@ export async function POST(req: NextRequest) {
       prisma.product.findUnique({
         where: { id: productId },
         select: { id: true, name: true, slug: true, isActive: true, status: true, currency: true, defaultLoaderUrl: true },
-      }),
-      prisma.productPrice.findUnique({
-        where: { productId_plan: { productId, plan: rawPlan } },
       }),
     ]);
 
@@ -67,9 +67,18 @@ export async function POST(req: NextRequest) {
     if (!product || !product.isActive || product.status === "DISCONTINUED") {
       return NextResponse.json({ success: false, error: "Product is not available." }, { status: 404 });
     }
+
+    const priceRow = await prisma.productPrice.findFirst({
+      where: {
+        productId,
+        OR: [{ plan: requestedPlan }, { plan: normalizedPlan }],
+      },
+    });
     if (!priceRow) {
       return NextResponse.json({ success: false, error: "Selected plan is not available." }, { status: 400 });
     }
+
+    const selectedPlan = priceRow.plan;
 
     const amount = Number(priceRow.price || 0);
     if (amount <= 0) return NextResponse.json({ success: false, error: "Invalid product price." }, { status: 400 });
@@ -77,8 +86,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Insufficient balance." }, { status: 400 });
     }
 
-    const expiresAt = getPlanExpiry(rawPlan);
-    const licenseKey = await createUniqueLicenseKey(product.slug, rawPlan);
+    const expiresAt = getPlanExpiry(selectedPlan);
+    const licenseKey = await createUniqueLicenseKey(product.slug, selectedPlan);
 
     const result = await prisma.$transaction(async (tx) => {
       const current = await tx.customer.findUnique({
@@ -118,7 +127,7 @@ export async function POST(req: NextRequest) {
         data: {
           orderId: order.id,
           productId: product.id,
-          plan: rawPlan,
+          plan: selectedPlan,
           amount,
         },
       });
@@ -127,7 +136,7 @@ export async function POST(req: NextRequest) {
         data: {
           customerId: customer.id,
           productId: product.id,
-          plan: rawPlan,
+          plan: selectedPlan,
           key: licenseKey,
           status: "ACTIVE",
           downloadUrl: product.defaultLoaderUrl || null,
@@ -143,13 +152,13 @@ export async function POST(req: NextRequest) {
           amount,
           balanceBefore: before,
           balanceAfter: after,
-          reason: `Purchase: ${product.name} (${rawPlan})`,
+          reason: `Purchase: ${product.name} (${selectedPlan})`,
           orderId: order.id,
         },
       });
 
       await tx.cartItem.deleteMany({
-        where: { customerId: customer.id, productId: product.id, plan: rawPlan },
+        where: { customerId: customer.id, productId: product.id, plan: selectedPlan },
       });
 
       return { updatedCustomer, order, license };

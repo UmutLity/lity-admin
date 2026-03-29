@@ -156,6 +156,7 @@ async function main() {
     { name: "Vanguard Bypass", slug: "vanguard-bypass", shortDescription: "Reliable system-level bypass for Vanguard.", description: "# Vanguard Bypass\n\nReliable bypass.", category: "BYPASS", status: "UNDETECTED", isActive: true, currency: "USD", buyUrl: "https://discord.gg/litysoftware", sortOrder: 6 },
     { name: "Private Woofer", slug: "private-woofer", shortDescription: "Custom method HWID spoofer.", description: "# Private Woofer\n\nCustom method HWID spoofer.", category: "SPOOFER", status: "UNDETECTED", isActive: true, currency: "USD", buyUrl: "https://discord.gg/litysoftware", sortOrder: 7 },
     { name: "Perm Woofer", slug: "perm-woofer", shortDescription: "Permanent HWID spoofer solution.", description: "# Perm Woofer\n\nPermanent HWID spoofer.", category: "SPOOFER", status: "UPDATING", statusNote: "Enhanced features coming soon", isActive: true, currency: "USD", buyUrl: "https://discord.gg/litysoftware", sortOrder: 8 },
+    { name: "NFA Account", slug: "nfa-account", shortDescription: "Game-based NFA account pricing with fast delivery.", description: "# NFA Account\n\nPricing varies by game. Contact us or choose your game-specific option when available.", category: "OTHER", status: "UNDETECTED", isActive: true, currency: "USD", buyUrl: "https://discord.gg/litysoftware", sortOrder: 9 },
   ];
 
   for (const p of products) {

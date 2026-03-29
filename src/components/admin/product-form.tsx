@@ -624,21 +624,25 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
             <div className="space-y-6">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-zinc-300">Pricing Plans</label>
-                <p className="text-xs text-zinc-500">Base plan is always shown. Add optional extra plans below.</p>
+                <p className="text-xs text-zinc-500">You can use standard plans or custom labels like game names.</p>
               </div>
 
+              <datalist id="pricing-plan-options">
+                {planOptions.map((plan) => (
+                  <option key={plan.value} value={plan.value}>
+                    {plan.label}
+                  </option>
+                ))}
+              </datalist>
+
               <div className="grid grid-cols-1 gap-3 md:grid-cols-[220px_1fr]">
-                <select
+                <input
+                  list="pricing-plan-options"
                   value={basePlan}
                   onChange={(event) => setBasePlan(event.target.value)}
                   className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
-                >
-                  {planOptions.map((plan) => (
-                    <option key={plan.value} value={plan.value}>
-                      {plan.label}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="MONTHLY or Fortnite"
+                />
                 <input
                   type="number"
                   step="0.01"
@@ -653,19 +657,15 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
               <div className="space-y-2">
                 {extraPrices.map((price, index) => (
                   <div key={`${price.plan}-${index}`} className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr_auto]">
-                    <select
+                    <input
+                      list="pricing-plan-options"
                       value={price.plan}
                       onChange={(event) =>
                         setExtraPrices((prev) => prev.map((item, i) => (i === index ? { ...item, plan: event.target.value } : item)))
                       }
                       className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none"
-                    >
-                      {planOptions.map((plan) => (
-                        <option key={plan.value} value={plan.value}>
-                          {plan.label}
-                        </option>
-                      ))}
-                    </select>
+                      placeholder="WEEKLY or Rust"
+                    />
                     <input
                       type="number"
                       step="0.01"
