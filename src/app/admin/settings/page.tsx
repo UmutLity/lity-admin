@@ -34,6 +34,14 @@ export default function SettingsPage() {
   const [testingWebhook, setTestingWebhook] = useState(false);
   const [lastTestResult, setLastTestResult] = useState<any>(null);
 
+  const announcementPreviewStyles: Record<string, string> = {
+    info: "border-blue-400/30 bg-blue-500/15 text-blue-50",
+    success: "border-emerald-400/30 bg-emerald-500/15 text-emerald-50",
+    warning: "border-amber-400/30 bg-amber-500/15 text-amber-50",
+    alert: "border-rose-400/30 bg-rose-500/15 text-rose-50",
+    promo: "border-violet-300/30 bg-violet-900/40 text-white",
+  };
+
   useEffect(() => {
     async function load() {
       try {
@@ -78,6 +86,12 @@ export default function SettingsPage() {
         body: JSON.stringify({ settings: settingsPayload }),
       });
       if (res.ok) {
+        setSettings(settingsPayload.map(({ key, value }) => {
+          const existing = settings.find((setting) => setting.key === key);
+          return existing
+            ? { ...existing, value }
+            : { id: `local-${key}`, key, value, type: "string", group: "custom", label: key };
+        }));
         addToast({ type: "success", title: "Saved", description: "Site settings updated" });
       } else {
         const err = await res.json().catch(() => ({}));
@@ -244,7 +258,7 @@ const handleTestWebhook = async () => {
 
               <div className="rounded-lg border p-4 bg-muted/20">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Preview</p>
-                <div className="h-9 rounded border border-violet-300/30 bg-violet-900/40 flex items-center justify-center text-sm font-semibold text-white">
+                <div className={`h-9 rounded border flex items-center justify-center text-sm font-semibold ${announcementPreviewStyles[values.announcement_type || "promo"] || announcementPreviewStyles.promo}`}>
                   {values.announcement_text || "NEW UPDATE AVAILABLE"}
                 </div>
               </div>

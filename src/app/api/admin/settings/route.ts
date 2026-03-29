@@ -4,13 +4,47 @@ import { requireAdmin } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
 import { getClientIp } from "@/lib/ip-utils";
 
+const SETTING_DEFAULTS: Record<string, { value: string; type: string; group: string; label: string }> = {
+  announcement_active: {
+    value: "true",
+    type: "boolean",
+    group: "announcement",
+    label: "Announcement Active",
+  },
+  announcement_type: {
+    value: "promo",
+    type: "string",
+    group: "announcement",
+    label: "Announcement Type",
+  },
+  announcement_text: {
+    value: "NEW UPDATE AVAILABLE",
+    type: "string",
+    group: "announcement",
+    label: "Announcement Text",
+  },
+};
+
 // GET /api/admin/settings
 export async function GET() {
   try {
     await requireAdmin();
 
     const settings = await prisma.siteSetting.findMany({ orderBy: { group: "asc" } });
-    return NextResponse.json({ success: true, data: settings });
+    const missingDefaults = Object.entries(SETTING_DEFAULTS)
+      .filter(([key]) => !settings.some((setting) => setting.key === key))
+      .map(([key, config]) => ({
+        id: `virtual-${key}`,
+        key,
+        value: config.value,
+        type: config.type,
+        group: config.group,
+        label: config.label,
+        updatedAt: new Date(),
+      }));
+
+    const mergedSettings = [...settings, ...missingDefaults].sort((a, b) => a.group.localeCompare(b.group));
+    return NextResponse.json({ success: true, data: mergedSettings });
   } catch (error: any) {
     if (error.message === "Unauthorized") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (error.message?.includes("Forbidden")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -34,17 +68,30 @@ export async function PUT(req: NextRequest) {
 
     for (const { key, value } of body.settings) {
       const existing = await prisma.siteSetting.findUnique({ where: { key } });
+      const preset = SETTING_DEFAULTS[key];
+
       if (existing) {
         before[key] = existing.value;
         after[key] = value;
-        await prisma.siteSetting.update({ where: { key }, data: { value } });
-      } else {
-        // Create new setting if it doesn't exist
+      } else if (preset) {
+        before[key] = preset.value;
         after[key] = value;
-        await prisma.siteSetting.create({
-          data: { key, value, type: "string", group: "custom", label: key },
-        });
       }
+
+      await prisma.siteSetting.upsert({
+        where: { key },
+        update: {
+          value,
+          ...(preset ? { type: preset.type, group: preset.group, label: preset.label } : {}),
+        },
+        create: {
+          key,
+          value,
+          type: preset?.type || "string",
+          group: preset?.group || "custom",
+          label: preset?.label || key,
+        },
+      });
     }
 
     await createAuditLog({
