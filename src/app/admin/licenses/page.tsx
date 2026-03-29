@@ -338,7 +338,7 @@ export default function LicensesPage() {
                             <Badge variant="outline" className={cn("border text-[10px] tracking-[0.18em]", statusStyles[displayStatus])}>
                               {displayStatus === "ACTIVE" ? "AVAILABLE" : displayStatus}
                             </Badge>
-                            <span className="text-xs uppercase tracking-[0.18em] text-zinc-500">{license.plan === "DAILY" ? "1 DAY" : license.plan.replaceAll("_", " ")}</span>
+                            <span className="text-xs uppercase tracking-[0.18em] text-zinc-500">{license.plan === "DAILY" ? "1 DAY" : license.plan.split("_").join(" ")}</span>
                           </div>
                         </div>
                       </div>
