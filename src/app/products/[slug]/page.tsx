@@ -98,5 +98,9 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
     notFound();
   }
 
-  return <ProductDetailView product={data.product} relatedProducts={data.related} />;
+  return (
+    <div className="min-h-screen bg-[linear-gradient(180deg,#0d0e12_0%,#101118_35%,#0d0e12_100%)]">
+      <ProductDetailView product={data.product} relatedProducts={data.related} />
+    </div>
+  );
 }

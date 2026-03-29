@@ -6,7 +6,7 @@ import { ArrowRight, CheckCircle2, Clock3, Layers3, Rocket, Shield, Sparkles, St
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select } from "@/components/ui/select-native";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 
@@ -131,15 +131,42 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
               </div>
               <div className="rounded-xl border border-white/8 bg-white/[0.03] p-3">
                 <p className="text-xs uppercase tracking-[0.14em] text-zinc-500">Plan</p>
-                <Select
-                  className="mt-2 bg-background/80"
-                  options={product.prices.map((price) => ({
-                    value: price.plan,
-                    label: `${planLabel(price.plan)} - ${formatCurrency(price.price, product.currency)}`,
-                  }))}
-                  value={selectedPlan}
-                  onChange={(event) => setSelectedPlan(event.target.value)}
-                />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="mt-2 flex h-10 w-full items-center justify-between rounded-md border border-white/10 bg-[rgba(16,16,22,0.96)] px-3 text-sm text-zinc-100 transition hover:border-primary/35 hover:bg-[rgba(20,20,28,0.98)]"
+                    >
+                      <span className="truncate">
+                        {selectedPrice
+                          ? `${formatPlanDisplay(selectedPrice.plan)} - ${formatCurrency(selectedPrice.price, product.currency)}`
+                          : "Select plan"}
+                      </span>
+                      <span className="ml-3 text-zinc-500">v</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[320px] rounded-xl border border-white/10 bg-[rgba(16,16,22,0.98)] p-1.5 text-zinc-100 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+                  >
+                    {product.prices.map((price) => {
+                      const active = price.plan === selectedPlan;
+                      return (
+                        <DropdownMenuItem
+                          key={price.id}
+                          onSelect={() => setSelectedPlan(price.plan)}
+                          className={cn(
+                            "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm text-zinc-200 focus:bg-[rgba(124,58,237,0.16)] focus:text-white",
+                            active && "bg-[rgba(124,58,237,0.18)] text-white"
+                          )}
+                        >
+                          <span>{formatPlanDisplay(price.plan)}</span>
+                          <span className="font-semibold text-primary">{formatCurrency(price.price, product.currency)}</span>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
