@@ -647,7 +647,7 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
 
               <div className="space-y-2">
                 {extraPrices.map((price, index) => (
-                  <div key={`${price.plan}-${index}`} className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr_auto]">
+                  <div key={`extra-price-${index}`} className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr_auto]">
                     <input
                       value={price.plan}
                       onChange={(event) =>
