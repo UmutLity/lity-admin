@@ -319,7 +319,8 @@ export default function UsersPage() {
     if (role === "ADMIN") return "bg-gradient-to-r from-purple-500/20 to-violet-500/20 text-purple-400 border border-purple-500/20";
     if (role === "MODERATOR") return "bg-blue-500/10 text-blue-300 border border-blue-500/20";
     if (role === "SUPPORT") return "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20";
-    if (role === "ANALYST") return "bg-amber-500/10 text-amber-300 border border-amber-500/20";
+    if (role === "ANALYST") return "bg-zinc-500/10 text-zinc-300 border border-zinc-500/20";
+    if (role === "EDITOR") return "bg-zinc-500/10 text-zinc-300 border border-zinc-500/20";
     if (role === "VIEWER") return "bg-zinc-500/10 text-zinc-300 border border-zinc-500/20";
     return "";
   };
@@ -630,17 +631,14 @@ export default function UsersPage() {
               <Label>Role</Label>
                 <Select
                   options={[
-                  { value: "FOUNDER", label: "Founder" },
-                  { value: "ADMIN", label: "Admin" },
-                  { value: "MODERATOR", label: "Moderator" },
-                  { value: "SUPPORT", label: "Support" },
-                  { value: "ANALYST", label: "Analyst" },
-                  { value: "EDITOR", label: "Editor" },
-                  { value: "VIEWER", label: "Viewer" },
-                ]}
-                value={newAdmin.role}
-                onChange={(e) => setNewAdmin({ ...newAdmin, role: e.target.value })}
-              />
+                    { value: "FOUNDER", label: "Founder" },
+                    { value: "ADMIN", label: "Admin" },
+                    { value: "MODERATOR", label: "Moderator" },
+                    { value: "SUPPORT", label: "Support" },
+                  ]}
+                  value={newAdmin.role}
+                  onChange={(e) => setNewAdmin({ ...newAdmin, role: e.target.value })}
+                />
             </div>
           </div>
           <DialogFooter>

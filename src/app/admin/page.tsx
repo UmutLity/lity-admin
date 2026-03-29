@@ -5,16 +5,11 @@ import Link from "next/link";
 import {
   AlertTriangle,
   ArrowRight,
-  ArrowUpRight,
   BadgeDollarSign,
   Boxes,
-  Crown,
   CreditCard,
-  Gem,
   Gift,
-  Search,
   ShoppingCart,
-  Sparkles,
   Ticket,
   UserRound,
   Wallet,
@@ -94,14 +89,14 @@ const EMPTY: DashboardData = {
 };
 
 const RANK_TIERS = [
-  { name: "Bronze", min: 10, text: "text-amber-500", chip: "border-amber-500/25 bg-amber-500/10 text-amber-300" },
-  { name: "Silver", min: 25, text: "text-slate-300", chip: "border-slate-400/25 bg-slate-400/10 text-slate-200" },
-  { name: "Gold", min: 50, text: "text-yellow-400", chip: "border-yellow-500/25 bg-yellow-500/10 text-yellow-300" },
-  { name: "Platinum", min: 100, text: "text-cyan-300", chip: "border-cyan-500/25 bg-cyan-500/10 text-cyan-300" },
-  { name: "Diamond", min: 250, text: "text-sky-300", chip: "border-sky-500/25 bg-sky-500/10 text-sky-300" },
-  { name: "Ascendant", min: 500, text: "text-violet-300", chip: "border-violet-500/30 bg-violet-500/12 text-violet-300" },
-  { name: "Sovereign", min: 1000, text: "text-orange-300", chip: "border-orange-500/30 bg-orange-500/12 text-orange-300" },
-  { name: "Celestial", min: 2500, text: "text-fuchsia-300", chip: "border-fuchsia-500/30 bg-fuchsia-500/12 text-fuchsia-300" },
+  { name: "Bronze", min: 10, text: "text-amber-400" },
+  { name: "Silver", min: 25, text: "text-slate-300" },
+  { name: "Gold", min: 50, text: "text-yellow-400" },
+  { name: "Platinum", min: 100, text: "text-cyan-300" },
+  { name: "Diamond", min: 250, text: "text-sky-300" },
+  { name: "Ascendant", min: 500, text: "text-violet-300" },
+  { name: "Sovereign", min: 1000, text: "text-orange-300" },
+  { name: "Celestial", min: 2500, text: "text-fuchsia-300" },
 ] as const;
 
 function resolveRank(spent: number) {
@@ -114,8 +109,7 @@ function resolveRank(spent: number) {
 
 function tierStyles(rank: string) {
   const matched = RANK_TIERS.find((t) => t.name === rank);
-  if (!matched) return { text: "text-zinc-500", chip: "border-zinc-500/20 bg-zinc-500/10 text-zinc-400" };
-  return matched;
+  return matched ? matched.text : "text-zinc-500";
 }
 
 function safeArray<T = any>(value: any): T[] {
@@ -184,23 +178,23 @@ function StatCard({
   href?: string;
 }) {
   const card = (
-    <div className={cn(
-      "rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] p-3.5 shadow-[0_10px_20px_rgba(0,0,0,0.26)] transition-all",
-      href ? "cursor-pointer hover:border-[#b9accf]/24 hover:bg-[linear-gradient(180deg,rgba(16,17,25,0.94),rgba(12,13,19,0.98))]" : ""
-    )}>
-      <div className="mb-2.5 flex items-center justify-between">
+    <div
+      className={cn(
+        "rounded-2xl border border-white/[0.07] bg-[#0f1117] p-4 transition-colors",
+        href ? "cursor-pointer hover:border-white/[0.14] hover:bg-[#121520]" : ""
+      )}
+    >
+      <div className="mb-4 flex items-center justify-between">
         <p className="text-xs text-zinc-500">{title}</p>
-        <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg", iconClass)}>
-          <Icon className="h-3.5 w-3.5" />
+        <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.06]", iconClass)}>
+          <Icon className="h-4 w-4" />
         </div>
       </div>
-      <p className={cn("text-[15px] font-bold leading-none tracking-tight text-white sm:text-[17px]", valueClass)}>{value}</p>
+      <p className={cn("text-[18px] font-bold leading-none tracking-tight text-white sm:text-[19px]", valueClass)}>{value}</p>
     </div>
   );
 
-  if (href) {
-    return <Link href={href}>{card}</Link>;
-  }
+  if (href) return <Link href={href}>{card}</Link>;
   return card;
 }
 
@@ -220,15 +214,15 @@ function SummaryCard({
   valueClass?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] p-3.5 shadow-[0_10px_20px_rgba(0,0,0,0.26)]">
-      <div className="mb-2.5 flex items-center justify-between">
+    <div className="rounded-2xl border border-white/[0.07] bg-[#0f1117] p-4">
+      <div className="mb-4 flex items-center justify-between">
         <h3 className="text-sm font-medium text-zinc-300">{title}</h3>
-        <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg", iconClass)}>
-          <Icon className="h-3.5 w-3.5" />
+        <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.06]", iconClass)}>
+          <Icon className="h-4 w-4" />
         </div>
       </div>
-      <p className={cn("text-[22px] font-bold leading-none text-emerald-400 sm:text-[24px]", valueClass)}>{value}</p>
-      <p className="mt-1.5 text-[11px] text-zinc-500">{subtext}</p>
+      <p className={cn("text-[28px] font-bold leading-none sm:text-[30px]", valueClass || "text-white")}>{value}</p>
+      <p className="mt-2 text-[11px] text-zinc-500">{subtext}</p>
     </div>
   );
 }
@@ -251,32 +245,34 @@ function PeriodCard({
   const formatMoney = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] px-3.5 py-3">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-[18px] font-semibold leading-none text-zinc-100 sm:text-[21px]">{title}</h3>
-        <ArrowUpRight className="h-4 w-4 text-zinc-600" />
+    <div className="rounded-2xl border border-white/[0.07] bg-[#0f1117] px-4 py-4">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-[18px] font-semibold leading-none text-zinc-100 sm:text-[20px]">{title}</h3>
+        <span className="rounded-full border border-white/[0.07] bg-white/[0.02] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+          Summary
+        </span>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="min-w-0">
           <p className="text-[20px] font-bold leading-none text-white sm:text-[22px]">{sales}</p>
-          <p className="text-[11px] text-zinc-500">sales</p>
+          <p className="mt-1 text-[11px] text-zinc-500">sales</p>
         </div>
         <div className="min-w-0">
-          <p className="text-[18px] font-bold leading-none tabular-nums text-emerald-400 sm:text-[20px]">{formatMoney(revenue)}</p>
-          <p className="text-[11px] text-zinc-500">product rev.</p>
+          <p className="text-[18px] font-bold leading-none text-emerald-400 sm:text-[20px]">{formatMoney(revenue)}</p>
+          <p className="mt-1 text-[11px] text-zinc-500">product rev.</p>
         </div>
         <div className="min-w-0">
-          <p className="text-[18px] font-bold leading-none tabular-nums text-[#c7bdd8] sm:text-[20px]">{formatMoney(deposits)}</p>
-          <p className="text-[11px] text-zinc-500">deposits</p>
+          <p className="text-[18px] font-bold leading-none text-[#c7bdd8] sm:text-[20px]">{formatMoney(deposits)}</p>
+          <p className="mt-1 text-[11px] text-zinc-500">deposits</p>
         </div>
         <div className="min-w-0">
           <p className="text-[20px] font-bold leading-none text-[#c7bdd8] sm:text-[22px]">{boxOpens}</p>
-          <p className="text-[11px] text-zinc-500">box opens</p>
+          <p className="mt-1 text-[11px] text-zinc-500">box opens</p>
         </div>
       </div>
 
-      <div className="mt-3.5 border-t border-white/[0.06] pt-2.5">
+      <div className="mt-4 border-t border-white/[0.06] pt-3">
         <p className="flex items-center gap-1 text-xs text-zinc-400">
           <UserRound className="h-3.5 w-3.5 text-blue-400" />
           {users} new users
@@ -286,63 +282,26 @@ function PeriodCard({
   );
 }
 
-const BLOG_POSTS: any[] = [];
-
-function BlogCard({
-  title,
-  excerpt,
-  authorName,
-  date,
-}: {
-  title: string;
-  excerpt: string;
-  authorName: string;
-  date: string;
-}) {
-  return (
-    <article className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[linear-gradient(180deg,rgba(17,16,24,0.92),rgba(12,12,18,0.98))] shadow-[0_12px_28px_rgba(0,0,0,0.28)]">
-      <div className="relative h-40 bg-[radial-gradient(circle_at_30%_20%,rgba(169,150,196,0.24),transparent_55%),linear-gradient(135deg,rgba(95,78,125,0.45),rgba(20,18,30,0.2))]">
-        <span className="absolute left-3 top-3 rounded-full border border-[#b9accf]/35 bg-[#a996c4]/14 px-2.5 py-0.5 text-[10px] font-semibold text-[#d8cee8]">Blog</span>
-      </div>
-      <div className="space-y-2 p-4">
-        <h4 className="line-clamp-2 text-xl font-semibold text-zinc-100">{title}</h4>
-        <p className="line-clamp-2 text-sm text-zinc-400">{excerpt}</p>
-        <p className="text-xs text-zinc-500">
-          {date} • by {authorName}
-        </p>
-        <span className="inline-flex items-center gap-1 text-xs font-medium text-[#d8cee8]">
-          Live article
-        </span>
-      </div>
-    </article>
-  );
-}
-
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<DashboardData>(EMPTY);
-  const [blogSearch, setBlogSearch] = useState("");
-  const [blogPosts, setBlogPosts] = useState<any[]>([]);
-  const [rankSearch, setRankSearch] = useState("");
 
   useEffect(() => {
     let active = true;
 
     async function load() {
       setLoading(true);
-      const [productsRes, customersRes, ticketsRes, paymentsRes, blogRes] = await Promise.all([
+      const [productsRes, customersRes, ticketsRes, paymentsRes] = await Promise.all([
         safeFetch("/api/admin/products"),
         safeFetch("/api/admin/customers"),
         safeFetch("/api/admin/tickets?status=ALL"),
         safeFetch("/api/admin/logs?type=payment&page=1&pageSize=300"),
-        safeFetch("/api/admin/blog"),
       ]);
 
       const products = safeArray(productsRes?.data);
       const customers = safeArray(customersRes?.data);
       const tickets = safeArray(ticketsRes?.data);
       const payments = safeArray(paymentsRes?.data);
-      const blog = safeArray(blogRes?.data);
 
       const debitPayments = payments.filter((p) => String(p.type || "").toUpperCase() === "DEBIT");
       const creditPayments = payments.filter((p) => String(p.type || "").toUpperCase() === "CREDIT");
@@ -405,11 +364,8 @@ export default function DashboardPage() {
         const cid = String(payment.customerId || payment.customer?.id || payment.customer?.email || payment.id);
         const user = payment.customer?.username || payment.customer?.email || "Guest User";
         const prev = spenderMap.get(cid);
-        if (prev) {
-          prev.spent += Number(payment.amount || 0);
-        } else {
-          spenderMap.set(cid, { id: cid, user, spent: Number(payment.amount || 0) });
-        }
+        if (prev) prev.spent += Number(payment.amount || 0);
+        else spenderMap.set(cid, { id: cid, user, spent: Number(payment.amount || 0) });
       }
 
       if (spenderMap.size === 0) {
@@ -425,44 +381,41 @@ export default function DashboardPage() {
 
       const leaderboard = Array.from(spenderMap.values())
         .sort((a, b) => b.spent - a.spent)
-        .slice(0, 8)
+        .slice(0, 6)
         .map((row) => ({
           ...row,
           rank: resolveRank(row.spent),
         }));
 
-      const next: DashboardData = {
-        totalUsers,
-        totalOrders,
-        totalRevenue,
-        pendingPayments,
-        activeProducts,
-        openTickets,
-        totalDeposits,
-        productSales,
-        mysteryBoxRevenue,
-        todaySales: salesToday.length,
-        todayRevenue: salesToday.reduce((acc, s) => acc + Number(s.amount || 0), 0),
-        todayDeposits: depositsToday.reduce((acc, s) => acc + Number(s.amount || 0), 0),
-        todayUsers: usersToday,
-        todayBoxOpens: mysteryToday,
-        weekSales: salesWeek.length,
-        weekRevenue: salesWeek.reduce((acc, s) => acc + Number(s.amount || 0), 0),
-        weekDeposits: depositsWeek.reduce((acc, s) => acc + Number(s.amount || 0), 0),
-        weekUsers: usersWeek,
-        weekBoxOpens: mysteryWeek,
-        monthSales: salesMonth.length,
-        monthRevenue: salesMonth.reduce((acc, s) => acc + Number(s.amount || 0), 0),
-        monthDeposits: depositsMonth.reduce((acc, s) => acc + Number(s.amount || 0), 0),
-        monthUsers: usersMonth,
-        monthBoxOpens: mysteryMonth,
-        activities,
-        leaderboard,
-      };
-
       if (active) {
-        setData(next);
-        setBlogPosts(blog);
+        setData({
+          totalUsers,
+          totalOrders,
+          totalRevenue,
+          pendingPayments,
+          activeProducts,
+          openTickets,
+          totalDeposits,
+          productSales,
+          mysteryBoxRevenue,
+          todaySales: salesToday.length,
+          todayRevenue: salesToday.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+          todayDeposits: depositsToday.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+          todayUsers: usersToday,
+          todayBoxOpens: mysteryToday,
+          weekSales: salesWeek.length,
+          weekRevenue: salesWeek.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+          weekDeposits: depositsWeek.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+          weekUsers: usersWeek,
+          weekBoxOpens: mysteryWeek,
+          monthSales: salesMonth.length,
+          monthRevenue: salesMonth.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+          monthDeposits: depositsMonth.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+          monthUsers: usersMonth,
+          monthBoxOpens: mysteryMonth,
+          activities,
+          leaderboard,
+        });
         setLoading(false);
       }
     }
@@ -484,45 +437,33 @@ export default function DashboardPage() {
     };
   }, []);
 
-  const filteredPosts = useMemo(() => {
-    const query = blogSearch.trim().toLowerCase();
-    return (blogPosts.length ? blogPosts : BLOG_POSTS)
-      .filter((post: any) => !post.isDraft)
-      .filter((post: any) => {
-        if (!query) return true;
-        return `${post.title || ""} ${post.excerpt || ""}`.toLowerCase().includes(query);
-      })
-      .slice(0, 12);
-  }, [blogPosts, blogSearch]);
-
-  const filteredLeaderboard = useMemo(() => {
-    return data.leaderboard.filter((row) => row.user.toLowerCase().includes(rankSearch.toLowerCase()));
-  }, [data.leaderboard, rankSearch]);
-
   if (loading) {
     return (
       <div>
-        <div className="mb-4">
+        <div className="mb-5">
           <h1 className="text-[36px] font-bold leading-none text-white sm:text-[40px]">Admin Dashboard</h1>
           <p className="mt-2 text-[16px] text-zinc-400 sm:text-[18px]">Overview of your platform</p>
         </div>
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-32 rounded-xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
+              <div key={i} className="h-32 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
             ))}
           </div>
           <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-36 rounded-xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
+              <div key={i} className="h-36 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
             ))}
           </div>
           <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-52 rounded-xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
+              <div key={i} className="h-52 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
             ))}
           </div>
-          <div className="h-96 rounded-xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.3fr_0.9fr]">
+            <div className="h-96 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
+            <div className="h-96 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
+          </div>
         </div>
       </div>
     );
@@ -530,12 +471,12 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <div className="mb-4">
-        <h1 className="text-[30px] font-bold leading-none text-white sm:text-[34px]">Admin Dashboard</h1>
+      <div className="mb-5">
+        <h1 className="text-[32px] font-bold leading-none text-white sm:text-[36px]">Admin Dashboard</h1>
         <p className="mt-1.5 text-[14px] text-zinc-400 sm:text-[16px]">Overview of your platform</p>
       </div>
 
-      <div className="space-y-3.5">
+      <div className="space-y-4">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
           <StatCard title="Total Users" value={data.totalUsers} icon={UserRound} iconClass="bg-blue-500/15 text-blue-300" />
           <StatCard title="Total Orders" value={data.totalOrders} icon={ShoppingCart} iconClass="bg-emerald-500/15 text-emerald-300" />
@@ -552,6 +493,7 @@ export default function DashboardPage() {
             subtext="Total approved deposits"
             icon={Wallet}
             iconClass="bg-emerald-500/15 text-emerald-300"
+            valueClass="text-emerald-400"
           />
           <SummaryCard
             title="Product Sales"
@@ -559,6 +501,7 @@ export default function DashboardPage() {
             subtext="Revenue from product purchases"
             icon={ShoppingCart}
             iconClass="bg-teal-500/15 text-teal-300"
+            valueClass="text-emerald-400"
           />
           <SummaryCard
             title="Mystery Box"
@@ -597,150 +540,78 @@ export default function DashboardPage() {
           />
         </div>
 
-        <div className="rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(14,15,22,0.94),rgba(11,12,18,0.98))] p-3.5 shadow-[0_14px_30px_rgba(0,0,0,0.3)]">
-          <div className="mb-4 flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-[#c7bdd8]" />
-            <h3 className="text-[22px] font-semibold text-white">Recent Activity</h3>
-          </div>
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.3fr_0.9fr]">
+          <section className="rounded-2xl border border-white/[0.08] bg-[#0f1117] p-4">
+            <div className="mb-4 flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-[#c7bdd8]" />
+              <h3 className="text-[22px] font-semibold text-white">Recent Activity</h3>
+            </div>
 
-          <div className="space-y-2">
-            {data.activities.length === 0 ? (
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.01] px-4 py-5 text-zinc-500">No activity found.</div>
-            ) : (
-              data.activities.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.01] px-3.5 py-2.5 transition-colors hover:bg-white/[0.03]"
-                >
-                  <div className="min-w-0 flex items-center gap-3">
-                    <div
-                      className={cn(
-                        "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg",
-                        activity.type === "ticket" ? "bg-blue-500/12 text-blue-300" : "bg-emerald-500/12 text-emerald-300"
-                      )}
-                    >
-                      {activity.type === "ticket" ? <Ticket className="h-3.5 w-3.5" /> : <CreditCard className="h-3.5 w-3.5" />}
+            <div className="space-y-2">
+              {data.activities.length === 0 ? (
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-5 text-zinc-500">No activity found.</div>
+              ) : (
+                data.activities.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-3 transition-colors hover:bg-white/[0.035]"
+                  >
+                    <div className="min-w-0 flex items-center gap-3">
+                      <div
+                        className={cn(
+                          "flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-white/[0.06]",
+                          activity.type === "ticket" ? "bg-blue-500/10 text-blue-300" : "bg-emerald-500/10 text-emerald-300"
+                        )}
+                      >
+                        {activity.type === "ticket" ? <Ticket className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-zinc-100">{activity.label}</p>
+                        <p className="truncate text-xs text-zinc-500">{activity.detail}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-zinc-100">{activity.label}</p>
-                      <p className="truncate text-xs text-zinc-500">{activity.detail}</p>
+
+                    <div className="ml-4 flex items-center gap-3">
+                      <span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-semibold", activityStatusClass(activity.status))}>
+                        {activity.status}
+                      </span>
+                      <span className="text-xs text-zinc-500">{timeAgo(activity.createdAt)}</span>
+                      <ArrowRight className="h-3.5 w-3.5 text-zinc-700" />
                     </div>
                   </div>
+                ))
+              )}
+            </div>
+          </section>
 
-                  <div className="ml-4 flex items-center gap-3">
-                    <span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-semibold", activityStatusClass(activity.status))}>
-                      {activity.status}
-                    </span>
-                    <span className="text-xs text-zinc-500">{timeAgo(activity.createdAt)}</span>
-                    <ArrowRight className="h-3.5 w-3.5 text-zinc-700" />
+          <section className="rounded-2xl border border-white/[0.08] bg-[#0f1117] p-4">
+            <div className="mb-4">
+              <h3 className="text-[22px] font-semibold text-white">Top Customers</h3>
+              <p className="text-sm text-zinc-400">Highest spenders this cycle</p>
+            </div>
+
+            <div className="space-y-2">
+              {data.leaderboard.length === 0 ? (
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-5 text-zinc-500">No user data yet.</div>
+              ) : (
+                data.leaderboard.map((row, idx) => (
+                  <div key={row.id} className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.03] text-sm font-semibold text-zinc-300">
+                        {idx + 1}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-zinc-100">{row.user}</p>
+                        <p className={cn("text-xs font-medium", tierStyles(row.rank))}>{row.rank}</p>
+                      </div>
+                    </div>
+                    <p className="text-sm font-semibold text-white">${row.spent.toFixed(2)}</p>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
+                ))
+              )}
+            </div>
+          </section>
         </div>
-
-        <section className="rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(14,15,22,0.94),rgba(11,12,18,0.98))] p-3.5 shadow-[0_14px_30px_rgba(0,0,0,0.3)]">
-          <div className="mb-4">
-            <h3 className="text-[22px] font-semibold text-white">Blog</h3>
-            <p className="text-sm text-zinc-400">Gaming tips, guides and updates</p>
-          </div>
-
-          <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <label className="relative w-full xl:max-w-[620px]">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-              <input
-                value={blogSearch}
-                onChange={(e) => setBlogSearch(e.target.value)}
-                placeholder="Search articles..."
-                className="h-10 w-full rounded-xl border border-white/[0.07] bg-white/[0.02] pl-10 pr-3 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none transition focus:border-[#b9accf]/35 focus:bg-white/[0.03]"
-              />
-            </label>
-            <Link href="/admin/blog/new" className="rounded-xl border border-[#b9accf]/35 bg-[#a996c4]/14 px-4 py-2 text-xs font-semibold text-[#d8cee8] transition hover:bg-[#a996c4]/20">
-              Write New Post
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
-            {filteredPosts.map((post: any) => (
-              <BlogCard
-                key={post.id}
-                title={post.title}
-                excerpt={post.excerpt || "No excerpt."}
-                authorName={post.authorName || "Lity Team"}
-                date={new Date(post.publishedAt || post.createdAt).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })}
-              />
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(14,15,22,0.94),rgba(11,12,18,0.98))] p-3.5 shadow-[0_14px_30px_rgba(0,0,0,0.3)]">
-          <div className="mb-4">
-            <h3 className="text-[22px] font-semibold text-white">Leaderboard</h3>
-            <p className="text-sm text-zinc-400">Top spenders and rank thresholds</p>
-          </div>
-
-          <div className="mb-4 flex flex-wrap gap-2">
-            {RANK_TIERS.map((tier) => (
-              <span key={tier.name} className={cn("rounded-lg border px-2.5 py-1 text-xs font-medium", tier.chip)}>
-                {tier.name} ${tier.min}+
-              </span>
-            ))}
-          </div>
-
-          <label className="relative mb-4 block">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-            <input
-              value={rankSearch}
-              onChange={(e) => setRankSearch(e.target.value)}
-              placeholder="Search users..."
-              className="h-10 w-full rounded-xl border border-white/[0.07] bg-white/[0.02] pl-10 pr-3 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none transition focus:border-[#b9accf]/35 focus:bg-white/[0.03]"
-            />
-          </label>
-
-          <div className="overflow-x-auto rounded-xl border border-white/[0.06]">
-            <table className="w-full min-w-[720px] text-left">
-              <thead className="bg-white/[0.02]">
-                <tr className="text-xs uppercase tracking-wide text-zinc-500">
-                  <th className="px-4 py-2.5">#</th>
-                  <th className="px-4 py-2.5">User</th>
-                  <th className="px-4 py-2.5">Rank</th>
-                  <th className="px-4 py-2.5 text-right">Total Spent</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredLeaderboard.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-sm text-zinc-500">
-                      No users found.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredLeaderboard.map((row, idx) => {
-                    const style = tierStyles(row.rank);
-                    return (
-                      <tr key={row.id} className="border-t border-white/[0.05] text-sm text-zinc-200">
-                        <td className="px-4 py-3">{idx + 1}</td>
-                        <td className="px-4 py-3 font-medium text-zinc-100">{row.user}</td>
-                        <td className="px-4 py-3">
-                          <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold", style.chip)}>
-                            {row.rank === "Celestial" ? <Crown className="h-3 w-3" /> : row.rank === "Diamond" ? <Gem className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
-                            <span className={style.text}>{row.rank}</span>
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right font-semibold text-white">${row.spent.toFixed(2)}</td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
       </div>
     </div>
   );

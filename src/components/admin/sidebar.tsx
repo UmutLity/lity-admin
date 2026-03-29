@@ -224,14 +224,14 @@ export function Sidebar() {
                 <div className="relative flex h-6 w-6 items-center justify-center text-zinc-500">
                   <Bell className="h-[17px] w-[17px]" />
                   {unreadCount > 0 && (
-                    <span className="absolute -right-1.5 -top-1.5 flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-[#8f1627] px-1 text-[10px] font-bold text-white">
+                    <span className="absolute -right-1.5 -top-1.5 flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-[#2b2038] px-1 text-[10px] font-bold text-[#e4daf5]">
                       {unreadCount}
                     </span>
                   )}
                 </div>
-                <span className="text-[15px] font-medium text-[#c2b0a2]">Notifications</span>
+                <span className="text-[15px] font-medium text-[#cbbfe0]">Notifications</span>
               </div>
-              <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-[#1a0f14] px-2 text-[10px] font-semibold text-[#9d2c3f]">
+              <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-[#17131f] px-2 text-[10px] font-semibold text-[#cbbfe0]">
                 {unreadCount}
               </span>
             </button>

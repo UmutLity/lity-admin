@@ -43,7 +43,6 @@ const ROLE_TEMPLATES = [
   { name: "ADMIN", label: "Admin", permissions: [...ALL_PERMISSIONS] },
   { name: "MODERATOR", label: "Moderator", permissions: ["product.view", "changelog.view", "category.view", "customer.view", "ticket.view", "ticket.manage", "notification.view"] },
   { name: "SUPPORT", label: "Support", permissions: ["customer.view", "customer.manage", "ticket.view", "ticket.manage", "notification.view", "analytics.view"] },
-  { name: "ANALYST", label: "Analyst", permissions: ["product.view", "changelog.view", "category.view", "analytics.view", "audit.view", "notification.view", "system.view"] },
 ];
 
 export default function RolesPage() {
@@ -181,7 +180,7 @@ export default function RolesPage() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Recommended Staff Roles</CardTitle>
-          <CardDescription>Quick-create common admin ranks for moderation, support, and analytics access.</CardDescription>
+          <CardDescription>Quick-create the only staff ranks you need: Founder, Admin, Moderator, and Support.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
           {ROLE_TEMPLATES.map((template) => (
