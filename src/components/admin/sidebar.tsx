@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Package, Settings, FileText, Bell, DollarSign, MessageSquare, BookOpen,
   Users, Shield, LogOut, Menu, ClipboardList,
-  Download, PanelLeftClose, PanelLeft, Ticket, Landmark, Newspaper, ShoppingCart,
+  Download, PanelLeftClose, PanelLeft, Ticket, Landmark, Newspaper, ShoppingCart, TicketPercent, Truck,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useState, createContext, useContext, useEffect } from "react";
@@ -39,6 +39,8 @@ const navGroups: NavGroup[] = [
       { href: "/admin/users", label: "Users", icon: Users, roles: ["ADMIN"] },
       { href: "/admin/revenue", label: "Payments", icon: DollarSign, roles: ["ADMIN"] },
       { href: "/admin/orders", label: "Orders", icon: ShoppingCart, roles: ["ADMIN"] },
+      { href: "/admin/pending-deliveries", label: "Pending Deliveries", icon: Truck, roles: ["ADMIN"] },
+      { href: "/admin/coupons", label: "Coupons", icon: TicketPercent, roles: ["ADMIN"] },
       { href: "/admin/topups", label: "Top-up Requests", icon: Landmark, roles: ["ADMIN"] },
       { href: "/admin/reviews", label: "Reviews", icon: MessageSquare, roles: ["ADMIN", "EDITOR"] },
       { href: "/admin/notifications", label: "Community", icon: Bell, roles: ["ADMIN", "EDITOR"] },

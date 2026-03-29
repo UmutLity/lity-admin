@@ -585,6 +585,11 @@ model Order {
   paymentMethod String @default("BALANCE") // BALANCE | MANUAL | EXTERNAL
   currency   String   @default("USD")
   totalAmount Float
+  subtotalAmount Float?
+  discountAmount Float @default(0)
+  couponCode String?
+  customerNote String?
+  timeline String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -632,6 +637,24 @@ model License {
 }
 
 // ─── Webhook Delivery ───────────────────────────────────
+
+model Coupon {
+  id             String   @id @default(cuid())
+  code           String   @unique
+  description    String?
+  type           String   @default("PERCENT") // PERCENT | FIXED
+  value          Float
+  minOrderAmount Float?
+  usageLimit     Int?
+  usedCount      Int      @default(0)
+  isActive       Boolean  @default(true)
+  expiresAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([code])
+  @@index([isActive, expiresAt])
+}
 
 model WebhookDelivery {
   id           String     @id @default(cuid())

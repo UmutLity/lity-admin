@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import { parseOrderTimeline } from "@/lib/orders";
 
 const LICENSE_MATCH_WINDOW_MS = 10 * 60 * 1000;
 
@@ -164,6 +165,11 @@ export async function GET(req: NextRequest) {
       status: order.status,
       paymentMethod: order.paymentMethod,
       totalAmount: order.totalAmount,
+      subtotalAmount: order.subtotalAmount,
+      discountAmount: order.discountAmount,
+      couponCode: order.couponCode,
+      customerNote: order.customerNote,
+      timeline: parseOrderTimeline(order.timeline),
       customer: order.customer
         ? {
             id: order.customer.id,
@@ -204,4 +210,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }
-

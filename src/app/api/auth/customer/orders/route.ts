@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
+import { parseOrderTimeline } from "@/lib/orders";
 
 export async function GET(req: NextRequest) {
   try {
@@ -23,10 +24,15 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({ success: true, data: orders });
+    return NextResponse.json({
+      success: true,
+      data: orders.map((order) => ({
+        ...order,
+        timeline: parseOrderTimeline(order.timeline),
+      })),
+    });
   } catch (error) {
     console.error("GET /api/auth/customer/orders error:", error);
     return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
   }
 }
-

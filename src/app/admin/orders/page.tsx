@@ -6,9 +6,13 @@ import {
   BadgeDollarSign,
   ChevronDown,
   ChevronUp,
+  Copy,
   KeyRound,
+  Send,
   Search,
   ShoppingCart,
+  Ticket,
+  Truck,
   UserRound,
 } from "lucide-react";
 
@@ -27,6 +31,11 @@ type OrderRow = {
   status: string;
   paymentMethod: string;
   totalAmount: number;
+  subtotalAmount?: number | null;
+  discountAmount?: number;
+  couponCode?: string | null;
+  customerNote?: string | null;
+  timeline?: Array<{ type: string; title: string; description?: string; createdAt: string }>;
   customer: {
     id: string;
     username: string;
@@ -80,6 +89,16 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<OrdersPayload>(EMPTY_DATA);
   const [openRows, setOpenRows] = useState<Record<string, boolean>>({});
+
+  async function orderAction(orderId: string, action: "MARK_DELIVERED" | "SEND_DISCORD") {
+    await fetch(`/api/admin/orders/${orderId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ action }),
+    });
+    await loadOrders();
+  }
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -240,6 +259,54 @@ export default function OrdersPage() {
                   {isOpen && (
                     <div className="border-t border-white/[0.06] bg-[#11131c]/70 px-4 py-3">
                       <p className="mb-2 text-xs uppercase tracking-[0.16em] text-zinc-500">Order #{order.id.slice(-10)}</p>
+                      <div className="mb-3 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => navigator.clipboard.writeText(order.customer?.email || order.customer?.username || order.id)}
+                          className="rounded-xl border border-white/[0.08] px-3 py-2 text-xs font-semibold text-zinc-200"
+                        >
+                          <Copy className="mr-2 inline h-4 w-4" /> Copy User
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => orderAction(order.id, "SEND_DISCORD")}
+                          className="rounded-xl border border-white/[0.08] px-3 py-2 text-xs font-semibold text-zinc-200"
+                        >
+                          <Send className="mr-2 inline h-4 w-4" /> Send Discord
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => window.location.assign("/admin/tickets")}
+                          className="rounded-xl border border-white/[0.08] px-3 py-2 text-xs font-semibold text-zinc-200"
+                        >
+                          <Ticket className="mr-2 inline h-4 w-4" /> Open Tickets
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => orderAction(order.id, "MARK_DELIVERED")}
+                          className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300"
+                        >
+                          <Truck className="mr-2 inline h-4 w-4" /> Mark Delivered
+                        </button>
+                      </div>
+
+                      {(order.customerNote || order.couponCode || (order.timeline && order.timeline.length)) && (
+                        <div className="mb-3 grid gap-3 md:grid-cols-3">
+                          <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 text-sm text-zinc-300">
+                            <p className="mb-2 text-[11px] uppercase tracking-[0.15em] text-zinc-500">Customer Note</p>
+                            <p>{order.customerNote || "No note left."}</p>
+                          </div>
+                          <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 text-sm text-zinc-300">
+                            <p className="mb-2 text-[11px] uppercase tracking-[0.15em] text-zinc-500">Discount</p>
+                            <p>{order.couponCode ? `${order.couponCode} • -$${Number(order.discountAmount || 0).toFixed(2)}` : "No coupon used."}</p>
+                          </div>
+                          <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 text-sm text-zinc-300">
+                            <p className="mb-2 text-[11px] uppercase tracking-[0.15em] text-zinc-500">Timeline</p>
+                            <p>{order.timeline?.length ? order.timeline[order.timeline.length - 1]?.title : "No timeline events yet."}</p>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="overflow-x-auto rounded-xl border border-white/[0.07]">
                         <table className="w-full min-w-[720px]">
                           <thead className="bg-white/[0.02]">

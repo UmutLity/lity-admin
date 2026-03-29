@@ -6,7 +6,7 @@ import { createAuditLog } from "@/lib/audit";
 
 const updateLicenseSchema = z.object({
   productId: z.string().cuid(),
-  plan: z.enum(["DAILY", "LIFETIME"]).default("LIFETIME"),
+  plan: z.string().min(1).max(50),
   key: z.string().min(3).max(120).regex(/^[a-zA-Z0-9_.-]+$/),
   status: z.enum(["ACTIVE", "PENDING", "REVOKED"]).default("ACTIVE"),
   note: z.string().max(500).optional().nullable(),
@@ -39,9 +39,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     const data = validation.data;
-    const expiresAt = data.plan === "DAILY"
+    const normalizedPlan = data.plan.trim().toUpperCase();
+    const expiresAt = normalizedPlan === "DAILY"
       ? new Date(Date.now() + 24 * 60 * 60 * 1000)
-      : null;
+      : normalizedPlan === "3_DAYS"
+        ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+        : normalizedPlan === "WEEKLY"
+          ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+          : normalizedPlan === "MONTHLY"
+            ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            : normalizedPlan === "3_MONTHS"
+              ? new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
+              : null;
     const product = await prisma.product.findUnique({
       where: { id: data.productId },
       select: { id: true, defaultLoaderUrl: true },
@@ -69,7 +78,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       data: {
         customerId: current.customerId || null,
         productId: data.productId,
-        plan: data.plan.toUpperCase(),
+        plan: normalizedPlan,
         key: normalizedKey,
         status: data.status === "REVOKED" ? "REVOKED" : (data.status === "PENDING" ? "PENDING" : (expiresAt && expiresAt.getTime() < Date.now() ? "EXPIRED" : "ACTIVE")),
         downloadUrl: data.status === "ACTIVE" ? (product.defaultLoaderUrl || null) : null,

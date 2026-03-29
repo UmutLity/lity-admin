@@ -141,6 +141,21 @@ interface WebhookResult {
   attempts: number;
 }
 
+type OrderDiscordPayload = {
+  orderId: string;
+  productName: string;
+  productSlug: string;
+  plan: string;
+  amount: number;
+  subtotalAmount?: number;
+  discountAmount?: number;
+  couponCode?: string | null;
+  customerEmail?: string | null;
+  customerUsername?: string | null;
+  customerNote?: string | null;
+  manualDelivery?: boolean;
+};
+
 export async function sendDiscordWebhook(
   webhookUrl: string,
   payload: object,
@@ -201,6 +216,69 @@ export async function sendDiscordWebhook(
     responseBody: lastError,
     attempts: maxRetries,
   };
+}
+
+export async function sendOrderNotificationToDiscord(order: OrderDiscordPayload): Promise<WebhookResult | null> {
+  const webhookEnabledSetting = await prisma.siteSetting.findUnique({
+    where: { key: "discord_webhook_enabled" },
+  });
+  if (!webhookEnabledSetting || webhookEnabledSetting.value !== "true") return null;
+
+  const webhookUrlSetting = await prisma.siteSetting.findUnique({
+    where: { key: "discord_webhook_url" },
+  });
+  if (!webhookUrlSetting || !webhookUrlSetting.value) return null;
+
+  const [usernameSetting, avatarSetting] = await Promise.all([
+    prisma.siteSetting.findUnique({ where: { key: "discord_webhook_username" } }),
+    prisma.siteSetting.findUnique({ where: { key: "discord_webhook_avatar_url" } }),
+  ]);
+
+  const fields = [
+    { name: "Product", value: `**${order.productName}**\n\`/${order.productSlug}\``, inline: true },
+    { name: "Plan", value: String(order.plan || "-").split("_").join(" "), inline: true },
+    { name: "Total", value: `$${Number(order.amount || 0).toFixed(2)}`, inline: true },
+    { name: "Customer", value: `${order.customerUsername || "Unknown"}\n${order.customerEmail || "-"}`, inline: false },
+    { name: "Delivery", value: order.manualDelivery ? "Manual delivery pending" : "Automatic delivery", inline: true },
+  ] as Array<{ name: string; value: string; inline?: boolean }>;
+
+  if ((order.discountAmount || 0) > 0) {
+    fields.push({
+      name: "Discount",
+      value: `-$${Number(order.discountAmount || 0).toFixed(2)}${order.couponCode ? ` via ${order.couponCode}` : ""}`,
+      inline: true,
+    });
+  }
+
+  if (order.customerNote) {
+    fields.push({
+      name: "Customer Note",
+      value: truncate(order.customerNote, 500),
+      inline: false,
+    });
+  }
+
+  const payload = buildWebhookPayload(
+    {
+      embeds: [
+        {
+          title: `New Order - #${order.orderId.slice(-8).toUpperCase()}`,
+          description: order.manualDelivery
+            ? "A new manual-delivery order is waiting for review."
+            : "A new order has been created.",
+          color: 0x8470ff,
+          fields,
+          footer: { text: "Lity Software - Order Notification" },
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    },
+    usernameSetting?.value || undefined,
+    avatarSetting?.value || undefined,
+    false
+  );
+
+  return sendDiscordWebhook(webhookUrlSetting.value, payload);
 }
 
 export async function sendChangelogToDiscord(changelogId: string): Promise<WebhookResult | null> {

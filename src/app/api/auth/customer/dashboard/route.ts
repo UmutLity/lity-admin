@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
+import { parseOrderTimeline } from "@/lib/orders";
 
 function normalizeLicenseStatus(status: string, expiresAt: Date | null) {
   if (status === "REVOKED") return "REVOKED";
@@ -255,7 +256,9 @@ export async function GET(req: NextRequest) {
         id: `order-${order.id}`,
         type: "ORDER",
         title: `Order ${order.status.toLowerCase()} for $${Number(order.totalAmount || 0).toFixed(2)}`,
-        description: `${order.items.length} item${order.items.length === 1 ? "" : "s"} purchased`,
+        description: order.customerNote
+          ? `${order.items.length} item${order.items.length === 1 ? "" : "s"} purchased • Note left by customer`
+          : `${order.items.length} item${order.items.length === 1 ? "" : "s"} purchased`,
         createdAt: order.createdAt,
       })),
       ...recentTransactions.map((transaction) => ({
@@ -316,7 +319,10 @@ export async function GET(req: NextRequest) {
           totalSpent,
           openTickets,
         },
-        recentOrders,
+        recentOrders: recentOrders.map((order) => ({
+          ...order,
+          timeline: parseOrderTimeline(order.timeline),
+        })),
         recentTransactions,
         leaderboard: leaderboard.map((item, index) => ({
           rank: index + 1,

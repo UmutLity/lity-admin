@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import prisma from "@/lib/prisma";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
+import { appendOrderTimeline } from "@/lib/orders";
+import { sendOrderNotificationToDiscord } from "@/lib/discord";
 
 const AUTO_PROMOTE_ROLES = new Set(["MEMBER", "USER", "CUSTOMER"]);
 
@@ -43,6 +45,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const productId = typeof body?.productId === "string" ? body.productId : "";
     const requestedPlan = typeof body?.plan === "string" ? body.plan.trim() : "";
+    const customerNote = typeof body?.note === "string" ? body.note.trim().slice(0, 500) : "";
+    const couponCode = typeof body?.couponCode === "string" ? body.couponCode.trim().toUpperCase() : "";
 
     if (!productId || !requestedPlan) {
       return NextResponse.json({ success: false, error: "Valid product and plan required" }, { status: 400 });
@@ -80,9 +84,65 @@ export async function POST(req: NextRequest) {
 
     const selectedPlan = priceRow.plan;
 
-    const amount = Number(priceRow.price || 0);
+    const baseAmount = Number(priceRow.price || 0);
     const manualDelivery = true;
-    if (amount <= 0) return NextResponse.json({ success: false, error: "Invalid product price." }, { status: 400 });
+    if (baseAmount <= 0) return NextResponse.json({ success: false, error: "Invalid product price." }, { status: 400 });
+
+    let coupon: null | {
+      id: string;
+      code: string;
+      type: string;
+      value: number;
+      minOrderAmount: number | null;
+      usageLimit: number | null;
+      usedCount: number;
+      expiresAt: Date | null;
+      isActive: boolean;
+    } = null;
+
+    if (couponCode) {
+      coupon = await prisma.coupon.findUnique({
+        where: { code: couponCode },
+        select: {
+          id: true,
+          code: true,
+          type: true,
+          value: true,
+          minOrderAmount: true,
+          usageLimit: true,
+          usedCount: true,
+          expiresAt: true,
+          isActive: true,
+        },
+      });
+
+      if (!coupon || !coupon.isActive) {
+        return NextResponse.json({ success: false, error: "Coupon is not valid." }, { status: 400 });
+      }
+      if (coupon.expiresAt && coupon.expiresAt.getTime() < Date.now()) {
+        return NextResponse.json({ success: false, error: "Coupon has expired." }, { status: 400 });
+      }
+      if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
+        return NextResponse.json({ success: false, error: "Coupon usage limit reached." }, { status: 400 });
+      }
+      if (coupon.minOrderAmount !== null && baseAmount < coupon.minOrderAmount) {
+        return NextResponse.json(
+          { success: false, error: `Coupon requires a minimum order of $${Number(coupon.minOrderAmount).toFixed(2)}.` },
+          { status: 400 }
+        );
+      }
+    }
+
+    const discountAmount = coupon
+      ? Math.min(
+          baseAmount,
+          coupon.type === "FIXED"
+            ? Number(coupon.value || 0)
+            : (baseAmount * Number(coupon.value || 0)) / 100
+        )
+      : 0;
+    const amount = Math.max(0, Number((baseAmount - discountAmount).toFixed(2)));
+
     if (customer.balance < amount) {
       return NextResponse.json({ success: false, error: "Insufficient balance." }, { status: 400 });
     }
@@ -121,6 +181,17 @@ export async function POST(req: NextRequest) {
           paymentMethod: "BALANCE",
           currency: product.currency || "USD",
           totalAmount: amount,
+          subtotalAmount: baseAmount,
+          discountAmount,
+          couponCode: coupon?.code || null,
+          customerNote: customerNote || null,
+          timeline: appendOrderTimeline(null, {
+            type: "ORDER_CREATED",
+            title: "Order placed",
+            description: manualDelivery
+              ? "Payment received. Manual delivery queue created."
+              : "Payment received.",
+          }),
         },
       });
 
@@ -162,7 +233,31 @@ export async function POST(req: NextRequest) {
         where: { customerId: customer.id, productId: product.id, plan: selectedPlan },
       });
 
+      if (coupon) {
+        await tx.coupon.update({
+          where: { id: coupon.id },
+          data: { usedCount: { increment: 1 } },
+        });
+      }
+
       return { updatedCustomer, order, license };
+    });
+
+    sendOrderNotificationToDiscord({
+      orderId: result.order.id,
+      productName: product.name,
+      productSlug: product.slug,
+      plan: selectedPlan,
+      amount,
+      subtotalAmount: baseAmount,
+      discountAmount,
+      couponCode: coupon?.code || null,
+      customerEmail: customer.email,
+      customerUsername: customer.username,
+      customerNote: customerNote || null,
+      manualDelivery,
+    }).catch((err) => {
+      console.error("Order Discord webhook error:", err);
     });
 
     return NextResponse.json({
@@ -173,6 +268,10 @@ export async function POST(req: NextRequest) {
         licenseKey: result.license.key,
         licenseStatus: result.license.status,
         manualDelivery,
+        subtotalAmount: baseAmount,
+        discountAmount,
+        couponCode: coupon?.code || null,
+        totalAmount: amount,
         balance: result.updatedCustomer.balance,
         totalSpent: result.updatedCustomer.totalSpent,
         role: result.updatedCustomer.role,
