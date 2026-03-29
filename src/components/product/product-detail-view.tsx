@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowRight, CheckCircle2, Clock3, Rocket, Shield, Sparkles, Star } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock3, Layers3, Rocket, Shield, Sparkles, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,8 +78,15 @@ function buildFaq(product: ProductDetailData) {
   return [...base, ...fromSpecs];
 }
 
+function formatPlanDisplay(plan: string) {
+  return planLabel(plan)
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export function ProductDetailView({ product, relatedProducts }: { product: ProductDetailData; relatedProducts: RelatedProductData[] }) {
-  const gallery = product.gallery.length
+  const hasRealGallery = product.gallery.length > 0;
+  const gallery = hasRealGallery
     ? product.gallery
     : [{ id: "fallback", url: "/litysoftware.png", altText: `${product.name} preview`, isThumbnail: true }];
   const thumbnail = gallery.find((item) => item.isThumbnail) || gallery[0];
@@ -92,11 +99,15 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
   );
 
   const faq = useMemo(() => buildFaq(product), [product]);
+  const spotlightPlans = product.prices.slice(0, 4);
+  const summary = product.shortDescription || product.description || "Premium access with fast delivery and game-based pricing.";
+  const relatedItems = relatedProducts.slice(0, 3);
 
   return (
-    <main className="page-enter mx-auto w-full max-w-[1480px] space-y-6 p-5 lg:p-8">
+    <main className="page-enter relative mx-auto w-full max-w-[1480px] space-y-6 overflow-hidden p-5 lg:p-8">
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.18),transparent_38%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.015),transparent)]" />
       <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-        <Card className="premium-card border-white/10">
+        <Card className="premium-card overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))]">
           <CardHeader className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={statusVariant(product.status)}>{product.status}</Badge>
@@ -132,6 +143,40 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
               </div>
             </div>
 
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(116,83,211,0.22),rgba(255,255,255,0.03))] p-5">
+              <div className="pointer-events-none absolute -left-10 top-0 h-32 w-32 rounded-full bg-primary/20 blur-3xl" />
+              <div className="pointer-events-none absolute bottom-0 right-0 h-28 w-28 rounded-full bg-sky-400/10 blur-3xl" />
+              <div className="relative grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+                <div className="space-y-3">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs uppercase tracking-[0.16em] text-zinc-300">
+                    <Layers3 className="h-3.5 w-3.5 text-primary" />
+                    Product Spotlight
+                  </div>
+                  <h3 className="max-w-xl text-2xl font-semibold text-zinc-50 md:text-3xl">{product.name}</h3>
+                  <p className="max-w-2xl text-sm leading-6 text-zinc-300">{summary}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {spotlightPlans.map((price) => (
+                      <span key={price.id} className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-zinc-200">
+                        {formatPlanDisplay(price.plan)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                    <p className="text-xs uppercase tracking-[0.14em] text-zinc-500">Pricing Model</p>
+                    <p className="mt-2 text-lg font-semibold text-zinc-100">Game-based selection</p>
+                    <p className="mt-1 text-sm text-zinc-400">Choose a title-specific option from the pricing card.</p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                    <p className="text-xs uppercase tracking-[0.14em] text-zinc-500">Delivery</p>
+                    <p className="mt-2 text-lg font-semibold text-zinc-100">Instant after checkout</p>
+                    <p className="mt-1 text-sm text-zinc-400">Purchase, receive access, and continue without delay.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="flex flex-wrap gap-3">
               <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/85">
                 Buy {selectedPrice ? planLabel(selectedPrice.plan) : "Now"}
@@ -161,29 +206,58 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
 
         <Card className="premium-card overflow-hidden border-white/10">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Product Preview</CardTitle>
+            <CardTitle className="text-lg">{hasRealGallery ? "Product Preview" : "Product Overview"}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="overflow-hidden rounded-xl border border-white/10 bg-black/20">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={activeImage} alt={product.name} className="h-[260px] w-full object-cover" />
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              {gallery.slice(0, 4).map((image) => (
-                <button
-                  key={image.id}
-                  type="button"
-                  onClick={() => setActiveImage(image.url)}
-                  className={cn(
-                    "overflow-hidden rounded-lg border bg-black/20 transition",
-                    activeImage === image.url ? "border-primary/70 ring-1 ring-primary/40" : "border-white/10 hover:border-primary/35"
-                  )}
-                >
+            {hasRealGallery ? (
+              <>
+                <div className="overflow-hidden rounded-xl border border-white/10 bg-black/20">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={image.url} alt={image.altText} className="h-16 w-full object-cover" />
-                </button>
-              ))}
-            </div>
+                  <img src={activeImage} alt={product.name} className="h-[260px] w-full object-cover" />
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {gallery.slice(0, 4).map((image) => (
+                    <button
+                      key={image.id}
+                      type="button"
+                      onClick={() => setActiveImage(image.url)}
+                      className={cn(
+                        "overflow-hidden rounded-lg border bg-black/20 transition",
+                        activeImage === image.url ? "border-primary/70 ring-1 ring-primary/40" : "border-white/10 hover:border-primary/35"
+                      )}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={image.url} alt={image.altText} className="h-16 w-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(145deg,rgba(24,24,27,0.92),rgba(94,48,182,0.22))] p-5">
+                <div className="pointer-events-none absolute left-0 top-0 h-28 w-28 rounded-full bg-primary/20 blur-3xl" />
+                <div className="pointer-events-none absolute bottom-0 right-0 h-28 w-28 rounded-full bg-sky-400/10 blur-3xl" />
+                <div className="relative space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Badge variant={statusVariant(product.status)}>{product.status}</Badge>
+                    <span className="text-xs uppercase tracking-[0.18em] text-zinc-500">{product.category}</span>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
+                    <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Selection Range</p>
+                    <div className="mt-4 grid gap-2">
+                      {spotlightPlans.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2">
+                          <span className="text-sm text-zinc-200">{formatPlanDisplay(item.plan)}</span>
+                          <span className="text-sm font-semibold text-primary">{formatCurrency(item.price, product.currency)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-sm leading-6 text-zinc-300">
+                    This product uses flexible title-based pricing, so the experience is centered around selection rather than screenshots.
+                  </p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </section>
@@ -298,28 +372,30 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
         </Tabs>
       </section>
 
-      <section className="space-y-3">
-        <div>
-          <h2 className="text-2xl font-semibold">Preview Gallery</h2>
-          <p className="text-sm text-zinc-400">Visual previews from the latest build.</p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {gallery.map((image) => (
-            <button
-              key={image.id}
-              type="button"
-              onClick={() => setActiveImage(image.url)}
-              className={cn(
-                "overflow-hidden rounded-xl border bg-background/40 text-left transition",
-                activeImage === image.url ? "border-primary/60 ring-1 ring-primary/30" : "border-white/10 hover:border-primary/35"
-              )}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={image.url} alt={image.altText} className="h-44 w-full object-cover" />
-            </button>
-          ))}
-        </div>
-      </section>
+      {hasRealGallery && (
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-2xl font-semibold">Preview Gallery</h2>
+            <p className="text-sm text-zinc-400">Visual previews from the latest build.</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {gallery.map((image) => (
+              <button
+                key={image.id}
+                type="button"
+                onClick={() => setActiveImage(image.url)}
+                className={cn(
+                  "overflow-hidden rounded-xl border bg-background/40 text-left transition",
+                  activeImage === image.url ? "border-primary/60 ring-1 ring-primary/30" : "border-white/10 hover:border-primary/35"
+                )}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={image.url} alt={image.altText} className="h-44 w-full object-cover" />
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section id="plans" className="space-y-3">
         <div>
@@ -353,37 +429,39 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
         </div>
       </section>
 
-      <section className="space-y-3">
-        <div>
-          <h2 className="text-2xl font-semibold">Related Products</h2>
-          <p className="text-sm text-zinc-400">Explore similar products in the same category.</p>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {relatedProducts.map((item) => (
-            <Card key={item.id} className="premium-card border-white/8">
-              <CardContent className="space-y-3 p-4">
-                <div className="overflow-hidden rounded-lg border border-white/10 bg-black/30">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={item.imageUrl || "/litysoftware.png"} alt={item.name} className="h-36 w-full object-cover" />
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="font-semibold">{item.name}</p>
-                    <Badge variant={statusVariant(item.status)}>{item.status}</Badge>
+      {relatedItems.length > 0 && (
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-2xl font-semibold">Related Products</h2>
+            <p className="text-sm text-zinc-400">Explore similar products in the same category.</p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {relatedItems.map((item) => (
+              <Card key={item.id} className="premium-card border-white/8">
+                <CardContent className="space-y-3 p-4">
+                  <div className="overflow-hidden rounded-lg border border-white/10 bg-black/30">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={item.imageUrl || "/litysoftware.png"} alt={item.name} className="h-36 w-full object-cover" />
                   </div>
-                  <p className="text-sm text-zinc-400">{item.shortDescription}</p>
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold text-primary">From {formatCurrency(item.fromPrice, item.currency)}</p>
-                  <Button variant="outline" asChild>
-                    <Link href={`/products/${item.slug}`}>View</Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold">{item.name}</p>
+                      <Badge variant={statusVariant(item.status)}>{item.status}</Badge>
+                    </div>
+                    <p className="text-sm text-zinc-400">{item.shortDescription}</p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-primary">From {formatCurrency(item.fromPrice, item.currency)}</p>
+                    <Button variant="outline" asChild>
+                      <Link href={`/products/${item.slug}`}>View</Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="rounded-2xl border border-primary/25 bg-primary/10 p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
