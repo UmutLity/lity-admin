@@ -238,33 +238,33 @@ export function Sidebar() {
 
             <div className="mx-1 h-px bg-white/[0.06]" />
 
-            <div className="flex items-center gap-3 px-3 py-3">
-              <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(249,195,122,0.22),rgba(64,46,34,0.95))] ring-1 ring-white/[0.06]">
-                <div className="flex h-full w-full items-center justify-center text-xs font-bold text-[#f5d8b2]">
+            <div className="flex items-center gap-2.5 px-3 py-2.5">
+              <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(249,195,122,0.16),rgba(64,46,34,0.82))] ring-1 ring-white/[0.05]">
+                <div className="flex h-full w-full items-center justify-center text-[11px] font-bold text-[#f5d8b2]">
                   {(session.user.name || "A").charAt(0).toUpperCase()}
                 </div>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[26px] font-semibold leading-none text-[#ff7b7b]">
+                <p className="truncate text-[15px] font-semibold leading-none text-[#f08a8a]">
                   {session.user.name}
                 </p>
-                <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff4d5f]">
+                <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#d95b69]">
                   {userRole || "ADMIN"}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => router.push("/admin/settings")}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
+                className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
                 title="Settings"
               >
-                <Settings className="h-4 w-4" />
+                <Settings className="h-3.5 w-3.5" />
               </button>
             </div>
 
             <button
               onClick={() => signOut({ callbackUrl: "/admin/login" })}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium text-[#c6d3f0] transition-colors hover:bg-white/[0.03] hover:text-white"
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] font-medium text-zinc-300 transition-colors hover:bg-white/[0.03] hover:text-white"
             >
               <LogOut className="h-[18px] w-[18px] flex-shrink-0" />
               <span>Logout</span>
