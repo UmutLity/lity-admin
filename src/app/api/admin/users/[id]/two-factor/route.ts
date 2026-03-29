@@ -13,7 +13,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const sessionUserId = (session.user as any).id;
 
     // Users can only enable 2FA for themselves (or admin can do it for anyone)
-    if (sessionUserId !== params.id && (session.user as any).role !== "ADMIN") {
+  if (sessionUserId !== params.id && !["FOUNDER", "ADMIN"].includes((session.user as any).role)) {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
@@ -64,7 +64,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const session = await requireAuth();
     const sessionUserId = (session.user as any).id;
 
-    if (sessionUserId !== params.id && (session.user as any).role !== "ADMIN") {
+  if (sessionUserId !== params.id && !["FOUNDER", "ADMIN"].includes((session.user as any).role)) {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
@@ -114,7 +114,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     const session = await requireAuth();
     const sessionUserId = (session.user as any).id;
 
-    if (sessionUserId !== params.id && (session.user as any).role !== "ADMIN") {
+  if (sessionUserId !== params.id && !["FOUNDER", "ADMIN"].includes((session.user as any).role)) {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 

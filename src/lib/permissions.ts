@@ -121,6 +121,7 @@ export const PERMISSION_GROUPS: Record<string, { label: string; permissions: Per
 // ─── Default Role Permissions ──────────────────────────
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<string, Permission[]> = {
+  FOUNDER: [...ALL_PERMISSIONS],
   ADMIN: [...ALL_PERMISSIONS],
   MODERATOR: [
     "product.view",

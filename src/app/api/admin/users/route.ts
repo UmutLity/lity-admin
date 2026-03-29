@@ -9,7 +9,7 @@ const createUserSchema = z.object({
   email: z.string().email("Geçerli bir email girin"),
   name: z.string().min(1, "İsim zorunlu"),
   password: z.string().min(6, "Şifre en az 6 karakter olmalı"),
-  role: z.enum(["ADMIN", "EDITOR", "VIEWER", "MODERATOR", "SUPPORT", "ANALYST"]),
+  role: z.enum(["FOUNDER", "ADMIN", "EDITOR", "VIEWER", "MODERATOR", "SUPPORT", "ANALYST"]),
 });
 
 // GET /api/admin/users

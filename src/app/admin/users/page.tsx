@@ -59,7 +59,7 @@ export default function UsersPage() {
   // Admin create dialog
   const [showCreateAdmin, setShowCreateAdmin] = useState(false);
   const [creatingAdmin, setCreatingAdmin] = useState(false);
-  const [newAdmin, setNewAdmin] = useState({ email: "", name: "", password: "", role: "EDITOR" });
+  const [newAdmin, setNewAdmin] = useState({ email: "", name: "", password: "", role: "MODERATOR" });
 
   // Customer create dialog
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
@@ -117,7 +117,7 @@ export default function UsersPage() {
       if (res.ok) {
         addToast({ type: "success", title: "Admin user created" });
         setShowCreateAdmin(false);
-        setNewAdmin({ email: "", name: "", password: "", role: "EDITOR" });
+        setNewAdmin({ email: "", name: "", password: "", role: "MODERATOR" });
         loadData();
       } else {
         addToast({ type: "error", title: "Error", description: data.error });
@@ -315,6 +315,7 @@ export default function UsersPage() {
   };
 
   const adminRoleClass = (role: string) => {
+    if (role === "FOUNDER") return "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/20";
     if (role === "ADMIN") return "bg-gradient-to-r from-purple-500/20 to-violet-500/20 text-purple-400 border border-purple-500/20";
     if (role === "MODERATOR") return "bg-blue-500/10 text-blue-300 border border-blue-500/20";
     if (role === "SUPPORT") return "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20";
@@ -568,7 +569,7 @@ export default function UsersPage() {
                         <td className="px-6 py-3 text-sm text-zinc-500">{user.email}</td>
                         <td className="px-6 py-3">
                           <Badge
-                            variant={user.role === "ADMIN" ? "default" : "secondary"}
+                            variant={user.role === "FOUNDER" || user.role === "ADMIN" ? "default" : "secondary"}
                             className={cn(adminRoleClass(user.role))}
                           >
                             {user.role}
@@ -627,8 +628,9 @@ export default function UsersPage() {
             <div className="space-y-2"><Label>Password</Label><Input type="password" value={newAdmin.password} onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })} placeholder="Min 6 characters" /></div>
             <div className="space-y-2">
               <Label>Role</Label>
-              <Select
-                options={[
+                <Select
+                  options={[
+                  { value: "FOUNDER", label: "Founder" },
                   { value: "ADMIN", label: "Admin" },
                   { value: "MODERATOR", label: "Moderator" },
                   { value: "SUPPORT", label: "Support" },

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
 import { KeyRound, Plus, Save, Trash2, Users, Check, Shield } from "lucide-react";
+import { ALL_PERMISSIONS } from "@/lib/permissions";
 
 interface RoleData {
   id: string;
@@ -38,6 +39,8 @@ const PERMISSION_GROUPS: Record<string, { label: string; perms: string[] }> = {
 };
 
 const ROLE_TEMPLATES = [
+  { name: "FOUNDER", label: "Founder", permissions: [...ALL_PERMISSIONS] },
+  { name: "ADMIN", label: "Admin", permissions: [...ALL_PERMISSIONS] },
   { name: "MODERATOR", label: "Moderator", permissions: ["product.view", "changelog.view", "category.view", "customer.view", "ticket.view", "ticket.manage", "notification.view"] },
   { name: "SUPPORT", label: "Support", permissions: ["customer.view", "customer.manage", "ticket.view", "ticket.manage", "notification.view", "analytics.view"] },
   { name: "ANALYST", label: "Analyst", permissions: ["product.view", "changelog.view", "category.view", "analytics.view", "audit.view", "notification.view", "system.view"] },
@@ -111,10 +114,14 @@ export default function RolesPage() {
   };
 
   const createFromTemplate = async (template: { name: string; label: string; permissions: string[] }) => {
+    const payload = {
+      ...template,
+      permissions: template.permissions.length ? template.permissions : undefined,
+    };
     const res = await fetch("/api/admin/roles", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(template),
+      body: JSON.stringify(payload),
     });
     if (res.ok) {
       addToast({ type: "success", title: `${template.label} role created` });

@@ -179,7 +179,7 @@ export default withAuth(
     ];
     const isAdminOnly = adminOnlyRoutes.some((route) => pathname.startsWith(route));
 
-    if (isAdminOnly && token?.role !== "ADMIN") {
+    if (isAdminOnly && !["FOUNDER", "ADMIN"].includes(String(token?.role || ""))) {
       return NextResponse.redirect(new URL("/admin", req.url));
     }
 

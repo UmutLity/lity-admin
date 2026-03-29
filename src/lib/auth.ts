@@ -14,7 +14,7 @@ import { createAuditLog } from "@/lib/audit";
 const VERIFY_INTERVAL = 5 * 60 * 1000; // 5 minutes
 const MAX_SESSION_AGE = 8 * 60 * 60 * 1000; // 8 hours hard limit
 
-type Role = "ADMIN" | "EDITOR" | "VIEWER";
+type Role = "FOUNDER" | "ADMIN" | "EDITOR" | "VIEWER" | "MODERATOR" | "SUPPORT" | "ANALYST";
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -253,7 +253,7 @@ export async function requireAuth() {
 
 export async function requireAdmin() {
   const session = await requireAuth();
-  if ((session.user as any).role !== "ADMIN") throw new Error("Forbidden: Admin only");
+  if (!["FOUNDER", "ADMIN"].includes((session.user as any).role)) throw new Error("Forbidden: Admin only");
   return session;
 }
 
@@ -275,14 +275,14 @@ export async function requirePermission(permission: Permission) {
 
 export function canAccess(userRole: string, resource: string): boolean {
   const permissions: Record<string, string[]> = {
-    products: ["ADMIN", "EDITOR"],
-    changelog: ["ADMIN", "EDITOR"],
-    settings: ["ADMIN"],
-    users: ["ADMIN"],
-    media: ["ADMIN", "EDITOR"],
-    audit: ["ADMIN"],
-    security: ["ADMIN"],
-    roles: ["ADMIN"],
+    products: ["FOUNDER", "ADMIN", "EDITOR"],
+    changelog: ["FOUNDER", "ADMIN", "EDITOR"],
+    settings: ["FOUNDER", "ADMIN"],
+    users: ["FOUNDER", "ADMIN"],
+    media: ["FOUNDER", "ADMIN", "EDITOR"],
+    audit: ["FOUNDER", "ADMIN"],
+    security: ["FOUNDER", "ADMIN"],
+    roles: ["FOUNDER", "ADMIN"],
   };
   return permissions[resource]?.includes(userRole) ?? false;
 }

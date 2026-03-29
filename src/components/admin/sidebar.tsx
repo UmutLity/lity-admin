@@ -11,7 +11,7 @@ import {
 import { signOut, useSession } from "next-auth/react";
 import { useState, createContext, useContext, useEffect } from "react";
 
-type Role = "ADMIN" | "EDITOR" | "VIEWER";
+type Role = "FOUNDER" | "ADMIN" | "EDITOR" | "VIEWER" | "MODERATOR" | "SUPPORT" | "ANALYST";
 
 interface NavGroup {
   title: string;

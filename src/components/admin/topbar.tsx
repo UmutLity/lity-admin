@@ -27,12 +27,14 @@ export function Topbar({ title, description, children }: TopbarProps) {
           <h1 className="text-2xl font-bold tracking-tight text-white">{title}</h1>
           {role && (
             <Badge
-              variant={role === "ADMIN" ? "default" : "secondary"}
+              variant={role === "FOUNDER" || role === "ADMIN" ? "default" : "secondary"}
               className={cn(
                 "border text-[10px] font-semibold uppercase tracking-[0.22em]",
-                role === "ADMIN"
-                  ? "border-[#b9accf]/30 bg-[#a996c4]/12 text-[#c7bdd8]"
-                  : "border-white/[0.08] bg-white/[0.04] text-zinc-300"
+                role === "FOUNDER"
+                  ? "border-amber-400/30 bg-amber-500/12 text-amber-200"
+                  : role === "ADMIN"
+                    ? "border-[#b9accf]/30 bg-[#a996c4]/12 text-[#c7bdd8]"
+                    : "border-white/[0.08] bg-white/[0.04] text-zinc-300"
               )}
             >
               {role}

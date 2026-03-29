@@ -1,6 +1,6 @@
 import NextAuth, { DefaultSession } from "next-auth";
 
-type Role = "ADMIN" | "EDITOR" | "VIEWER";
+type Role = "FOUNDER" | "ADMIN" | "EDITOR" | "VIEWER" | "MODERATOR" | "SUPPORT" | "ANALYST";
 
 declare module "next-auth" {
   interface Session {
