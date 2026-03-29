@@ -627,17 +627,8 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                 <p className="text-xs text-zinc-500">You can use standard plans or custom labels like game names.</p>
               </div>
 
-              <datalist id="pricing-plan-options">
-                {planOptions.map((plan) => (
-                  <option key={plan.value} value={plan.value}>
-                    {plan.label}
-                  </option>
-                ))}
-              </datalist>
-
               <div className="grid grid-cols-1 gap-3 md:grid-cols-[220px_1fr]">
                 <input
-                  list="pricing-plan-options"
                   value={basePlan}
                   onChange={(event) => setBasePlan(event.target.value)}
                   className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
@@ -658,7 +649,6 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                 {extraPrices.map((price, index) => (
                   <div key={`${price.plan}-${index}`} className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr_auto]">
                     <input
-                      list="pricing-plan-options"
                       value={price.plan}
                       onChange={(event) =>
                         setExtraPrices((prev) => prev.map((item, i) => (i === index ? { ...item, plan: event.target.value } : item)))
