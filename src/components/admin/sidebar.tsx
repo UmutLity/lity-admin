@@ -245,10 +245,10 @@ export function Sidebar() {
                 </div>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[15px] font-semibold leading-none text-[#f08a8a]">
+                <p className="truncate text-[15px] font-semibold leading-none text-white">
                   {session.user.name}
                 </p>
-                <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#d95b69]">
+                <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
                   {userRole || "ADMIN"}
                 </p>
               </div>
