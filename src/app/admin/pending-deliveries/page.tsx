@@ -65,6 +65,10 @@ export default function PendingDeliveriesPage() {
           <div className="divide-y divide-white/[0.06]">
             {rows.map((row) => (
               <div key={row.id} className="p-4">
+                {(() => {
+                  const customerId = row.customer?.id || null;
+                  return (
+                <>
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <p className="text-sm font-semibold text-white">
@@ -76,10 +80,10 @@ export default function PendingDeliveriesPage() {
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {row.customer ? (
+                    {customerId ? (
                       <button
                         className="rounded-xl border border-white/[0.08] px-3 py-2 text-sm text-zinc-200"
-                        onClick={() => window.location.assign(`/admin/customers/${row.customer.id}`)}
+                        onClick={() => window.location.assign(`/admin/customers/${customerId}`)}
                       >
                         <UserRound className="mr-2 inline h-4 w-4" /> Profile
                       </button>
@@ -144,6 +148,9 @@ export default function PendingDeliveriesPage() {
                     </div>
                   </div>
                 </div>
+                </>
+                  );
+                })()}
               </div>
             ))}
           </div>
