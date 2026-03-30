@@ -117,7 +117,7 @@ export async function PATCH(req: NextRequest) {
           },
         });
 
-        const updatedRequest = await tx.topUpRequest.update({
+      const updatedRequest = await tx.topUpRequest.update({
           where: { id: request.id },
           data: {
             status: "APPROVED",
@@ -125,6 +125,14 @@ export async function PATCH(req: NextRequest) {
             reviewNote: reviewNote || null,
             approvedAt: new Date(),
             rejectedAt: null,
+          },
+        });
+
+        await tx.notification.create({
+          data: {
+            userId: request.customer.id,
+            type: "TOPUP_APPROVED",
+            message: `Your top-up request for $${amount.toFixed(2)} was approved. Balance has been added to your account.`,
           },
         });
 
@@ -165,6 +173,16 @@ export async function PATCH(req: NextRequest) {
         reviewNote: reviewNote || null,
         rejectedAt: new Date(),
         approvedAt: null,
+      },
+    });
+
+    await prisma.notification.create({
+      data: {
+        userId: existing.customerId,
+        type: "TOPUP_REJECTED",
+        message: reviewNote
+          ? `Your top-up request was rejected. Reason: ${reviewNote}`
+          : "Your top-up request was rejected. Please review your payment details and try again.",
       },
     });
 

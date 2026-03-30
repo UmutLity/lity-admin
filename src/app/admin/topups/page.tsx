@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Topbar } from "@/components/admin/topbar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
@@ -14,6 +15,7 @@ interface TopUpRequestRow {
   senderBankName: string;
   amount: number;
   note: string | null;
+  proofImageUrl?: string | null;
   status: TopUpStatus;
   reviewNote: string | null;
   createdAt: string;
@@ -30,6 +32,12 @@ interface TopUpRequestRow {
     name: string;
     email: string;
   } | null;
+}
+
+function statusBadge(status: TopUpStatus) {
+  if (status === "APPROVED") return "bg-emerald-500/10 text-emerald-300 border-emerald-500/20";
+  if (status === "REJECTED") return "bg-red-500/10 text-red-300 border-red-500/20";
+  return "bg-sky-500/10 text-sky-300 border-sky-500/20";
 }
 
 export default function TopUpsPage() {
@@ -68,15 +76,13 @@ export default function TopUpsPage() {
   async function processRequest(id: string, action: "APPROVE" | "REJECT") {
     try {
       setBusyId(id);
-      const res = await fetch("/api/admin/topup-requests", {
+      const reviewNote = (reviewNotes[id] || "").trim();
+      const endpoint = action === "APPROVE" ? `/api/topup/${id}/approve` : `/api/topup/${id}/reject`;
+      const res = await fetch(endpoint, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          id,
-          action,
-          reviewNote: (reviewNotes[id] || "").trim(),
-        }),
+        body: JSON.stringify({ reviewNote }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || "Failed");
@@ -125,36 +131,54 @@ export default function TopUpsPage() {
                 <div key={row.id} className="rounded-xl border border-white/[0.08] bg-white/[0.01] p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <div className="text-sm font-semibold text-zinc-100">
-                        {row.customer.username} <span className="text-zinc-500">({row.customer.email})</span>
+                      <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-zinc-100">
+                        <span>{row.customer.username}</span>
+                        <Badge variant="outline" className={statusBadge(row.status)}>{row.status}</Badge>
                       </div>
                       <div className="mt-1 text-xs text-zinc-400">
-                        Request #{row.id.slice(-8)} | {new Date(row.createdAt).toLocaleString("tr-TR")}
+                        {row.customer.email} · Request #{row.id.slice(-8)} · {new Date(row.createdAt).toLocaleString("tr-TR")}
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold text-emerald-300">${Number(row.amount || 0).toFixed(2)}</div>
-                      <div className="text-xs text-zinc-400">{row.status}</div>
+                      <div className="text-xs text-zinc-400">Current balance: ${Number(row.customer.balance || 0).toFixed(2)}</div>
                     </div>
                   </div>
 
-                  <div className="mt-3 grid gap-2 text-sm text-zinc-300 md:grid-cols-2">
-                    <div><span className="text-zinc-500">Sender Name:</span> {row.senderName}</div>
-                    <div><span className="text-zinc-500">Bank Name:</span> {row.senderBankName}</div>
-                    <div><span className="text-zinc-500">Current Balance:</span> ${Number(row.customer.balance || 0).toFixed(2)}</div>
-                    <div><span className="text-zinc-500">Note:</span> {row.note || "-"}</div>
-                  </div>
+                  <div className="mt-3 grid gap-3 md:grid-cols-[1fr_220px]">
+                    <div className="grid gap-2 text-sm text-zinc-300 md:grid-cols-2">
+                      <div><span className="text-zinc-500">Sender Name:</span> {row.senderName}</div>
+                      <div><span className="text-zinc-500">Bank Name:</span> {row.senderBankName}</div>
+                      <div className="md:col-span-2"><span className="text-zinc-500">Customer Note:</span> {row.note || "-"}</div>
+                      {row.reviewNote ? (
+                        <div className="md:col-span-2 text-xs text-violet-300">Review Note: {row.reviewNote}</div>
+                      ) : null}
+                    </div>
 
-                  {row.reviewNote ? (
-                    <div className="mt-2 text-xs text-violet-300">Review Note: {row.reviewNote}</div>
-                  ) : null}
+                    <div className="rounded-xl border border-white/[0.06] bg-[#121520] p-3">
+                      <div className="mb-2 text-xs uppercase tracking-[0.14em] text-zinc-500">Proof Screenshot</div>
+                      {row.proofImageUrl ? (
+                        <a href={row.proofImageUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-white/[0.08]">
+                          <img
+                            src={row.proofImageUrl}
+                            alt="Payment proof"
+                            className="h-36 w-full object-cover"
+                          />
+                        </a>
+                      ) : (
+                        <div className="rounded-lg border border-dashed border-white/[0.1] px-4 py-8 text-center text-xs text-zinc-500">
+                          No proof uploaded
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
                   {row.status === "PENDING" ? (
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <Input
                         value={reviewNotes[row.id] || ""}
                         onChange={(e) => setReviewNotes((prev) => ({ ...prev, [row.id]: e.target.value }))}
-                        placeholder="Optional admin note"
+                        placeholder="Reject reason or optional admin note"
                         className="max-w-md"
                       />
                       <Button size="sm" disabled={busyId === row.id} onClick={() => processRequest(row.id, "APPROVE")}>
@@ -166,8 +190,7 @@ export default function TopUpsPage() {
                     </div>
                   ) : (
                     <div className="mt-3 text-xs text-zinc-500">
-                      Processed at{" "}
-                      {new Date((row.approvedAt || row.rejectedAt || row.createdAt) as string).toLocaleString("tr-TR")}
+                      Processed at {new Date((row.approvedAt || row.rejectedAt || row.createdAt) as string).toLocaleString("tr-TR")}
                     </div>
                   )}
                 </div>

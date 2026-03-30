@@ -56,7 +56,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
             data: {
               status: "ACTIVE",
               downloadUrl: license.product.defaultLoaderUrl || null,
-              note: "Delivered manually by admin.",
+              note: "Delivery has been completed by admin.",
             },
           });
         }
@@ -64,6 +64,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         await tx.order.update({
           where: { id: order.id },
           data: {
+            status: "DELIVERED",
             timeline: appendOrderTimeline(order.timeline, {
               type: "DELIVERED",
               title: "Manual delivery completed",
@@ -71,6 +72,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
             }),
           },
         });
+
+        if (order.customerId) {
+          await tx.notification.create({
+            data: {
+              userId: order.customerId,
+              type: "DELIVERY",
+              message: `Your order #${order.id.slice(-8)} has been delivered. Open your orders page to view the delivery content.`,
+            },
+          });
+        }
       });
 
       return NextResponse.json({ success: true });
@@ -100,6 +111,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       await prisma.order.update({
         where: { id: order.id },
         data: {
+          status: "PROCESSING",
           timeline: appendOrderTimeline(order.timeline, {
             type: "DISCORD_SENT",
             title: "Discord order notification sent",

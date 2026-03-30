@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
       success: true,
       data: orders.map((order) => ({
         ...order,
+        deliveryAvailable: String(order.status) === "DELIVERED" && !!order.deliveryContent,
         timeline: parseOrderTimeline(order.timeline),
       })),
     });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
 import { sendTopUpNotificationToDiscord } from "@/lib/discord";
+import { uploadFile } from "@/lib/upload";
 
 function normalizeInstructionMap(rows: Array<{ key: string; value: string }>) {
   const map = new Map(rows.map((x) => [x.key, x.value]));
@@ -30,10 +31,32 @@ async function getAuthedCustomer(req: NextRequest) {
   return { customer };
 }
 
+function corsHeaders(req?: NextRequest) {
+  const origin = req?.headers.get("origin") || "";
+  const allowed = new Set([
+    "https://litysoftware.com",
+    "https://www.litysoftware.com",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+  ]);
+  const allowOrigin = allowed.has(origin) ? origin : "https://litysoftware.com";
+
+  return {
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    Vary: "Origin",
+  };
+}
+
+export async function OPTIONS(req: NextRequest) {
+  return new NextResponse(null, { status: 204, headers: corsHeaders(req) });
+}
+
 export async function GET(req: NextRequest) {
   try {
     const auth = await getAuthedCustomer(req);
-    if ("error" in auth) return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    if ("error" in auth) return NextResponse.json({ success: false, error: auth.error }, { status: auth.status, headers: corsHeaders(req) });
 
     const [rows, requests] = await Promise.all([
       prisma.siteSetting.findMany({
@@ -62,6 +85,7 @@ export async function GET(req: NextRequest) {
           amount: true,
           status: true,
           reviewNote: true,
+          proofImageUrl: true,
           createdAt: true,
           approvedAt: true,
           rejectedAt: true,
@@ -75,32 +99,53 @@ export async function GET(req: NextRequest) {
         instructions: normalizeInstructionMap(rows),
         requests,
       },
-    });
+    }, { headers: corsHeaders(req) });
   } catch (error) {
     console.error("GET /api/auth/customer/topup error:", error);
-    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Server error" }, { status: 500, headers: corsHeaders(req) });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const auth = await getAuthedCustomer(req);
-    if ("error" in auth) return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    if ("error" in auth) return NextResponse.json({ success: false, error: auth.error }, { status: auth.status, headers: corsHeaders(req) });
 
-    const body = await req.json().catch(() => ({}));
-    const senderName = String(body.senderName || "").trim();
-    const senderBankName = String(body.senderBankName || "").trim();
-    const amount = Number(body.amount);
-    const note = typeof body.note === "string" ? body.note.trim() : "";
+    const contentType = req.headers.get("content-type") || "";
+    let senderName = "";
+    let senderBankName = "";
+    let amount = Number.NaN;
+    let note = "";
+    let proofImageUrl: string | null = null;
+
+    if (contentType.includes("multipart/form-data")) {
+      const form = await req.formData();
+      senderName = String(form.get("senderName") || "").trim();
+      senderBankName = String(form.get("senderBankName") || "").trim();
+      amount = Number(form.get("amount"));
+      note = String(form.get("note") || "").trim();
+      const screenshot = form.get("screenshot");
+      if (screenshot instanceof File && screenshot.size > 0) {
+        const uploaded = await uploadFile(screenshot);
+        proofImageUrl = uploaded.url;
+      }
+    } else {
+      const body = await req.json().catch(() => ({}));
+      senderName = String(body.senderName || "").trim();
+      senderBankName = String(body.senderBankName || "").trim();
+      amount = Number(body.amount);
+      note = typeof body.note === "string" ? body.note.trim() : "";
+      proofImageUrl = typeof body.proofImageUrl === "string" && body.proofImageUrl.trim() ? body.proofImageUrl.trim() : null;
+    }
 
     if (senderName.length < 2 || senderName.length > 120) {
-      return NextResponse.json({ success: false, error: "Sender account name must be 2-120 characters." }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Sender account name must be 2-120 characters." }, { status: 400, headers: corsHeaders(req) });
     }
     if (senderBankName.length < 2 || senderBankName.length > 120) {
-      return NextResponse.json({ success: false, error: "Bank name must be 2-120 characters." }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Bank name must be 2-120 characters." }, { status: 400, headers: corsHeaders(req) });
     }
     if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000) {
-      return NextResponse.json({ success: false, error: "Amount must be between 0.01 and 1000000." }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Amount must be between 0.01 and 1000000." }, { status: 400, headers: corsHeaders(req) });
     }
 
     const created = await prisma.topUpRequest.create({
@@ -110,6 +155,7 @@ export async function POST(req: NextRequest) {
         senderBankName,
         amount,
         note: note || null,
+        proofImageUrl,
       },
       select: {
         id: true,
@@ -118,6 +164,7 @@ export async function POST(req: NextRequest) {
         amount: true,
         status: true,
         note: true,
+        proofImageUrl: true,
         createdAt: true,
       },
     });
@@ -127,15 +174,16 @@ export async function POST(req: NextRequest) {
       senderName,
       senderBankName,
       note: note || null,
+      proofImageUrl,
       customerEmail: auth.customer.email,
       customerUsername: auth.customer.username,
     }).catch((error) => {
       console.error("Top-up Discord webhook error:", error);
     });
 
-    return NextResponse.json({ success: true, data: created }, { status: 201 });
+    return NextResponse.json({ success: true, data: created }, { status: 201, headers: corsHeaders(req) });
   } catch (error) {
     console.error("POST /api/auth/customer/topup error:", error);
-    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Server error" }, { status: 500, headers: corsHeaders(req) });
   }
 }

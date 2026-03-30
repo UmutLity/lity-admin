@@ -11,7 +11,7 @@ export async function GET() {
 
     const [orders, licenses] = await Promise.all([
       prisma.order.findMany({
-        where: { status: "PAID" },
+        where: { status: { in: ["PAID", "PROCESSING", "DELIVERED"] } },
         include: {
           customer: { select: { id: true, username: true, email: true } },
           items: { include: { product: { select: { id: true, name: true, slug: true } } } },
@@ -41,15 +41,17 @@ export async function GET() {
           return sameItem && Math.abs(licenseTime - orderTime) <= LICENSE_MATCH_WINDOW_MS;
         });
 
-        if (!pendingMatches.length) return null;
+        if (!pendingMatches.length && order.status !== "DELIVERED") return null;
 
         return {
           id: order.id,
+          status: order.status,
           createdAt: order.createdAt,
           totalAmount: order.totalAmount,
           customerNote: order.customerNote,
           couponCode: order.couponCode,
           discountAmount: order.discountAmount,
+          deliveryContent: order.deliveryContent,
           customer: order.customer,
           items: order.items.map((item) => ({
             id: item.id,

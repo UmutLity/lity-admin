@@ -161,6 +161,7 @@ type TopUpDiscordPayload = {
   senderName: string;
   senderBankName: string;
   note?: string | null;
+  proofImageUrl?: string | null;
   customerEmail?: string | null;
   customerUsername?: string | null;
 };
@@ -336,6 +337,7 @@ export async function sendTopUpNotificationToDiscord(input: TopUpDiscordPayload)
             { name: "Sender", value: `${input.senderName}\n${input.senderBankName}`, inline: true },
             { name: "Note", value: truncate(input.note || "No note left.", 500), inline: false },
           ],
+          ...(input.proofImageUrl ? { image: { url: input.proofImageUrl } } : {}),
           footer: { text: "Lity Software - Top-up Request" },
           timestamp: new Date().toISOString(),
         },
