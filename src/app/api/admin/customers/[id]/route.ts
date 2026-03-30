@@ -4,6 +4,119 @@ import { requireAdmin } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
 import bcrypt from "bcryptjs";
 
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    await requireAdmin();
+
+    const customer = await prisma.customer.findUnique({
+      where: { id: params.id },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        avatar: true,
+        role: true,
+        isActive: true,
+        balance: true,
+        totalSpent: true,
+        createdAt: true,
+        updatedAt: true,
+        lastLoginAt: true,
+        mustChangePassword: true,
+        orders: {
+          orderBy: { createdAt: "desc" },
+          take: 12,
+          select: {
+            id: true,
+            status: true,
+            totalAmount: true,
+            discountAmount: true,
+            couponCode: true,
+            customerNote: true,
+            createdAt: true,
+            timeline: true,
+            items: {
+              select: {
+                id: true,
+                plan: true,
+                amount: true,
+                product: { select: { id: true, name: true, slug: true } },
+              },
+            },
+          },
+        },
+        licenses: {
+          orderBy: { createdAt: "desc" },
+          take: 12,
+          select: {
+            id: true,
+            key: true,
+            status: true,
+            plan: true,
+            note: true,
+            expiresAt: true,
+            createdAt: true,
+            product: { select: { id: true, name: true, slug: true } },
+          },
+        },
+        balanceTransactions: {
+          orderBy: { createdAt: "desc" },
+          take: 12,
+          select: {
+            id: true,
+            type: true,
+            amount: true,
+            balanceBefore: true,
+            balanceAfter: true,
+            reason: true,
+            createdAt: true,
+          },
+        },
+        topUpRequests: {
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          select: {
+            id: true,
+            amount: true,
+            status: true,
+            senderName: true,
+            senderBankName: true,
+            note: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    if (!customer) return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+
+    const tickets = await prisma.supportTicket.findMany({
+      where: {
+        OR: [
+          { email: { equals: customer.email, mode: "insensitive" } },
+          { discordUsername: { equals: customer.username, mode: "insensitive" } },
+        ],
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 12,
+      select: {
+        id: true,
+        ticketNumber: true,
+        subject: true,
+        status: true,
+        priority: true,
+        updatedAt: true,
+        createdAt: true,
+      },
+    }).catch(() => []);
+
+    return NextResponse.json({ success: true, data: { ...customer, tickets } });
+  } catch (error: any) {
+    if (error.message === "Unauthorized") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
 // PATCH /api/admin/customers/[id] - Update customer role/status/password
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {

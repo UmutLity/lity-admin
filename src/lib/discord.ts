@@ -156,6 +156,25 @@ type OrderDiscordPayload = {
   manualDelivery?: boolean;
 };
 
+type TopUpDiscordPayload = {
+  amount: number;
+  senderName: string;
+  senderBankName: string;
+  note?: string | null;
+  customerEmail?: string | null;
+  customerUsername?: string | null;
+};
+
+type TicketDiscordPayload = {
+  ticketNumber: number | string;
+  subject: string;
+  message: string;
+  contactType: string;
+  productName?: string | null;
+  customerEmail?: string | null;
+  customerUsername?: string | null;
+};
+
 export async function sendDiscordWebhook(
   webhookUrl: string,
   payload: object,
@@ -279,6 +298,85 @@ export async function sendOrderNotificationToDiscord(order: OrderDiscordPayload)
   );
 
   return sendDiscordWebhook(webhookUrlSetting.value, payload);
+}
+
+async function getDiscordWebhookIdentity() {
+  const webhookEnabledSetting = await prisma.siteSetting.findUnique({ where: { key: "discord_webhook_enabled" } });
+  if (!webhookEnabledSetting || webhookEnabledSetting.value !== "true") return null;
+
+  const webhookUrlSetting = await prisma.siteSetting.findUnique({ where: { key: "discord_webhook_url" } });
+  if (!webhookUrlSetting?.value) return null;
+
+  const [usernameSetting, avatarSetting] = await Promise.all([
+    prisma.siteSetting.findUnique({ where: { key: "discord_webhook_username" } }),
+    prisma.siteSetting.findUnique({ where: { key: "discord_webhook_avatar_url" } }),
+  ]);
+
+  return {
+    webhookUrl: webhookUrlSetting.value,
+    username: usernameSetting?.value || undefined,
+    avatarUrl: avatarSetting?.value || undefined,
+  };
+}
+
+export async function sendTopUpNotificationToDiscord(input: TopUpDiscordPayload): Promise<WebhookResult | null> {
+  const webhook = await getDiscordWebhookIdentity();
+  if (!webhook) return null;
+
+  const payload = buildWebhookPayload(
+    {
+      embeds: [
+        {
+          title: "New Top-up Request",
+          description: "A customer submitted a manual balance request.",
+          color: 0x3b82f6,
+          fields: [
+            { name: "Customer", value: `${input.customerUsername || "Unknown"}\n${input.customerEmail || "-"}`, inline: false },
+            { name: "Amount", value: `$${Number(input.amount || 0).toFixed(2)}`, inline: true },
+            { name: "Sender", value: `${input.senderName}\n${input.senderBankName}`, inline: true },
+            { name: "Note", value: truncate(input.note || "No note left.", 500), inline: false },
+          ],
+          footer: { text: "Lity Software - Top-up Request" },
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    },
+    webhook.username,
+    webhook.avatarUrl,
+    false
+  );
+
+  return sendDiscordWebhook(webhook.webhookUrl, payload);
+}
+
+export async function sendSupportTicketNotificationToDiscord(input: TicketDiscordPayload): Promise<WebhookResult | null> {
+  const webhook = await getDiscordWebhookIdentity();
+  if (!webhook) return null;
+
+  const payload = buildWebhookPayload(
+    {
+      embeds: [
+        {
+          title: `New Support Ticket #${input.ticketNumber}`,
+          description: truncate(input.message, 1200),
+          color: 0xf59e0b,
+          fields: [
+            { name: "Subject", value: input.subject, inline: false },
+            { name: "Customer", value: `${input.customerUsername || "Unknown"}\n${input.customerEmail || "-"}`, inline: false },
+            { name: "Contact", value: input.contactType, inline: true },
+            { name: "Product", value: input.productName || "General Support", inline: true },
+          ],
+          footer: { text: "Lity Software - Support Ticket" },
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    },
+    webhook.username,
+    webhook.avatarUrl,
+    false
+  );
+
+  return sendDiscordWebhook(webhook.webhookUrl, payload);
 }
 
 export async function sendChangelogToDiscord(changelogId: string): Promise<WebhookResult | null> {

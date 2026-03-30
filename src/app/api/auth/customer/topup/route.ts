@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
+import { sendTopUpNotificationToDiscord } from "@/lib/discord";
 
 function normalizeInstructionMap(rows: Array<{ key: string; value: string }>) {
   const map = new Map(rows.map((x) => [x.key, x.value]));
@@ -119,6 +120,17 @@ export async function POST(req: NextRequest) {
         note: true,
         createdAt: true,
       },
+    });
+
+    sendTopUpNotificationToDiscord({
+      amount,
+      senderName,
+      senderBankName,
+      note: note || null,
+      customerEmail: auth.customer.email,
+      customerUsername: auth.customer.username,
+    }).catch((error) => {
+      console.error("Top-up Discord webhook error:", error);
     });
 
     return NextResponse.json({ success: true, data: created }, { status: 201 });

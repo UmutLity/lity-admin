@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getClientIp } from "@/lib/ip-utils";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
+import { sendSupportTicketNotificationToDiscord } from "@/lib/discord";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DISCORD_REGEX = /^.{2,32}$/;
@@ -297,6 +298,18 @@ export async function POST(req: NextRequest) {
         }),
       },
     }).catch(() => {});
+
+    sendSupportTicketNotificationToDiscord({
+      ticketNumber: ticket?.ticketNumber || fallbackTicketNumber,
+      subject,
+      message,
+      contactType,
+      productName: product?.name || "General Support",
+      customerEmail: email || null,
+      customerUsername: customer.username || discordUsername || null,
+    }).catch((error) => {
+      console.error("Support ticket Discord webhook error:", error);
+    });
 
     return NextResponse.json(
       {

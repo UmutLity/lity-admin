@@ -260,6 +260,15 @@ export default function OrdersPage() {
                     <div className="border-t border-white/[0.06] bg-[#11131c]/70 px-4 py-3">
                       <p className="mb-2 text-xs uppercase tracking-[0.16em] text-zinc-500">Order #{order.id.slice(-10)}</p>
                       <div className="mb-3 flex flex-wrap gap-2">
+                        {order.customer?.id ? (
+                          <button
+                            type="button"
+                            onClick={() => window.location.assign(`/admin/customers/${order.customer?.id}`)}
+                            className="rounded-xl border border-white/[0.08] px-3 py-2 text-xs font-semibold text-zinc-200"
+                          >
+                            <UserRound className="mr-2 inline h-4 w-4" /> Customer Profile
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           onClick={() => navigator.clipboard.writeText(order.customer?.email || order.customer?.username || order.id)}

@@ -496,6 +496,9 @@ export default function UsersPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-[#0d1424] border-white/[0.08]">
+                              <DropdownMenuItem onClick={() => window.location.assign(`/admin/customers/${customer.id}`)}>
+                                <Eye className="h-4 w-4 mr-2" /> Open Profile
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setEditCustomer(customer)}>
                                 <Crown className="h-4 w-4 mr-2" /> Change Role
                               </DropdownMenuItem>

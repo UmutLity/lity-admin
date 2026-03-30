@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Copy, MessageSquareShare, Send, Truck } from "lucide-react";
+import { Copy, MessageSquareShare, Send, Truck, UserRound } from "lucide-react";
 import { Topbar } from "@/components/admin/topbar";
 
 type DeliveryRow = {
@@ -12,7 +12,7 @@ type DeliveryRow = {
   couponCode: string | null;
   discountAmount: number;
   pendingCount: number;
-  customer: { username: string; email: string } | null;
+  customer: { id: string; username: string; email: string } | null;
   items: Array<{ id: string; productName: string; productSlug: string; plan: string; amount: number }>;
 };
 
@@ -76,6 +76,14 @@ export default function PendingDeliveriesPage() {
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    {row.customer ? (
+                      <button
+                        className="rounded-xl border border-white/[0.08] px-3 py-2 text-sm text-zinc-200"
+                        onClick={() => window.location.assign(`/admin/customers/${row.customer.id}`)}
+                      >
+                        <UserRound className="mr-2 inline h-4 w-4" /> Profile
+                      </button>
+                    ) : null}
                     <button
                       className="rounded-xl border border-white/[0.08] px-3 py-2 text-sm text-zinc-200"
                       onClick={() => navigator.clipboard.writeText(row.customer?.email || row.customer?.username || "")}
