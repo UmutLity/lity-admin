@@ -541,13 +541,14 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
           {activeTab === "media" && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-300">Main Image (Cover)</label>
+                <label className="text-sm font-medium text-zinc-300">Main Thumbnail / Cover Image</label>
                 <input
                   value={mainImageUrl}
                   onChange={(event) => setMainImageUrl(event.target.value)}
                   className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
                   placeholder="https://..."
                 />
+                <p className="text-xs text-zinc-500">This image is used as the thumbnail in product cards and as the main cover on the product page.</p>
               </div>
 
               <div className="space-y-2">
