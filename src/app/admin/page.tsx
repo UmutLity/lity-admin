@@ -18,7 +18,6 @@ import { cn } from "@/lib/utils";
 import { Topbar } from "@/components/admin/topbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 type AnyJson = Record<string, any>;
 
@@ -479,9 +478,12 @@ export default function DashboardPage() {
   return (
     <div>
       <Topbar title="Admin Dashboard" description="Overview of your platform">
-        <Button asChild variant="outline" className="border-white/[0.08] bg-white/[0.03] text-zinc-200 hover:bg-white/[0.06] hover:text-white">
-          <Link href="/admin/orders">Open Orders</Link>
-        </Button>
+        <Link
+          href="/admin/orders"
+          className="inline-flex h-10 items-center justify-center rounded-md border border-white/[0.08] bg-white/[0.03] px-4 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/[0.06] hover:text-white"
+        >
+          Open Orders
+        </Link>
       </Topbar>
 
       <div className="space-y-4">

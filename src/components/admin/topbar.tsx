@@ -210,8 +210,7 @@ export function AdminHeader() {
           </div>
 
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-10 rounded-xl px-2 text-zinc-300 hover:bg-white/[0.05] hover:text-white">
+            <DropdownMenuTrigger className="inline-flex h-10 items-center gap-2 rounded-xl px-2 text-zinc-300 transition-colors hover:bg-white/[0.05] hover:text-white focus:outline-none">
                 <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl border border-white/[0.08] bg-[linear-gradient(135deg,#8f7ab0,#6e6381)] text-[11px] font-bold text-white">
                   <span className="absolute inset-0 flex items-center justify-center">
                     {(session?.user?.name || "A").charAt(0).toUpperCase()}
@@ -231,7 +230,6 @@ export function AdminHeader() {
                   <p className="max-w-[120px] truncate text-sm font-medium text-zinc-200">{session?.user?.name}</p>
                 </div>
                 <ChevronDown className="h-4 w-4 text-zinc-500" />
-              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 border-white/[0.08] bg-[#11131a]/95 text-zinc-200 backdrop-blur-xl">
               <div className="border-b border-white/[0.06] px-3 py-2.5">

@@ -193,23 +193,21 @@ export function Sidebar() {
     const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href + "/"));
 
     return (
-      <Button
+      <Link
         key={item.href}
-        asChild
-        variant={active ? "secondary" : "ghost"}
+        href={item.href}
+        title={collapsed ? item.label : undefined}
         className={cn(
-          "h-10 w-full justify-start rounded-xl px-3 text-sm font-medium transition-all",
+          "flex h-10 w-full items-center rounded-xl px-3 text-sm font-medium transition-all",
           active
             ? "border border-white/[0.08] bg-white/[0.07] text-white shadow-none hover:bg-white/[0.08]"
             : "text-zinc-400 hover:bg-white/[0.04] hover:text-white",
           collapsed && "justify-center px-0"
         )}
       >
-        <Link href={item.href} title={collapsed ? item.label : undefined}>
-          <item.icon className={cn("h-4 w-4 flex-shrink-0", !collapsed && "mr-2.5")} />
-          {!collapsed ? <span className="truncate">{item.label}</span> : null}
-        </Link>
-      </Button>
+        <item.icon className={cn("h-4 w-4 flex-shrink-0", !collapsed && "mr-2.5")} />
+        {!collapsed ? <span className="truncate">{item.label}</span> : null}
+      </Link>
     );
   };
 
