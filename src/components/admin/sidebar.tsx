@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Package, Settings, FileText, Bell, DollarSign, MessageSquare, BookOpen,
   Users, Shield, LogOut, Menu, ClipboardList,
-  Download, PanelLeftClose, PanelLeft, Ticket, Landmark, Newspaper, ShoppingCart, TicketPercent, Truck, UserRoundCog,
+  Download, PanelLeftClose, PanelLeft, Ticket, Landmark, Newspaper, ShoppingCart, TicketPercent, Truck, UserRoundCog, X,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useState, createContext, useContext, useEffect, useRef } from "react";
@@ -77,8 +77,11 @@ export function Sidebar() {
   const { collapsed, setCollapsed } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
   const userRole = (session?.user as any)?.role as Role | undefined;
   const imageUrl = session?.user?.image || "";
 
@@ -99,12 +102,25 @@ export function Sidebar() {
       try {
         const res = await fetch("/api/admin/notifications?limit=5", { credentials: "include" });
         const data = await res.json();
-        if (data?.success) setUnreadCount(Number(data.unreadCount || 0));
+        if (data?.success) {
+          setUnreadCount(Number(data.unreadCount || 0));
+          setNotifications(Array.isArray(data.data) ? data.data : []);
+        }
       } catch {}
     };
     fetchUnread();
     const interval = setInterval(fetchUnread, 30000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const onClick = (event: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
   const uploadAvatar = async (file?: File | null) => {
@@ -256,26 +272,70 @@ export function Sidebar() {
               className="hidden"
               onChange={(e) => uploadAvatar(e.target.files?.[0])}
             />
-            <button
-              type="button"
-              onClick={() => router.push("/admin/notifications")}
-              className="flex w-full items-center justify-between border-b border-white/[0.06] px-3 py-3 text-left transition-colors hover:bg-white/[0.02]"
-            >
-              <div className="flex items-center gap-3">
-                <div className="relative flex h-6 w-6 items-center justify-center text-zinc-500">
-                  <Bell className="h-[17px] w-[17px]" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -right-1.5 -top-1.5 flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-[#2b2038] px-1 text-[10px] font-bold text-[#e4daf5]">
-                      {unreadCount}
-                    </span>
-                  )}
+            <div ref={notifRef} className="relative border-b border-white/[0.06]">
+              <button
+                type="button"
+                onClick={() => setNotifOpen((prev) => !prev)}
+                className="flex w-full items-center justify-between px-3 py-3 text-left transition-colors hover:bg-white/[0.02]"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="relative flex h-6 w-6 items-center justify-center text-zinc-500">
+                    <Bell className="h-[17px] w-[17px]" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -right-1.5 -top-1.5 flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-[#2b2038] px-1 text-[10px] font-bold text-[#e4daf5]">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[15px] font-medium text-[#cbbfe0]">Notifications</span>
                 </div>
-                <span className="text-[15px] font-medium text-[#cbbfe0]">Notifications</span>
-              </div>
-              <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-[#17131f] px-2 text-[10px] font-semibold text-[#cbbfe0]">
-                {unreadCount}
-              </span>
-            </button>
+                <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-[#17131f] px-2 text-[10px] font-semibold text-[#cbbfe0]">
+                  {unreadCount}
+                </span>
+              </button>
+
+              {notifOpen && (
+                <div className="absolute bottom-[calc(100%+10px)] left-0 z-[90] w-[320px] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#151515] shadow-[0_24px_50px_rgba(0,0,0,0.45)]">
+                  <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <Bell className="h-4 w-4 text-[#c83a57]" />
+                      <span className="text-sm font-semibold text-white">Notifications</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setNotifOpen(false)}
+                      className="flex h-6 w-6 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="max-h-[280px] overflow-y-auto px-3 py-3">
+                    {notifications.length === 0 ? (
+                      <div className="flex min-h-[160px] flex-col items-center justify-center text-center text-zinc-500">
+                        <Bell className="mb-3 h-9 w-9 text-zinc-700" />
+                        <p className="text-sm">No notifications yet</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {notifications.map((item) => (
+                          <div
+                            key={item.id}
+                            className={cn(
+                              "rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5",
+                              !item.readAt && "bg-[#a996c4]/[0.06] border-[#a996c4]/20"
+                            )}
+                          >
+                            <p className="text-sm font-medium text-zinc-200">{item.title || "Notification"}</p>
+                            <p className="mt-1 text-xs text-zinc-500">{item.message || "No details available."}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="flex items-center gap-3 px-3 py-2.5">
               <button
                 type="button"
