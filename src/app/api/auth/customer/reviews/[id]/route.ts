@@ -31,7 +31,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     const updated = await prisma.review.update({
       where: { id: params.id },
-      data: { content, rating, isVisible: true },
+      data: { content, rating, isVisible: false, meta: JSON.stringify({ moderationStatus: "PENDING" }) },
       include: { product: { select: { id: true, name: true, slug: true } } },
     });
 

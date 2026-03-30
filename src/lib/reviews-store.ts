@@ -16,6 +16,8 @@ export type ReviewItem = {
   createdAt: string;
   updatedAt: string;
   meta?: string | null;
+  moderationStatus?: "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason?: string | null;
 };
 
 const FALLBACK_KEY = "manual_reviews_fallback_json";
@@ -36,6 +38,44 @@ function normalizeRating(value: any): number | null {
   const parsed = Number(value);
   if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 5) return parsed;
   return null;
+}
+
+function parseReviewMeta(meta: string | null | undefined) {
+  if (!meta) return { moderationStatus: "APPROVED" as const, rejectionReason: null as string | null };
+  try {
+    const parsed = JSON.parse(meta);
+    const moderationStatus =
+      parsed?.moderationStatus === "PENDING" || parsed?.moderationStatus === "REJECTED" || parsed?.moderationStatus === "APPROVED"
+        ? parsed.moderationStatus
+        : "APPROVED";
+    const rejectionReason =
+      typeof parsed?.rejectionReason === "string" && parsed.rejectionReason.trim().length
+        ? parsed.rejectionReason.trim()
+        : null;
+    return { moderationStatus, rejectionReason };
+  } catch {
+    return { moderationStatus: "APPROVED" as const, rejectionReason: null as string | null };
+  }
+}
+
+function stringifyReviewMeta(
+  currentMeta: string | null | undefined,
+  patch: { moderationStatus?: "PENDING" | "APPROVED" | "REJECTED"; rejectionReason?: string | null }
+) {
+  let base: Record<string, any> = {};
+  if (currentMeta) {
+    try {
+      base = JSON.parse(currentMeta);
+    } catch {
+      base = {};
+    }
+  }
+  if (patch.moderationStatus !== undefined) base.moderationStatus = patch.moderationStatus;
+  if (patch.rejectionReason !== undefined) {
+    if (patch.rejectionReason) base.rejectionReason = patch.rejectionReason;
+    else delete base.rejectionReason;
+  }
+  return JSON.stringify(base);
 }
 
 async function loadFallback(): Promise<ReviewItem[]> {
@@ -84,6 +124,7 @@ export async function listAllReviews(): Promise<ReviewItem[]> {
       productId: r.productId || null,
       productName: r.productName || null,
       isVerifiedPurchase: !!r.isVerifiedPurchase,
+      ...parseReviewMeta(r.meta),
       createdAt: new Date(r.createdAt).toISOString(),
       updatedAt: new Date(r.updatedAt).toISOString(),
     }));
@@ -112,6 +153,7 @@ export async function listVisibleReviews(limit: number): Promise<ReviewItem[]> {
       productId: r.productId || null,
       productName: r.productName || null,
       isVerifiedPurchase: !!r.isVerifiedPurchase,
+      ...parseReviewMeta(r.meta),
       createdAt: new Date(r.createdAt).toISOString(),
       updatedAt: new Date(r.updatedAt).toISOString(),
     }));
@@ -176,7 +218,10 @@ export async function createManualReview(input: {
     isVisible: input.isVisible !== false,
     createdAt: now,
     updatedAt: now,
-    meta: customerEmail ? JSON.stringify({ customerEmail }) : null,
+    meta: stringifyReviewMeta(customerEmail ? JSON.stringify({ customerEmail }) : null, {
+      moderationStatus: input.isVisible === false ? "PENDING" : "APPROVED",
+      rejectionReason: null,
+    }),
   };
 
   try {
@@ -233,11 +278,22 @@ export async function updateReview(id: string, patch: Partial<ReviewItem>): Prom
       isVerifiedPurchase: patch.isVerifiedPurchase !== undefined ? !!patch.isVerifiedPurchase : current.isVerifiedPurchase,
       isVisible: patch.isVisible !== undefined ? !!patch.isVisible : current.isVisible,
       updatedAt: new Date().toISOString(),
+      moderationStatus:
+        patch.moderationStatus !== undefined
+          ? patch.moderationStatus
+          : current.moderationStatus || (patch.isVisible === false ? "PENDING" : "APPROVED"),
+      rejectionReason:
+        patch.rejectionReason !== undefined ? (patch.rejectionReason ? String(patch.rejectionReason).trim() : null) : current.rejectionReason || null,
     };
+
+    const nextMeta = stringifyReviewMeta(current.meta, {
+      moderationStatus: next.moderationStatus,
+      rejectionReason: next.rejectionReason,
+    });
 
     await prisma.$executeRawUnsafe(
       `UPDATE "Review"
-       SET "authorName"=$2, "authorAvatarUrl"=$3, "content"=$4, "rating"=$5, "isVisible"=$6, "source"=$7, "productId"=$8, "isVerifiedPurchase"=$9, "updatedAt"=NOW()
+       SET "authorName"=$2, "authorAvatarUrl"=$3, "content"=$4, "rating"=$5, "isVisible"=$6, "source"=$7, "productId"=$8, "isVerifiedPurchase"=$9, "meta"=$10, "updatedAt"=NOW()
        WHERE "id"=$1`,
       id,
       next.authorName,
@@ -247,7 +303,8 @@ export async function updateReview(id: string, patch: Partial<ReviewItem>): Prom
       next.isVisible,
       next.source,
       next.productId,
-      next.isVerifiedPurchase
+      next.isVerifiedPurchase,
+      nextMeta
     );
 
     return (await listAllReviews()).find((r) => r.id === id) || next;
@@ -269,7 +326,17 @@ export async function updateReview(id: string, patch: Partial<ReviewItem>): Prom
       isVerifiedPurchase: patch.isVerifiedPurchase !== undefined ? !!patch.isVerifiedPurchase : curr.isVerifiedPurchase,
       isVisible: patch.isVisible !== undefined ? !!patch.isVisible : curr.isVisible,
       updatedAt: new Date().toISOString(),
+      moderationStatus:
+        patch.moderationStatus !== undefined
+          ? patch.moderationStatus
+          : curr.moderationStatus || (patch.isVisible === false ? "PENDING" : "APPROVED"),
+      rejectionReason:
+        patch.rejectionReason !== undefined ? (patch.rejectionReason ? String(patch.rejectionReason).trim() : null) : curr.rejectionReason || null,
     };
+    updated.meta = stringifyReviewMeta(curr.meta, {
+      moderationStatus: updated.moderationStatus,
+      rejectionReason: updated.rejectionReason,
+    });
     rows[idx] = updated;
     await saveFallback(rows);
     return updated;
