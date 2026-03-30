@@ -159,6 +159,7 @@ export const authOptions: NextAuthOptions = {
     if (user) {
       (token as any).id = (user as any).id as string;
       (token as any).role = (user as any).role as Role;
+      (token as any).picture = (user as any).image || (token as any).picture || null;
       (token as any).invalid = false;
       (token as any).loginAt = Date.now();
       (token as any).lastVerified = Date.now();
@@ -172,7 +173,7 @@ export const authOptions: NextAuthOptions = {
       try {
         const dbUser = await prisma.user.findUnique({
           where: { id: (token as any).id as string },
-          select: { role: true, isActive: true },
+          select: { role: true, isActive: true, avatar: true },
         });
 
         if (!dbUser || !dbUser.isActive) {
@@ -181,6 +182,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         (token as any).role = dbUser.role as any;
+        (token as any).picture = dbUser.avatar || null;
         (token as any).lastVerified = Date.now();
       } catch {}
     }
@@ -200,6 +202,7 @@ export const authOptions: NextAuthOptions = {
     if (session.user) {
       (session.user as any).id = (token as any).id as string;
       (session.user as any).role = (token as any).role as Role;
+      (session.user as any).image = ((token as any).picture as string | null | undefined) || null;
       (session.user as any).invalid = (token as any).invalid ?? false;
     }
 

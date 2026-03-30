@@ -207,8 +207,20 @@ export function AdminHeader() {
             onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }}
             className="flex h-10 items-center gap-2 rounded-2xl pl-1.5 pr-2 transition-all hover:bg-white/[0.04]"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#8f7ab0,#77688f)] text-[11px] font-bold text-white shadow-[0_10px_24px_rgba(55,49,71,0.24)]">
-              {(session?.user?.name || "A").charAt(0).toUpperCase()}
+            <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl bg-[linear-gradient(135deg,#8f7ab0,#77688f)] text-[11px] font-bold text-white shadow-[0_10px_24px_rgba(55,49,71,0.24)]">
+              <div className="absolute inset-0 flex items-center justify-center">
+                {(session?.user?.name || "A").charAt(0).toUpperCase()}
+              </div>
+              {session?.user?.image ? (
+                <img
+                  src={session.user.image}
+                  alt={session.user.name || "Admin"}
+                  className="relative z-[1] h-full w-full object-cover"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              ) : null}
             </div>
             {!session?.user?.name ? null : (
               <span className="hidden md:block text-xs font-medium text-zinc-400 max-w-[100px] truncate">

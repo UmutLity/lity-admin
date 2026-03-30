@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Package, Settings, FileText, Bell, DollarSign, MessageSquare, BookOpen,
   Users, Shield, LogOut, Menu, ClipboardList,
-  Download, PanelLeftClose, PanelLeft, Ticket, Landmark, Newspaper, ShoppingCart, TicketPercent, Truck,
+  Download, PanelLeftClose, PanelLeft, Ticket, Landmark, Newspaper, ShoppingCart, TicketPercent, Truck, UserRoundCog,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
-import { useState, createContext, useContext, useEffect } from "react";
+import { useState, createContext, useContext, useEffect, useRef } from "react";
 
 type Role = "FOUNDER" | "ADMIN" | "EDITOR" | "VIEWER" | "MODERATOR" | "SUPPORT" | "ANALYST";
 
@@ -73,11 +73,14 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const { collapsed, setCollapsed } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const userRole = (session?.user as any)?.role as Role | undefined;
+  const imageUrl = session?.user?.image || "";
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -103,6 +106,37 @@ export function Sidebar() {
     const interval = setInterval(fetchUnread, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const uploadAvatar = async (file?: File | null) => {
+    if (!file) return;
+    if (!/^image\/(png|jpeg|jpg|webp)$/i.test(file.type)) {
+      window.alert("Only PNG, JPG, or WEBP files are allowed.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      window.alert("Profile photo size must be 5MB or less.");
+      return;
+    }
+
+    try {
+      setAvatarBusy(true);
+      const formData = new FormData();
+      formData.append("avatar", file);
+      const res = await fetch("/api/admin/avatar", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.success) throw new Error(data?.error || "Upload failed");
+      await update?.({ image: data.data?.avatar || null });
+      router.refresh();
+    } catch (error: any) {
+      window.alert(error?.message || "Profile photo upload failed.");
+    } finally {
+      setAvatarBusy(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const filteredGroups = navGroups.map((group) => ({
     ...group,
@@ -214,11 +248,18 @@ export function Sidebar() {
       {/* User Footer */}
       <div className="border-t border-white/[0.06] p-3 flex-shrink-0">
         {!collapsed && session?.user ? (
-          <div className="space-y-1">
+          <div className="space-y-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={(e) => uploadAvatar(e.target.files?.[0])}
+            />
             <button
               type="button"
               onClick={() => router.push("/admin/notifications")}
-              className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-left transition-colors hover:bg-white/[0.03]"
+              className="flex w-full items-center justify-between border-b border-white/[0.06] px-3 py-3 text-left transition-colors hover:bg-white/[0.02]"
             >
               <div className="flex items-center gap-3">
                 <div className="relative flex h-6 w-6 items-center justify-center text-zinc-500">
@@ -235,30 +276,43 @@ export function Sidebar() {
                 {unreadCount}
               </span>
             </button>
-
-            <div className="mx-1 h-px bg-white/[0.06]" />
-
-            <div className="flex items-center gap-2.5 px-3 py-2.5">
-              <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(249,195,122,0.16),rgba(64,46,34,0.82))] ring-1 ring-white/[0.05]">
-                <div className="flex h-full w-full items-center justify-center text-[11px] font-bold text-[#f5d8b2]">
+            <div className="flex items-center gap-3 px-3 py-2.5">
+              <button
+                type="button"
+                disabled={avatarBusy}
+                onClick={() => fileInputRef.current?.click()}
+                className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full ring-1 ring-white/[0.06] transition hover:ring-white/[0.12] disabled:cursor-wait"
+                title="Upload profile photo"
+              >
+                <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_30%_30%,rgba(147,112,219,0.18),rgba(34,28,46,0.92))] text-[12px] font-bold text-[#f2eaff]">
                   {(session.user.name || "A").charAt(0).toUpperCase()}
                 </div>
-              </div>
+                {imageUrl ? (
+                  <img
+                    src={imageUrl}
+                    alt={session.user.name || "Admin"}
+                    className="relative z-[1] h-full w-full object-cover"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                ) : null}
+              </button>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[15px] font-semibold leading-none text-white">
+                <p className="truncate text-[15px] font-semibold leading-none text-[#ff808f]">
                   {session.user.name}
                 </p>
-                <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#ff6d80]">
                   {userRole || "ADMIN"}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => router.push("/admin/settings")}
-                className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
-                title="Settings"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
+                title="Open settings"
               >
-                <Settings className="h-3.5 w-3.5" />
+                <UserRoundCog className="h-4 w-4" />
               </button>
             </div>
 
