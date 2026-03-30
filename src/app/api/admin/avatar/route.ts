@@ -62,6 +62,43 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export async function PATCH(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = (session.user as any).id as string | undefined;
+    if (!userId) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const avatarUrl = String(body?.avatarUrl || "").trim();
+    if (avatarUrl && !/^https?:\/\//i.test(avatarUrl)) {
+      return NextResponse.json({ success: false, error: "Avatar URL must start with http:// or https://" }, { status: 400 });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { avatar: avatarUrl || null },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        avatar: true,
+      },
+    });
+
+    return NextResponse.json({ success: true, data: updated });
+  } catch (error: any) {
+    console.error("Admin avatar URL update error:", error);
+    return NextResponse.json({ success: false, error: error?.message || "Server error" }, { status: 500 });
+  }
+}
+
 export async function DELETE() {
   try {
     const session = await getServerSession(authOptions);

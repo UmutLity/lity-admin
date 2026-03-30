@@ -80,7 +80,6 @@ export function Sidebar() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [notifOpen, setNotifOpen] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const userRole = (session?.user as any)?.role as Role | undefined;
   const imageUrl = session?.user?.image || "";
@@ -123,34 +122,24 @@ export function Sidebar() {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  const uploadAvatar = async (file?: File | null) => {
-    if (!file) return;
-    if (!/^image\/(png|jpeg|jpg|webp)$/i.test(file.type)) {
-      window.alert("Only PNG, JPG, or WEBP files are allowed.");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      window.alert("Profile photo size must be 5MB or less.");
-      return;
-    }
-
+  const updateAvatarUrl = async () => {
+    const nextUrl = window.prompt("Enter profile photo URL", imageUrl || "");
+    if (nextUrl === null) return;
     try {
       setAvatarBusy(true);
-      const formData = new FormData();
-      formData.append("avatar", file);
       const res = await fetch("/api/admin/avatar", {
-        method: "POST",
-        body: formData,
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatarUrl: nextUrl.trim() }),
       });
       const data = await res.json();
       if (!res.ok || !data?.success) throw new Error(data?.error || "Upload failed");
       await update?.({ image: data.data?.avatar || null });
       router.refresh();
     } catch (error: any) {
-      window.alert(error?.message || "Profile photo upload failed.");
+      window.alert(error?.message || "Profile photo update failed.");
     } finally {
       setAvatarBusy(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -265,13 +254,6 @@ export function Sidebar() {
       <div className="border-t border-white/[0.06] p-3 flex-shrink-0">
         {!collapsed && session?.user ? (
           <div className="space-y-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              className="hidden"
-              onChange={(e) => uploadAvatar(e.target.files?.[0])}
-            />
             <div ref={notifRef} className="relative border-b border-white/[0.06]">
               <button
                 type="button"
@@ -340,9 +322,9 @@ export function Sidebar() {
               <button
                 type="button"
                 disabled={avatarBusy}
-                onClick={() => fileInputRef.current?.click()}
+                onClick={updateAvatarUrl}
                 className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full ring-1 ring-white/[0.06] transition hover:ring-white/[0.12] disabled:cursor-wait"
-                title="Upload profile photo"
+                title="Set profile photo URL"
               >
                 <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_30%_30%,rgba(147,112,219,0.18),rgba(34,28,46,0.92))] text-[12px] font-bold text-[#f2eaff]">
                   {(session.user.name || "A").charAt(0).toUpperCase()}

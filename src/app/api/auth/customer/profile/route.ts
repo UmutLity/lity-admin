@@ -8,6 +8,15 @@ function normalizeUsername(username: string): string {
   return username.trim();
 }
 
+function normalizeAvatarUrl(value: unknown): string | null {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  if (!/^https?:\/\//i.test(raw)) {
+    throw new Error("Avatar URL must start with http:// or https://");
+  }
+  return raw;
+}
+
 export async function PATCH(req: NextRequest) {
   try {
     const token = getCustomerTokenFromRequest(req);
@@ -19,6 +28,7 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
     const usernameRaw = String(body?.username || "");
     const username = normalizeUsername(usernameRaw);
+    const avatar = normalizeAvatarUrl(body?.avatarUrl);
 
     if (!USERNAME_REGEX.test(username)) {
       return NextResponse.json(
@@ -37,7 +47,7 @@ export async function PATCH(req: NextRequest) {
 
     const updated = await prisma.customer.update({
       where: { id: payload.id },
-      data: { username },
+      data: { username, avatar },
       select: {
         id: true,
         email: true,
@@ -52,9 +62,11 @@ export async function PATCH(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: updated });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message?.includes("Avatar URL")) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    }
     console.error("Customer profile update error:", error);
     return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
   }
 }
-
