@@ -15,6 +15,10 @@ import {
   Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Topbar } from "@/components/admin/topbar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 type AnyJson = Record<string, any>;
 
@@ -178,12 +182,13 @@ function StatCard({
   href?: string;
 }) {
   const card = (
-    <div
+    <Card
       className={cn(
-        "rounded-2xl border border-white/[0.07] bg-[#0f1117] p-4 transition-colors",
+        "border-white/[0.06] bg-white/[0.03] shadow-none transition-colors",
         href ? "cursor-pointer hover:border-white/[0.14] hover:bg-[#121520]" : ""
       )}
     >
+      <CardContent className="p-4">
       <div className="mb-4 flex items-center justify-between">
         <p className="text-xs text-zinc-500">{title}</p>
         <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.06]", iconClass)}>
@@ -191,7 +196,8 @@ function StatCard({
         </div>
       </div>
       <p className={cn("text-[18px] font-bold leading-none tracking-tight text-white sm:text-[19px]", valueClass)}>{value}</p>
-    </div>
+      </CardContent>
+    </Card>
   );
 
   if (href) return <Link href={href}>{card}</Link>;
@@ -214,7 +220,8 @@ function SummaryCard({
   valueClass?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[#0f1117] p-4">
+    <Card className="border-white/[0.06] bg-white/[0.03] shadow-none">
+      <CardContent className="p-4">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-sm font-medium text-zinc-300">{title}</h3>
         <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.06]", iconClass)}>
@@ -223,7 +230,8 @@ function SummaryCard({
       </div>
       <p className={cn("text-[28px] font-bold leading-none sm:text-[30px]", valueClass || "text-white")}>{value}</p>
       <p className="mt-2 text-[11px] text-zinc-500">{subtext}</p>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -245,7 +253,8 @@ function PeriodCard({
   const formatMoney = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[#0f1117] px-4 py-4">
+    <Card className="border-white/[0.06] bg-white/[0.03] shadow-none">
+      <CardContent className="px-4 py-4">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-[18px] font-semibold leading-none text-zinc-100 sm:text-[20px]">{title}</h3>
         <span className="rounded-full border border-white/[0.07] bg-white/[0.02] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
@@ -278,7 +287,8 @@ function PeriodCard({
           {users} new users
         </p>
       </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -440,10 +450,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div>
-        <div className="mb-5">
-          <h1 className="text-[36px] font-bold leading-none text-white sm:text-[40px]">Admin Dashboard</h1>
-          <p className="mt-2 text-[16px] text-zinc-400 sm:text-[18px]">Overview of your platform</p>
-        </div>
+        <Topbar title="Admin Dashboard" description="Overview of your platform" />
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -471,10 +478,11 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <div className="mb-5">
-        <h1 className="text-[32px] font-bold leading-none text-white sm:text-[36px]">Admin Dashboard</h1>
-        <p className="mt-1.5 text-[14px] text-zinc-400 sm:text-[16px]">Overview of your platform</p>
-      </div>
+      <Topbar title="Admin Dashboard" description="Overview of your platform">
+        <Button asChild variant="outline" className="border-white/[0.08] bg-white/[0.03] text-zinc-200 hover:bg-white/[0.06] hover:text-white">
+          <Link href="/admin/orders">Open Orders</Link>
+        </Button>
+      </Topbar>
 
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
@@ -541,11 +549,15 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.3fr_0.9fr]">
-          <section className="rounded-2xl border border-white/[0.08] bg-[#0f1117] p-4">
-            <div className="mb-4 flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-[#c7bdd8]" />
-              <h3 className="text-[22px] font-semibold text-white">Recent Activity</h3>
-            </div>
+          <Card className="border-white/[0.06] bg-white/[0.03] shadow-none">
+            <CardHeader className="pb-4">
+              <div className="mb-1 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-[#c7bdd8]" />
+                <CardTitle className="text-[22px] font-semibold text-white">Recent Activity</CardTitle>
+              </div>
+              <CardDescription>Orders, payments, and support signals across the platform.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0">
 
             <div className="space-y-2">
               {data.activities.length === 0 ? (
@@ -582,13 +594,15 @@ export default function DashboardPage() {
                 ))
               )}
             </div>
-          </section>
+            </CardContent>
+          </Card>
 
-          <section className="rounded-2xl border border-white/[0.08] bg-[#0f1117] p-4">
-            <div className="mb-4">
-              <h3 className="text-[22px] font-semibold text-white">Top Customers</h3>
-              <p className="text-sm text-zinc-400">Highest spenders this cycle</p>
-            </div>
+          <Card className="border-white/[0.06] bg-white/[0.03] shadow-none">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-[22px] font-semibold text-white">Top Customers</CardTitle>
+              <CardDescription>Highest spenders this cycle</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0">
 
             <div className="space-y-2">
               {data.leaderboard.length === 0 ? (
@@ -602,7 +616,11 @@ export default function DashboardPage() {
                       </div>
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-zinc-100">{row.user}</p>
-                        <p className={cn("text-xs font-medium", tierStyles(row.rank))}>{row.rank}</p>
+                        <div className="mt-1">
+                          <Badge variant="outline" className={cn("border-white/[0.08] bg-white/[0.03] text-xs font-medium", tierStyles(row.rank))}>
+                            {row.rank}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
                     <p className="text-sm font-semibold text-white">${row.spent.toFixed(2)}</p>
@@ -610,7 +628,8 @@ export default function DashboardPage() {
                 ))
               )}
             </div>
-          </section>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

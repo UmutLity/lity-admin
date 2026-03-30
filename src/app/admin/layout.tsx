@@ -51,11 +51,11 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         <Sidebar />
         <div className={cn(
           "transition-all duration-300 ease-in-out min-h-screen flex flex-col",
-          collapsed ? "lg:ml-[72px]" : "lg:ml-[260px]"
+          collapsed ? "lg:ml-[88px]" : "lg:ml-[292px]"
         )}>
           <AdminHeader />
           <main className="flex-1">
-            <div className="page-enter mx-auto w-full max-w-[1480px] p-5 lg:p-8">
+            <div className="page-enter mx-auto w-full max-w-[1680px] p-4 lg:p-6">
               {children}
             </div>
           </main>

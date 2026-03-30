@@ -1,14 +1,22 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import {
-  Search, Bell, LogOut, Settings,
-  ChevronDown, Command,
+  Bell,
+  ChevronDown,
+  Command,
+  LogOut,
+  Search,
+  Settings,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 interface TopbarProps {
   title: string;
@@ -21,52 +29,53 @@ export function Topbar({ title, description, children }: TopbarProps) {
   const role = (session?.user as any)?.role;
 
   return (
-    <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-white/[0.06] bg-[linear-gradient(135deg,rgba(31,30,38,0.68),rgba(23,23,29,0.45))] px-5 py-4 shadow-[0_16px_36px_rgba(7,7,12,0.2)] backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between animate-fade-in">
-      <div>
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight text-white">{title}</h1>
-          {role && (
-            <Badge
-              variant={role === "FOUNDER" || role === "ADMIN" ? "default" : "secondary"}
-              className={cn(
-                "border text-[10px] font-semibold uppercase tracking-[0.22em]",
-                role === "FOUNDER"
-                  ? "border-amber-400/30 bg-amber-500/12 text-amber-200"
-                  : role === "ADMIN"
-                    ? "border-[#b9accf]/30 bg-[#a996c4]/12 text-[#c7bdd8]"
-                    : "border-white/[0.08] bg-white/[0.04] text-zinc-300"
-              )}
-            >
-              {role}
-            </Badge>
-          )}
-        </div>
-        {description && (
-          <p className="mt-0.5 text-sm text-zinc-400">{description}</p>
-        )}
-      </div>
-      {children && <div className="flex items-center gap-2">{children}</div>}
+    <div className="mb-6">
+      <Card className="border-white/[0.06] bg-white/[0.03] shadow-none">
+        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-semibold tracking-tight text-white">{title}</h1>
+              {role ? (
+                <Badge
+                  className={cn(
+                    "rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]",
+                    role === "FOUNDER"
+                      ? "border-amber-400/30 bg-amber-500/10 text-amber-200"
+                      : role === "MODERATOR"
+                        ? "border-sky-400/25 bg-sky-500/10 text-sky-200"
+                        : role === "SUPPORT"
+                          ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-200"
+                          : "border-[#b9accf]/30 bg-[#a996c4]/12 text-[#e0d7ef]"
+                  )}
+                >
+                  {role}
+                </Badge>
+              ) : null}
+            </div>
+            {description ? <p className="mt-1 text-sm text-zinc-400">{description}</p> : null}
+          </div>
+          {children ? <div className="flex items-center gap-2">{children}</div> : null}
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
-/* ━━━ Global Admin Header (sticky top bar) ━━━ */
 export function AdminHeader() {
   const { data: session } = useSession();
   const router = useRouter();
-  const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [profileOpen, setProfileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
-  const [notifOpen, setNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const profileRef = useRef<HTMLDivElement>(null);
+  const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -77,9 +86,9 @@ export function AdminHeader() {
       try {
         const res = await fetch("/api/admin/notifications?limit=5", { credentials: "include" });
         const data = await res.json();
-        if (data.success) {
-          setNotifications(data.data || []);
-          setUnreadCount(data.unreadCount || 0);
+        if (data?.success) {
+          setNotifications(Array.isArray(data.data) ? data.data : []);
+          setUnreadCount(Number(data.unreadCount || 0));
         }
       } catch {}
     };
@@ -88,169 +97,155 @@ export function AdminHeader() {
     return () => clearInterval(interval);
   }, []);
 
-  // Quick search navigation
-  const searchRoutes = [
-    { label: "Dashboard", path: "/admin", keywords: "home overview" },
-    { label: "Products", path: "/admin/products", keywords: "items store" },
-    { label: "Users", path: "/admin/users", keywords: "customers staff" },
-    { label: "Tickets", path: "/admin/tickets", keywords: "support replies messages" },
-    { label: "Licenses", path: "/admin/licenses", keywords: "keys plans" },
-    { label: "Changelogs", path: "/admin/changelog", keywords: "changelog docs updates" },
-    { label: "Guides", path: "/admin/guides", keywords: "how to docs product guides" },
-    { label: "Blog", path: "/admin/blog", keywords: "articles posts author cover" },
-    { label: "Payments", path: "/admin/revenue", keywords: "revenue sales money" },
-    { label: "Orders", path: "/admin/orders", keywords: "order purchases transactions" },
-    { label: "Reviews", path: "/admin/reviews", keywords: "feedback" },
-    { label: "Community", path: "/admin/notifications", keywords: "announcements notifications" },
-    { label: "Settings", path: "/admin/settings", keywords: "config" },
-  ];
+  const searchRoutes = useMemo(
+    () => [
+      { label: "Dashboard", path: "/admin", keywords: "overview home stats" },
+      { label: "Products", path: "/admin/products", keywords: "products catalog store" },
+      { label: "Orders", path: "/admin/orders", keywords: "orders purchases delivery" },
+      { label: "Pending Deliveries", path: "/admin/pending-deliveries", keywords: "manual delivery pending" },
+      { label: "Users", path: "/admin/users", keywords: "customers members" },
+      { label: "Tickets", path: "/admin/tickets", keywords: "support replies" },
+      { label: "Licenses", path: "/admin/licenses", keywords: "keys plans" },
+      { label: "Top-up Requests", path: "/admin/topups", keywords: "balance topup payments" },
+      { label: "Coupons", path: "/admin/coupons", keywords: "discount promos" },
+      { label: "Reviews", path: "/admin/reviews", keywords: "feedback ratings" },
+      { label: "Blog", path: "/admin/blog", keywords: "articles content" },
+      { label: "Settings", path: "/admin/settings", keywords: "configuration site settings" },
+    ],
+    []
+  );
 
-  const filteredRoutes = searchQuery
-    ? searchRoutes.filter(r =>
-        r.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.keywords.includes(searchQuery.toLowerCase())
-      )
+  const filteredRoutes = searchQuery.trim()
+    ? searchRoutes.filter((route) => {
+        const q = searchQuery.toLowerCase();
+        return route.label.toLowerCase().includes(q) || route.keywords.includes(q);
+      })
     : [];
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/[0.05] bg-[linear-gradient(180deg,rgba(20,19,26,0.92),rgba(15,15,21,0.78))] pr-4 pl-16 lg:px-6 backdrop-blur-2xl">
-      {/* Left: Search */}
-      <div className="relative flex-1 max-w-md">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-          <input
-            type="text"
-            placeholder="Search pages..."
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
-            onFocus={() => setSearchOpen(true)}
-            onBlur={() => setTimeout(() => setSearchOpen(false), 200)}
-            className="h-10 w-full rounded-2xl border border-white/[0.06] bg-white/[0.04] pl-10 pr-12 text-sm text-zinc-300 placeholder:text-zinc-600 transition-all focus:border-[#b9accf]/35 focus:bg-white/[0.06] focus:outline-none"
-          />
-          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-0.5 text-[10px] text-zinc-600 font-medium bg-white/[0.04] px-1.5 py-0.5 rounded">
-            <Command className="h-2.5 w-2.5" />K
-          </kbd>
-        </div>
-        {searchOpen && filteredRoutes.length > 0 && (
-          <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#12131a] shadow-2xl shadow-black/40">
-            {filteredRoutes.map((route) => (
-              <button
-                key={route.path}
-                onMouseDown={() => { router.push(route.path); setSearchQuery(""); }}
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors"
-              >
-                <Search className="h-3.5 w-3.5 text-zinc-600" />
-                {route.label}
-              </button>
-            ))}
+    <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#0d1016]/85 backdrop-blur-2xl">
+      <div className="mx-auto flex h-16 w-full max-w-[1680px] items-center justify-between gap-4 px-4 pl-16 lg:px-8">
+        <div className="relative flex-1 max-w-xl">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSearchOpen(true);
+              }}
+              onFocus={() => setSearchOpen(true)}
+              onBlur={() => setTimeout(() => setSearchOpen(false), 200)}
+              placeholder="Search pages, tools, and admin sections..."
+              className="h-11 rounded-2xl border-white/[0.08] bg-white/[0.04] pl-10 pr-14 text-sm text-zinc-200 placeholder:text-zinc-500 focus-visible:ring-0"
+            />
+            <div className="absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2 py-1 text-[10px] text-zinc-500 sm:flex">
+              <Command className="h-3 w-3" />
+              K
+            </div>
           </div>
-        )}
-      </div>
 
-      {/* Right: Actions */}
-      <div className="flex items-center gap-1">
-        {/* Notifications */}
-        <div ref={notifRef} className="relative">
-          <button
-            onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }}
-            className="relative flex h-10 w-10 items-center justify-center rounded-2xl text-zinc-500 transition-all hover:bg-white/[0.04] hover:text-zinc-300"
-          >
-            <Bell className="h-[18px] w-[18px]" />
-            {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#b9accf] ring-2 ring-[#0a0f1e]" />
-            )}
-          </button>
-          {notifOpen && (
-            <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#12131a] shadow-2xl shadow-black/40">
-              <div className="px-4 py-3 border-b border-white/[0.06]">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-white">Notifications</span>
-                  {unreadCount > 0 && (
-                      <Badge variant="default" className="border-[#b9accf]/30 bg-[#a996c4]/12 text-[10px] text-[#c7bdd8]">
-                        {unreadCount} new
-                      </Badge>
-                  )}
-                </div>
-              </div>
-              <div className="max-h-72 overflow-y-auto">
-                {notifications.length === 0 ? (
-                  <div className="py-8 text-center text-sm text-zinc-600">No notifications</div>
-                ) : notifications.map((n: any) => (
-                  <div
-                    key={n.id}
-                    className={cn(
-                      "px-4 py-3 border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors cursor-pointer",
-                      !n.readAt && "bg-[#a996c4]/[0.05]"
-                    )}
+          {searchOpen && filteredRoutes.length ? (
+            <Card className="absolute left-0 right-0 top-full mt-2 border-white/[0.08] bg-[#11131a]/95 shadow-2xl shadow-black/30">
+              <CardContent className="p-2">
+                {filteredRoutes.map((route) => (
+                  <Button
+                    key={route.path}
+                    variant="ghost"
+                    className="h-10 w-full justify-start rounded-xl px-3 text-sm text-zinc-300 hover:bg-white/[0.05] hover:text-white"
+                    onMouseDown={() => {
+                      router.push(route.path);
+                      setSearchQuery("");
+                    }}
                   >
-                    <p className="text-xs font-medium text-zinc-300 line-clamp-1">{n.title}</p>
-                    <p className="text-[11px] text-zinc-600 mt-0.5 line-clamp-1">{n.message}</p>
-                  </div>
+                    <Search className="mr-2 h-4 w-4 text-zinc-500" />
+                    {route.label}
+                  </Button>
                 ))}
-              </div>
-              <button
-                onMouseDown={() => router.push("/admin/notifications")}
-                className="w-full py-2.5 text-xs font-medium text-[#c7bdd8] transition-colors hover:bg-white/[0.02] hover:text-[#ddd4ea]"
-              >
-                View all notifications
-              </button>
-            </div>
-          )}
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
 
-        {/* Divider */}
-        <div className="mx-1 h-6 w-px bg-white/[0.06]" />
+        <div className="flex items-center gap-2">
+          <div ref={notifRef} className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative h-10 w-10 rounded-xl text-zinc-400 hover:bg-white/[0.05] hover:text-white"
+              onClick={() => setNotifOpen((prev) => !prev)}
+            >
+              <Bell className="h-4.5 w-4.5" />
+              {unreadCount > 0 ? <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#b9accf]" /> : null}
+            </Button>
 
-        {/* Profile */}
-        <div ref={profileRef} className="relative">
-          <button
-            onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }}
-            className="flex h-10 items-center gap-2 rounded-2xl pl-1.5 pr-2 transition-all hover:bg-white/[0.04]"
-          >
-            <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl bg-[linear-gradient(135deg,#8f7ab0,#77688f)] text-[11px] font-bold text-white shadow-[0_10px_24px_rgba(55,49,71,0.24)]">
-              <div className="absolute inset-0 flex items-center justify-center">
-                {(session?.user?.name || "A").charAt(0).toUpperCase()}
+            {notifOpen ? (
+              <Card className="absolute right-0 top-full mt-2 w-80 border-white/[0.08] bg-[#11131a]/95 shadow-2xl shadow-black/35">
+                <CardContent className="p-3">
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-sm font-semibold text-white">Notifications</p>
+                    {unreadCount > 0 ? <Badge className="border-[#b9accf]/30 bg-[#a996c4]/12 text-[#e0d7ef]">{unreadCount} new</Badge> : null}
+                  </div>
+                  <div className="space-y-2">
+                    {notifications.length ? (
+                      notifications.map((item) => (
+                        <div
+                          key={item.id}
+                          className={cn(
+                            "rounded-xl border border-white/[0.06] px-3 py-2.5",
+                            !item.readAt ? "bg-[#a996c4]/[0.06] border-[#b9accf]/20" : "bg-white/[0.02]"
+                          )}
+                        >
+                          <p className="text-sm font-medium text-zinc-100">{item.title || "Notification"}</p>
+                          <p className="mt-1 text-xs leading-5 text-zinc-500">{item.message || "No details available."}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="py-10 text-center text-sm text-zinc-500">No notifications</div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null}
+          </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-10 rounded-xl px-2 text-zinc-300 hover:bg-white/[0.05] hover:text-white">
+                <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl border border-white/[0.08] bg-[linear-gradient(135deg,#8f7ab0,#6e6381)] text-[11px] font-bold text-white">
+                  <span className="absolute inset-0 flex items-center justify-center">
+                    {(session?.user?.name || "A").charAt(0).toUpperCase()}
+                  </span>
+                  {session?.user?.image ? (
+                    <img
+                      src={session.user.image}
+                      alt={session.user.name || "Admin"}
+                      className="relative z-[1] h-full w-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  ) : null}
+                </div>
+                <div className="hidden text-left md:block">
+                  <p className="max-w-[120px] truncate text-sm font-medium text-zinc-200">{session?.user?.name}</p>
+                </div>
+                <ChevronDown className="h-4 w-4 text-zinc-500" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 border-white/[0.08] bg-[#11131a]/95 text-zinc-200 backdrop-blur-xl">
+              <div className="border-b border-white/[0.06] px-3 py-2.5">
+                <p className="truncate text-sm font-semibold text-white">{session?.user?.name}</p>
+                <p className="truncate text-xs text-zinc-500">{session?.user?.email}</p>
               </div>
-              {session?.user?.image ? (
-                <img
-                  src={session.user.image}
-                  alt={session.user.name || "Admin"}
-                  className="relative z-[1] h-full w-full object-cover"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.display = "none";
-                  }}
-                />
-              ) : null}
-            </div>
-            {!session?.user?.name ? null : (
-              <span className="hidden md:block text-xs font-medium text-zinc-400 max-w-[100px] truncate">
-                {session.user.name}
-              </span>
-            )}
-            <ChevronDown className="h-3 w-3 text-zinc-600" />
-          </button>
-          {profileOpen && (
-            <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#12131a] shadow-2xl shadow-black/40">
-              <div className="px-4 py-3 border-b border-white/[0.06]">
-                <p className="text-sm font-semibold text-white truncate">{session?.user?.name}</p>
-                <p className="text-[11px] text-zinc-500 truncate">{session?.user?.email}</p>
-              </div>
-              <div className="py-1">
-                <button
-                  onMouseDown={() => router.push("/admin/settings")}
-                  className="flex items-center gap-3 w-full px-4 py-2 text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors"
-                >
-                  <Settings className="h-4 w-4" /> Settings
-                </button>
-                <button
-                  onMouseDown={() => signOut({ callbackUrl: "/admin/login" })}
-                  className="flex items-center gap-3 w-full px-4 py-2 text-sm text-[#c9bddb]/80 hover:text-[#ddd4ea] hover:bg-[#a996c4]/[0.12] transition-colors"
-                >
-                  <LogOut className="h-4 w-4" /> Logout
-                </button>
-              </div>
-            </div>
-          )}
+              <DropdownMenuItem className="cursor-pointer focus:bg-white/[0.05]" onClick={() => router.push("/admin/settings")}>
+                <Settings className="mr-2 h-4 w-4" /> Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer text-[#e0d7ef] focus:bg-[#a996c4]/10 focus:text-white" onClick={() => signOut({ callbackUrl: "/admin/login" })}>
+                <LogOut className="mr-2 h-4 w-4" /> Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
