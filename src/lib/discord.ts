@@ -320,8 +320,26 @@ async function getDiscordWebhookIdentity() {
   };
 }
 
+async function getTopUpWebhookIdentity() {
+  const [topupEnabledSetting, topupUrlSetting, defaultWebhook] = await Promise.all([
+    prisma.siteSetting.findUnique({ where: { key: "discord_topup_webhook_enabled" } }),
+    prisma.siteSetting.findUnique({ where: { key: "discord_topup_webhook_url" } }),
+    getDiscordWebhookIdentity(),
+  ]);
+
+  if (topupEnabledSetting?.value === "true" && topupUrlSetting?.value) {
+    return {
+      webhookUrl: topupUrlSetting.value,
+      username: defaultWebhook?.username,
+      avatarUrl: defaultWebhook?.avatarUrl,
+    };
+  }
+
+  return defaultWebhook;
+}
+
 export async function sendTopUpNotificationToDiscord(input: TopUpDiscordPayload): Promise<WebhookResult | null> {
-  const webhook = await getDiscordWebhookIdentity();
+  const webhook = await getTopUpWebhookIdentity();
   if (!webhook) return null;
 
   const payload = buildWebhookPayload(

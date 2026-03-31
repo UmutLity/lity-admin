@@ -23,6 +23,18 @@ const SETTING_DEFAULTS: Record<string, { value: string; type: string; group: str
     group: "announcement",
     label: "Announcement Text",
   },
+  discord_topup_webhook_url: {
+    value: "",
+    type: "string",
+    group: "discord",
+    label: "Top-up Webhook URL",
+  },
+  discord_topup_webhook_enabled: {
+    value: "false",
+    type: "boolean",
+    group: "discord",
+    label: "Top-up Webhook Enabled",
+  },
 };
 
 // GET /api/admin/settings

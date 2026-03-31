@@ -6,6 +6,11 @@ import { getClientIp } from "@/lib/ip-utils";
 
 const AUTO_PROMOTE_ROLES = new Set(["MEMBER", "USER", "CUSTOMER"]);
 
+function isSchemaMismatch(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  return message.includes("P2021") || message.includes("P2022");
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await requireAdmin();
@@ -42,18 +47,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         },
       });
 
-      await tx.balanceTransaction.create({
-        data: {
-          customerId: request.customer.id,
-          type: "CREDIT",
-          amount,
-          balanceBefore: before,
-          balanceAfter: after,
-          reason: `Manual top-up approved (request #${request.id.slice(-8)})`,
-          adminUserId: adminId,
-        },
-      });
-
       const updatedRequest = await tx.topUpRequest.update({
         where: { id: request.id },
         data: {
@@ -63,6 +56,24 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
       return { request, updatedRequest, before, after };
     });
+
+    try {
+      await prisma.balanceTransaction.create({
+        data: {
+          customerId: result.request.customer.id,
+          type: "CREDIT",
+          amount: Number(result.request.amount || 0),
+          balanceBefore: result.before,
+          balanceAfter: result.after,
+          reason: `Manual top-up approved (request #${result.request.id.slice(-8)})`,
+          adminUserId: adminId,
+        },
+      });
+    } catch (error) {
+      if (!isSchemaMismatch(error)) {
+        console.error("Failed to create balance transaction for top-up approval:", error);
+      }
+    }
 
     await createAuditLog({
       userId: adminId,

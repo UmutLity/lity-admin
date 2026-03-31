@@ -321,6 +321,20 @@ const handleTestWebhook = async () => {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label>Top-up Webhook URL</Label>
+                <Input
+                  value={values.discord_topup_webhook_url || ""}
+                  onChange={(e) => updateValue("discord_topup_webhook_url", e.target.value)}
+                  placeholder="https://discord.com/api/webhooks/... (optional)"
+                  type="url"
+                  className="font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  If set, manual top-up requests will be sent here instead of the changelog webhook.
+                </p>
+              </div>
+
               <div className="flex items-center justify-between p-4 rounded-lg border">
                 <div>
                   <p className="font-medium">Automatic Sending</p>
@@ -329,6 +343,17 @@ const handleTestWebhook = async () => {
                 <Switch
                   checked={values.discord_webhook_enabled === "true"}
                   onCheckedChange={(checked) => setBoolValue("discord_webhook_enabled", checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-lg border">
+                <div>
+                  <p className="font-medium">Top-up Notifications</p>
+                  <p className="text-sm text-muted-foreground">Send manual top-up requests to the dedicated top-up webhook</p>
+                </div>
+                <Switch
+                  checked={values.discord_topup_webhook_enabled === "true"}
+                  onCheckedChange={(checked) => setBoolValue("discord_topup_webhook_enabled", checked)}
                 />
               </div>
 
