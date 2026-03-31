@@ -19,6 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         isActive: true,
         balance: true,
         totalSpent: true,
+        adminNotes: true,
         createdAt: true,
         updatedAt: true,
         lastLoginAt: true,
@@ -33,6 +34,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
             discountAmount: true,
             couponCode: true,
             customerNote: true,
+            deliveryContent: true,
             createdAt: true,
             timeline: true,
             items: {
@@ -82,6 +84,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
             senderName: true,
             senderBankName: true,
             note: true,
+            proofImageUrl: true,
+            reviewNote: true,
             createdAt: true,
           },
         },
@@ -105,6 +109,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         subject: true,
         status: true,
         priority: true,
+        adminNotes: true,
         updatedAt: true,
         createdAt: true,
       },
@@ -122,7 +127,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   try {
     const session = await requireAdmin();
     const body = await req.json();
-    const { role, isActive, newPassword, mustChangePassword, balanceAdjustment, balanceReason } = body;
+    const { role, isActive, newPassword, mustChangePassword, balanceAdjustment, balanceReason, adminNotes } = body;
 
     const existing = await prisma.customer.findUnique({ where: { id: params.id } });
     if (!existing) return NextResponse.json({ error: "Customer not found" }, { status: 404 });
@@ -141,6 +146,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (mustChangePassword !== undefined) {
       updateData.mustChangePassword = mustChangePassword;
       changes.mustChangePassword = { from: existing.mustChangePassword, to: mustChangePassword };
+    }
+    if (adminNotes !== undefined) {
+      updateData.adminNotes = typeof adminNotes === "string" ? adminNotes.trim() || null : null;
+      changes.adminNotes = true;
     }
 
     // Admin password reset

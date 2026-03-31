@@ -62,6 +62,7 @@ model Customer {
   isActive    Boolean   @default(true)
   balance     Float     @default(0)
   totalSpent  Float     @default(0)
+  adminNotes  String?
   lastLoginAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

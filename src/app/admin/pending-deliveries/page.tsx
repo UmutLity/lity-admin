@@ -23,6 +23,8 @@ type DeliveryRow = {
   items: Array<{ id: string; productName: string; productSlug: string; plan: string; amount: number }>;
 };
 
+type DeliveryTemplateType = "KEY" | "LOADER" | "ACCOUNT" | "CUSTOM" | "MIXED";
+
 function formatPlan(plan: string) {
   return String(plan || "").split("_").join(" ");
 }
@@ -42,6 +44,7 @@ export default function PendingDeliveriesPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [selectedRow, setSelectedRow] = useState<DeliveryRow | null>(null);
   const [deliveryContent, setDeliveryContent] = useState("");
+  const [deliveryType, setDeliveryType] = useState<DeliveryTemplateType>("CUSTOM");
 
   async function loadRows() {
     setLoading(true);
@@ -95,12 +98,27 @@ export default function PendingDeliveriesPage() {
       addToast({ type: "success", title: "Delivered", description: "Order marked as delivered and customer notified." });
       setSelectedRow(null);
       setDeliveryContent("");
+      setDeliveryType("CUSTOM");
       await loadRows();
     } catch (error: any) {
       addToast({ type: "error", title: "Error", description: error.message || "Delivery failed" });
     } finally {
       setBusyId(null);
     }
+  }
+
+  function applyTemplate(type: DeliveryTemplateType) {
+    setDeliveryType(type);
+    const productNames = selectedRow?.items.map((item) => item.productName).join(", ") || "Product";
+    const customerName = selectedRow?.customer?.username || "customer";
+    const templates: Record<DeliveryTemplateType, string> = {
+      KEY: `Delivery Type: License Key\nCustomer: ${customerName}\nProduct: ${productNames}\n\nLicense Key:\n-\n\nInstructions:\n- Open your loader / launcher\n- Paste the key exactly as sent\n- Contact support if activation fails`,
+      LOADER: `Delivery Type: Loader Access\nCustomer: ${customerName}\nProduct: ${productNames}\n\nLoader URL:\n-\n\nLogin / Key:\n-\n\nInstructions:\n- Download from the link above\n- Run as administrator if required\n- Use the login/key shown above`,
+      ACCOUNT: `Delivery Type: Account Delivery\nCustomer: ${customerName}\nProduct: ${productNames}\n\nUsername / Email:\n-\nPassword:\n-\nRegion / Platform:\n-\n\nNotes:\n- Change credentials if your workflow requires it\n- Keep this information private`,
+      CUSTOM: `Delivery Type: Custom Note\nCustomer: ${customerName}\nProduct: ${productNames}\n\nDelivery Details:\n-\n\nNotes:\n-`,
+      MIXED: `Delivery Type: Mixed Delivery\nCustomer: ${customerName}\nProduct: ${productNames}\n\nLoader URL:\n-\nLicense Key:\n-\nAccount / Extra Access:\n-\n\nInstructions:\n-`,
+    };
+    setDeliveryContent(templates[type]);
   }
 
   useEffect(() => {
@@ -176,6 +194,7 @@ export default function PendingDeliveriesPage() {
                         className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300 disabled:opacity-50"
                         onClick={() => {
                           setSelectedRow(row);
+                          setDeliveryType("CUSTOM");
                           setDeliveryContent(row.deliveryContent || "");
                         }}
                         disabled={busyId === row.id}
@@ -234,7 +253,7 @@ export default function PendingDeliveriesPage() {
         )}
       </div>
 
-      <Dialog open={!!selectedRow} onOpenChange={(open) => { if (!open) { setSelectedRow(null); setDeliveryContent(""); } }}>
+      <Dialog open={!!selectedRow} onOpenChange={(open) => { if (!open) { setSelectedRow(null); setDeliveryContent(""); setDeliveryType("CUSTOM"); } }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{String(selectedRow?.status).toUpperCase() === "DELIVERED" ? "Edit Delivery" : "Deliver Order"}</DialogTitle>
@@ -246,6 +265,19 @@ export default function PendingDeliveriesPage() {
             <div className="text-sm text-zinc-400">
               {selectedRow?.customer?.username || "Customer"} · {selectedRow?.items.map((item) => item.productName).join(", ")}
             </div>
+            <div className="flex flex-wrap gap-2">
+              {([
+                ["KEY", "Key"],
+                ["LOADER", "Loader"],
+                ["ACCOUNT", "Account"],
+                ["MIXED", "Mixed"],
+                ["CUSTOM", "Custom"],
+              ] as Array<[DeliveryTemplateType, string]>).map(([value, label]) => (
+                <Button key={value} type="button" size="sm" variant={deliveryType === value ? "default" : "outline"} onClick={() => applyTemplate(value)}>
+                  {label}
+                </Button>
+              ))}
+            </div>
             <Textarea
               rows={8}
               value={deliveryContent}
@@ -254,7 +286,7 @@ export default function PendingDeliveriesPage() {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setSelectedRow(null); setDeliveryContent(""); }}>Cancel</Button>
+            <Button variant="outline" onClick={() => { setSelectedRow(null); setDeliveryContent(""); setDeliveryType("CUSTOM"); }}>Cancel</Button>
             <Button onClick={deliverSelected} disabled={!selectedRow || busyId === selectedRow.id}>Save Delivery</Button>
           </DialogFooter>
         </DialogContent>

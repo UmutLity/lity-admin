@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Your account is not eligible." }, { status: 403 });
     }
 
-    const [activeLicenses, totalOrders, recentOrders, openTickets, recentTransactions, ownedRoles, totalSpentAgg, leaderboard, pendingTopups, orderRankRows, licenses, tickets, topups, latestChangelogs, announcements, communityCount] = await Promise.all([
+    const [activeLicenses, totalOrders, deliveredOrders, recentOrders, openTickets, recentTransactions, ownedRoles, totalSpentAgg, leaderboard, pendingTopups, orderRankRows, licenses, tickets, topups, latestChangelogs, announcements, communityCount, ownedProducts, approvedReviews, pendingDeliveries] = await Promise.all([
       prisma.license.count({
         where: {
           customerId: customer.id,
@@ -46,6 +46,16 @@ export async function GET(req: NextRequest) {
         },
       }),
       prisma.order.count({ where: { customerId: customer.id } }),
+      prisma.order.count({ where: { customerId: customer.id, status: "DELIVERED" } }),
+      prisma.supportTicket.count({
+        where: {
+          OR: [
+            { email: { equals: customer.email, mode: "insensitive" } },
+            { discordUsername: { equals: customer.username, mode: "insensitive" } },
+          ],
+          status: { in: ["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER"] },
+        },
+      }).catch(() => 0),
       prisma.order.findMany({
         where: { customerId: customer.id },
         include: {
@@ -56,15 +66,6 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: "desc" },
         take: 10,
       }),
-      prisma.supportTicket.count({
-        where: {
-          OR: [
-            { email: { equals: customer.email, mode: "insensitive" } },
-            { discordUsername: { equals: customer.username, mode: "insensitive" } },
-          ],
-          status: { in: ["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER"] },
-        },
-      }).catch(() => 0),
       prisma.balanceTransaction.findMany({
         where: { customerId: customer.id },
         orderBy: { createdAt: "desc" },
@@ -192,6 +193,20 @@ export async function GET(req: NextRequest) {
         select: { id: true, title: true, message: true, createdAt: true },
       }).catch(() => []),
       prisma.communityMessage.count().catch(() => 0),
+      prisma.license.findMany({
+        where: { customerId: customer.id },
+        distinct: ["productId"],
+        select: { productId: true },
+      }).catch(() => []),
+      prisma.review.count({
+        where: { customerId: customer.id, isVisible: true },
+      }).catch(() => 0),
+      prisma.order.count({
+        where: {
+          customerId: customer.id,
+          status: { in: ["PENDING", "PAID", "PROCESSING"] },
+        },
+      }).catch(() => 0),
     ]);
 
     const totalSpent = Number(totalSpentAgg?._sum?.totalAmount || 0);
@@ -315,9 +330,13 @@ export async function GET(req: NextRequest) {
           balance: customer.balance,
           activeCheats: activeLicenses,
           totalOrders,
+          deliveredOrders,
           pendingPayments: pendingTopups,
+          pendingDeliveries,
           totalSpent,
           openTickets,
+          ownedProducts: ownedProducts.length,
+          approvedReviews,
         },
         recentOrders: recentOrders.map((order) => ({
           ...order,
