@@ -55,7 +55,13 @@ export default function PendingDeliveriesPage() {
     try {
       const res = await fetch("/api/admin/pending-deliveries", { credentials: "include" });
       const data = await res.json();
-      setRows(data?.success ? data.data : []);
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || "Could not load pending deliveries");
+      }
+      setRows(Array.isArray(data.data) ? data.data : []);
+    } catch (error: any) {
+      setRows([]);
+      addToast({ type: "error", title: "Error", description: error.message || "Could not load pending deliveries" });
     } finally {
       setLoading(false);
     }

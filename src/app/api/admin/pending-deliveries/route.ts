@@ -5,6 +5,11 @@ import { parseOrderTimeline } from "@/lib/orders";
 
 const LICENSE_MATCH_WINDOW_MS = 10 * 60 * 1000;
 
+function isSchemaMismatch(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  return message.includes("P2021") || message.includes("P2022");
+}
+
 export async function GET() {
   try {
     await requireAdmin();
@@ -19,6 +24,41 @@ export async function GET() {
         },
         orderBy: { createdAt: "desc" },
         take: 50,
+      }).catch(async (error) => {
+        if (!isSchemaMismatch(error)) throw error;
+        const legacyOrders = await prisma.order.findMany({
+          where: { status: { in: ["PAID", "PROCESSING", "DELIVERED"] } },
+          select: {
+            id: true,
+            status: true,
+            createdAt: true,
+            totalAmount: true,
+            customerNote: true,
+            couponCode: true,
+            discountAmount: true,
+            timeline: true,
+            customerId: true,
+            customer: { select: { id: true, username: true, email: true } },
+            items: {
+              select: {
+                id: true,
+                productId: true,
+                plan: true,
+                amount: true,
+                product: { select: { id: true, name: true, slug: true } },
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        });
+
+        return legacyOrders.map((order) => ({
+          ...order,
+          deliveryContent: null,
+          deliveredAt: null,
+          deliveredBy: null,
+        }));
       }),
       prisma.license.findMany({
         where: { status: "PENDING" },
