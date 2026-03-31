@@ -4,11 +4,6 @@ import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer
 import { sendTopUpNotificationToDiscord } from "@/lib/discord";
 import { uploadFile } from "@/lib/upload";
 
-function isSchemaMismatch(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error || "");
-  return message.includes("P2021") || message.includes("P2022");
-}
-
 function normalizeInstructionMap(rows: Array<{ key: string; value: string }>) {
   const map = new Map(rows.map((x) => [x.key, x.value]));
   return {
@@ -79,50 +74,29 @@ export async function GET(req: NextRequest) {
       select: { key: true, value: true },
     });
 
-    const requestQuery = prisma.topUpRequest.findMany({
-      where: { customerId: auth.customer.id },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-      select: {
-        id: true,
-        senderName: true,
-        senderBankName: true,
-        amount: true,
-        status: true,
-        reviewNote: true,
-        proofImageUrl: true,
-        createdAt: true,
-        approvedAt: true,
-        rejectedAt: true,
-      },
-    });
-
     const [rows, requests] = await Promise.all([
       rowsPromise,
-      requestQuery.catch(async (error) => {
-        if (!isSchemaMismatch(error)) throw error;
-        const legacyRows = await prisma.topUpRequest.findMany({
-          where: { customerId: auth.customer.id },
-          orderBy: { createdAt: "desc" },
-          take: 50,
-          select: {
-            id: true,
-            senderName: true,
-            senderBankName: true,
-            amount: true,
-            status: true,
-            createdAt: true,
-          },
-        });
-
-        return legacyRows.map((row) => ({
+      prisma.topUpRequest.findMany({
+        where: { customerId: auth.customer.id },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        select: {
+          id: true,
+          senderName: true,
+          senderBankName: true,
+          amount: true,
+          status: true,
+          createdAt: true,
+        },
+      }).then((legacyRows) =>
+        legacyRows.map((row) => ({
           ...row,
           reviewNote: null,
           proofImageUrl: null,
           approvedAt: null,
           rejectedAt: null,
-        }));
-      }),
+        }))
+      ),
     ]);
 
     return NextResponse.json({
@@ -185,17 +159,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Amount must be between 0.01 and 1000000." }, { status: 400, headers: corsHeaders(req) });
     }
 
-    const createData = {
-      customerId: auth.customer.id,
-      senderName,
-      senderBankName,
-      amount,
-      note: note || null,
-      proofImageUrl,
-    };
-
     const created = await prisma.topUpRequest.create({
-      data: createData,
+      data: {
+        customerId: auth.customer.id,
+        senderName,
+        senderBankName,
+        amount,
+        note: note || null,
+      },
       select: {
         id: true,
         senderName: true,
@@ -203,36 +174,22 @@ export async function POST(req: NextRequest) {
         amount: true,
         status: true,
         note: true,
-        proofImageUrl: true,
         createdAt: true,
       },
-    }).catch(async (error) => {
-      if (!isSchemaMismatch(error)) throw error;
-
-      const legacyCreated = await prisma.topUpRequest.create({
-        data: {
-          customerId: auth.customer.id,
-          senderName,
-          senderBankName,
-          amount,
-          note: note || null,
-        },
-        select: {
-          id: true,
-          senderName: true,
-          senderBankName: true,
-          amount: true,
-          status: true,
-          note: true,
-          createdAt: true,
-        },
-      });
-
-      return {
-        ...legacyCreated,
-        proofImageUrl: null,
-      };
     });
+
+    if (proofImageUrl) {
+      try {
+        await prisma.topUpRequest.update({
+          where: { id: created.id },
+          data: { proofImageUrl },
+        });
+      } catch (error) {
+        if (!isSchemaMismatch(error)) {
+          console.error("Failed to attach top-up proof image:", error);
+        }
+      }
+    }
 
     sendTopUpNotificationToDiscord({
       amount,
@@ -246,7 +203,13 @@ export async function POST(req: NextRequest) {
       console.error("Top-up Discord webhook error:", error);
     });
 
-    return NextResponse.json({ success: true, data: created }, { status: 201, headers: corsHeaders(req) });
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...created,
+        proofImageUrl,
+      },
+    }, { status: 201, headers: corsHeaders(req) });
   } catch (error) {
     console.error("POST /api/auth/customer/topup error:", error);
     return NextResponse.json({ success: false, error: "Server error" }, { status: 500, headers: corsHeaders(req) });

@@ -6,11 +6,6 @@ import { getClientIp } from "@/lib/ip-utils";
 
 const AUTO_PROMOTE_ROLES = new Set(["MEMBER", "USER", "CUSTOMER"]);
 
-function isSchemaMismatch(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error || "");
-  return message.includes("P2021") || message.includes("P2022");
-}
-
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin();
@@ -32,41 +27,26 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    const rowsQuery = prisma.topUpRequest.findMany({
-      where,
-      include: {
-        customer: { select: { id: true, username: true, email: true, balance: true } },
-        reviewedBy: { select: { id: true, name: true, email: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    });
-
     const [rows, total] = await Promise.all([
-      rowsQuery.catch(async (error) => {
-        if (!isSchemaMismatch(error)) throw error;
-
-        const legacyRows = await prisma.topUpRequest.findMany({
-          where,
-          select: {
-            id: true,
-            customerId: true,
-            senderName: true,
-            senderBankName: true,
-            amount: true,
-            note: true,
-            status: true,
-            createdAt: true,
-            updatedAt: true,
-            customer: { select: { id: true, username: true, email: true, balance: true } },
-          },
-          orderBy: { createdAt: "desc" },
-          skip: (page - 1) * pageSize,
-          take: pageSize,
-        });
-
-        return legacyRows.map((row) => ({
+      prisma.topUpRequest.findMany({
+        where,
+        select: {
+          id: true,
+          customerId: true,
+          senderName: true,
+          senderBankName: true,
+          amount: true,
+          note: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          customer: { select: { id: true, username: true, email: true, balance: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }).then((legacyRows) =>
+        legacyRows.map((row) => ({
           ...row,
           proofImageUrl: null,
           reviewedById: null,
@@ -74,8 +54,8 @@ export async function GET(req: NextRequest) {
           reviewNote: null,
           approvedAt: null,
           rejectedAt: null,
-        }));
-      }),
+        }))
+      ),
       prisma.topUpRequest.count({ where }),
     ]);
 
@@ -159,32 +139,8 @@ export async function PATCH(req: NextRequest) {
           where: { id: request.id },
           data: {
             status: "APPROVED",
-            reviewedById: adminId,
-            reviewNote: reviewNote || null,
-            approvedAt: new Date(),
-            rejectedAt: null,
           },
-        }).catch(async (error) => {
-          if (!isSchemaMismatch(error)) throw error;
-          return tx.topUpRequest.update({
-            where: { id: request.id },
-            data: {
-              status: "APPROVED",
-            },
-          });
         });
-
-        try {
-          await tx.notification.create({
-            data: {
-              userId: request.customer.id,
-              type: "TOPUP_APPROVED",
-              message: `Your top-up request for $${amount.toFixed(2)} was approved. Balance has been added to your account.`,
-            },
-          });
-        } catch (error) {
-          if (!isSchemaMismatch(error)) throw error;
-        }
 
         return { request, updatedRequest, before, after };
       });
@@ -219,34 +175,8 @@ export async function PATCH(req: NextRequest) {
       where: { id },
       data: {
         status: "REJECTED",
-        reviewedById: adminId,
-        reviewNote: reviewNote || null,
-        rejectedAt: new Date(),
-        approvedAt: null,
       },
-    }).catch(async (error) => {
-      if (!isSchemaMismatch(error)) throw error;
-      return prisma.topUpRequest.update({
-        where: { id },
-        data: {
-          status: "REJECTED",
-        },
-      });
     });
-
-    try {
-      await prisma.notification.create({
-        data: {
-          userId: existing.customerId,
-          type: "TOPUP_REJECTED",
-          message: reviewNote
-            ? `Your top-up request was rejected. Reason: ${reviewNote}`
-            : "Your top-up request was rejected. Please review your payment details and try again.",
-        },
-      });
-    } catch (error) {
-      if (!isSchemaMismatch(error)) throw error;
-    }
 
     await createAuditLog({
       userId: adminId,

@@ -12,8 +12,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const adminId = (session.user as any).id as string;
     const ip = getClientIp(req);
     const userAgent = req.headers.get("user-agent") || undefined;
-    const body = await req.json().catch(() => ({}));
-    const reviewNote = typeof body.reviewNote === "string" ? body.reviewNote.trim() : "";
+    await req.json().catch(() => ({}));
 
     const result = await prisma.$transaction(async (tx) => {
       const request = await tx.topUpRequest.findUnique({
@@ -59,18 +58,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         where: { id: request.id },
         data: {
           status: "APPROVED",
-          reviewedById: adminId,
-          reviewNote: reviewNote || null,
-          approvedAt: new Date(),
-          rejectedAt: null,
-        },
-      });
-
-      await tx.notification.create({
-        data: {
-          userId: request.customer.id,
-          type: "TOPUP_APPROVED",
-          message: `Your top-up request for $${amount.toFixed(2)} was approved. Balance has been added to your account.`,
         },
       });
 

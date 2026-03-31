@@ -24,20 +24,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         where: { id: params.id },
         data: {
           status: "REJECTED",
-          reviewedById: adminId,
-          reviewNote: reviewNote || null,
-          rejectedAt: new Date(),
-          approvedAt: null,
-        },
-      });
-
-      await tx.notification.create({
-        data: {
-          userId: request.customerId,
-          type: "TOPUP_REJECTED",
-          message: reviewNote
-            ? `Your top-up request was rejected. Reason: ${reviewNote}`
-            : "Your top-up request was rejected. Please review your payment details and try again.",
         },
       });
 
