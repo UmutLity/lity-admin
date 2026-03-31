@@ -5,11 +5,6 @@ import { parseOrderTimeline } from "@/lib/orders";
 
 const LICENSE_MATCH_WINDOW_MS = 10 * 60 * 1000;
 
-function isSchemaMismatch(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error || "");
-  return message.includes("P2021") || message.includes("P2022");
-}
-
 export async function GET() {
   try {
     await requireAdmin();
@@ -17,48 +12,29 @@ export async function GET() {
     const [orders, licenses] = await Promise.all([
       prisma.order.findMany({
         where: { status: { in: ["PAID", "PROCESSING", "DELIVERED"] } },
-        include: {
+        select: {
+          id: true,
+          customerId: true,
+          status: true,
+          createdAt: true,
+          totalAmount: true,
+          customerNote: true,
+          couponCode: true,
+          discountAmount: true,
+          timeline: true,
           customer: { select: { id: true, username: true, email: true } },
-          deliveredBy: { select: { id: true, name: true } },
-          items: { include: { product: { select: { id: true, name: true, slug: true } } } },
+          items: {
+            select: {
+              id: true,
+              productId: true,
+              plan: true,
+              amount: true,
+              product: { select: { name: true, slug: true } },
+            },
+          },
         },
         orderBy: { createdAt: "desc" },
         take: 50,
-      }).catch(async (error) => {
-        if (!isSchemaMismatch(error)) throw error;
-        const legacyOrders = await prisma.order.findMany({
-          where: { status: { in: ["PAID", "PROCESSING", "DELIVERED"] } },
-          select: {
-            id: true,
-            status: true,
-            createdAt: true,
-            totalAmount: true,
-            customerNote: true,
-            couponCode: true,
-            discountAmount: true,
-            timeline: true,
-            customerId: true,
-            customer: { select: { id: true, username: true, email: true } },
-            items: {
-              select: {
-                id: true,
-                productId: true,
-                plan: true,
-                amount: true,
-                product: { select: { id: true, name: true, slug: true } },
-              },
-            },
-          },
-          orderBy: { createdAt: "desc" },
-          take: 50,
-        });
-
-        return legacyOrders.map((order) => ({
-          ...order,
-          deliveryContent: null,
-          deliveredAt: null,
-          deliveredBy: null,
-        }));
       }),
       prisma.license.findMany({
         where: { status: "PENDING" },
@@ -76,9 +52,13 @@ export async function GET() {
       .map((order) => {
         const pendingMatches = licenses.filter((license) => {
           if (!order.customerId || license.customerId !== order.customerId) return false;
+
           const orderTime = order.createdAt.getTime();
           const licenseTime = license.createdAt.getTime();
-          const sameItem = order.items.some((item) => item.productId === license.productId && item.plan === license.plan);
+          const sameItem = order.items.some(
+            (item) => item.productId === license.productId && item.plan === license.plan
+          );
+
           return sameItem && Math.abs(licenseTime - orderTime) <= LICENSE_MATCH_WINDOW_MS;
         });
 
@@ -92,9 +72,9 @@ export async function GET() {
           customerNote: order.customerNote,
           couponCode: order.couponCode,
           discountAmount: order.discountAmount,
-          deliveryContent: order.deliveryContent,
-          deliveredAt: order.deliveredAt,
-          deliveredBy: order.deliveredBy,
+          deliveryContent: null,
+          deliveredAt: null,
+          deliveredBy: null,
           customer: order.customer,
           items: order.items.map((item) => ({
             id: item.id,
@@ -111,9 +91,17 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data: rows });
   } catch (error: any) {
-    if (error?.message === "Unauthorized") return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    if (String(error?.message || "").includes("Forbidden")) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    if (error?.message === "Unauthorized") {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    if (String(error?.message || "").includes("Forbidden")) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+
     console.error("GET /api/admin/pending-deliveries error:", error);
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error?.message || "Internal server error" },
+      { status: 500 }
+    );
   }
 }
