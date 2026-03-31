@@ -4,6 +4,11 @@ import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer
 import { sendTopUpNotificationToDiscord } from "@/lib/discord";
 import { uploadFile } from "@/lib/upload";
 
+function isSchemaMismatch(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  return message.includes("P2021") || message.includes("P2022");
+}
+
 function normalizeInstructionMap(rows: Array<{ key: string; value: string }>) {
   const map = new Map(rows.map((x) => [x.key, x.value]));
   return {
