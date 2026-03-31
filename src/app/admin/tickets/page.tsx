@@ -32,6 +32,28 @@ interface AdminTicket {
 
 const statusOptions: TicketStatus[] = ["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER", "RESOLVED", "CLOSED"];
 const priorityOptions: TicketPriority[] = ["LOW", "NORMAL", "HIGH"];
+const quickReplies = [
+  {
+    label: "Delivered",
+    message:
+      "Your delivery has been completed. Please check your dashboard order details. If anything looks wrong, reply here and we will help immediately.",
+  },
+  {
+    label: "Need Info",
+    message:
+      "We are reviewing your request. Please send the missing details here so we can continue quickly: game, region, account type, and any extra note.",
+  },
+  {
+    label: "Stock Delay",
+    message:
+      "Your request is queued but stock/delivery is delayed right now. We will update you as soon as your delivery is ready.",
+  },
+  {
+    label: "Discord Check",
+    message:
+      "Please check our Discord ticket or direct messages as well. If you do not see a message, reply here and we will resend the delivery details.",
+  },
+];
 
 function formatStatus(status: TicketStatus) {
   return status.replace("_", " ");
@@ -271,6 +293,18 @@ export default function AdminTicketsPage() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-zinc-300">Reply as admin</label>
+                <div className="flex flex-wrap gap-2">
+                  {quickReplies.map((item) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => setReplyMessage(item.message)}
+                      className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-zinc-300 transition hover:border-[#b9accf]/35 hover:bg-[#a996c4]/12 hover:text-white"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
                 <textarea
                   value={replyMessage}
                   onChange={(event) => setReplyMessage(event.target.value)}

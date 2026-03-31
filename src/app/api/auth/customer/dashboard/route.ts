@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Your account is not eligible." }, { status: 403 });
     }
 
-    const [activeLicenses, totalOrders, deliveredOrders, openTickets, recentOrders, recentTransactions, ownedRoles, totalSpentAgg, leaderboard, pendingTopups, orderRankRows, licenses, tickets, topups, latestChangelogs, announcements, communityCount, ownedProducts, approvedReviews, pendingDeliveries] = await Promise.all([
+    const [activeLicenses, totalOrders, deliveredOrders, openTickets, recentOrders, recentTransactions, ownedRoles, totalSpentAgg, leaderboard, pendingTopups, orderRankRows, licenses, tickets, topups, latestChangelogs, announcements, communityCount, ownedProducts, approvedReviews, pendingDeliveries, favorites] = await Promise.all([
       prisma.license.count({
         where: {
           customerId: customer.id,
@@ -207,6 +207,27 @@ export async function GET(req: NextRequest) {
           status: { in: ["PENDING", "PAID", "PROCESSING"] },
         },
       }).catch(() => 0),
+      prisma.favoriteProduct.findMany({
+        where: { customerId: customer.id },
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              shortDescription: true,
+              description: true,
+              status: true,
+              prices: {
+                orderBy: { plan: "asc" },
+                select: { id: true, plan: true, price: true },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 8,
+      }).catch(() => []),
     ]);
 
     const totalSpent = Number(totalSpentAgg?._sum?.totalAmount || 0);
@@ -337,6 +358,7 @@ export async function GET(req: NextRequest) {
           openTickets,
           ownedProducts: ownedProducts.length,
           approvedReviews,
+          favorites: favorites.length,
         },
         recentOrders: recentOrders.map((order) => ({
           ...order,
@@ -386,6 +408,12 @@ export async function GET(req: NextRequest) {
             productSlug: item.product.slug,
           }))
           .filter((item) => !!item.roleKey),
+        favorites: favorites.map((item) => ({
+          id: item.id,
+          createdAt: item.createdAt,
+          productId: item.productId,
+          product: item.product,
+        })),
       },
     });
   } catch (error) {

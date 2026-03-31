@@ -179,6 +179,7 @@ export default function LogsPage() {
                   {type === "audit" && (
                     <>
                       <th className="pb-2 font-medium">Kullanıcı</th>
+                      <th className="pb-2 font-medium">Target</th>
                       <th className="pb-2 font-medium">Action</th>
                       <th className="pb-2 font-medium">Entity</th>
                       <th className="pb-2 font-medium">IP</th>
@@ -197,6 +198,7 @@ export default function LogsPage() {
                   {type === "role" && (
                     <>
                       <th className="pb-2 font-medium">User</th>
+                      <th className="pb-2 font-medium">Target</th>
                       <th className="pb-2 font-medium">Entity</th>
                       <th className="pb-2 font-medium">Action</th>
                       <th className="pb-2 font-medium">Role Change</th>
@@ -212,6 +214,10 @@ export default function LogsPage() {
                     {type === "audit" && (
                       <>
                         <td className="py-2">{log.user?.name || "-"}</td>
+                        <td className="py-2">
+                          {log.target?.label || "-"}
+                          {log.target?.sublabel ? <div className="text-xs text-muted-foreground">{log.target.sublabel}</div> : null}
+                        </td>
                         <td className="py-2">
                           <Badge variant="outline">{log.action}</Badge>
                         </td>
@@ -241,6 +247,10 @@ export default function LogsPage() {
                     {type === "role" && (
                       <>
                         <td className="py-2">{log.user?.name || "-"}</td>
+                        <td className="py-2">
+                          {log.target?.label || (log.entityId ? `#${String(log.entityId).slice(-6)}` : "-")}
+                          {log.target?.sublabel ? <div className="text-xs text-muted-foreground">{log.target.sublabel}</div> : null}
+                        </td>
                         <td className="py-2">{log.entity}</td>
                         <td className="py-2"><Badge variant="outline">{log.action}</Badge></td>
                         <td className="py-2 text-xs">{log.role?.from || "-"} → {log.role?.to || "-"}</td>

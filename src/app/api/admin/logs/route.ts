@@ -35,6 +35,62 @@ function extractRoleTransition(entry: any) {
   return { from: null, to: null };
 }
 
+async function attachTargets(entries: any[]) {
+  const customerIds = Array.from(
+    new Set(entries.filter((entry) => entry.entity === "Customer" && entry.entityId).map((entry) => entry.entityId))
+  );
+  const userIds = Array.from(
+    new Set(entries.filter((entry) => entry.entity === "User" && entry.entityId).map((entry) => entry.entityId))
+  );
+  const productIds = Array.from(
+    new Set(entries.filter((entry) => entry.entity === "Product" && entry.entityId).map((entry) => entry.entityId))
+  );
+
+  const [customers, users, products] = await Promise.all([
+    customerIds.length
+      ? prisma.customer.findMany({
+          where: { id: { in: customerIds } },
+          select: { id: true, username: true, email: true },
+        })
+      : Promise.resolve([]),
+    userIds.length
+      ? prisma.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, name: true, email: true },
+        })
+      : Promise.resolve([]),
+    productIds.length
+      ? prisma.product.findMany({
+          where: { id: { in: productIds } },
+          select: { id: true, name: true, slug: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const customerMap = new Map(customers.map((item) => [item.id, item]));
+  const userMap = new Map(users.map((item) => [item.id, item]));
+  const productMap = new Map(products.map((item) => [item.id, item]));
+
+  return entries.map((entry) => {
+    let target: any = null;
+    if (entry.entity === "Customer" && entry.entityId) {
+      const customer = customerMap.get(entry.entityId);
+      if (customer) target = { label: customer.username, sublabel: customer.email, kind: "customer" };
+    } else if (entry.entity === "User" && entry.entityId) {
+      const user = userMap.get(entry.entityId);
+      if (user) target = { label: user.name, sublabel: user.email, kind: "user" };
+    } else if (entry.entity === "Product" && entry.entityId) {
+      const product = productMap.get(entry.entityId);
+      if (product) target = { label: product.name, sublabel: product.slug, kind: "product" };
+    }
+
+    return {
+      ...entry,
+      target,
+    };
+  });
+}
+
 export async function GET(req: NextRequest) {
   try {
     const session = await requireAuth();
@@ -154,7 +210,7 @@ export async function GET(req: NextRequest) {
         prisma.auditLog.count({ where }),
       ]);
 
-      const data = rows.map((x) => ({
+      const data = await attachTargets(rows.map((x) => ({
         id: x.id,
         createdAt: x.createdAt,
         action: x.action,
@@ -165,7 +221,7 @@ export async function GET(req: NextRequest) {
         after: x.after,
         diff: x.diff,
         user: x.user,
-      }));
+      })));
 
       return NextResponse.json({ success: true, data, meta: { total, page, pageSize } });
     }
@@ -197,7 +253,9 @@ export async function GET(req: NextRequest) {
       prisma.auditLog.count({ where }),
     ]);
 
-    return NextResponse.json({ success: true, data: rows, meta: { total, page, pageSize } });
+    const data = await attachTargets(rows);
+
+    return NextResponse.json({ success: true, data, meta: { total, page, pageSize } });
   } catch (error: any) {
     if (error.message === "Unauthorized") return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });

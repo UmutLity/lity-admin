@@ -83,6 +83,7 @@ model Customer {
   reviews             Review[]
   topUpRequests       TopUpRequest[]
   notifications       Notification[]
+  favorites           FavoriteProduct[]
 }
 
 // ─── Cart Item ──────────────────────────────────────────
@@ -98,6 +99,19 @@ model CartItem {
 
   @@unique([customerId, productId, plan])
   @@index([customerId])
+}
+
+model FavoriteProduct {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([customerId, productId])
+  @@index([customerId, createdAt])
+  @@index([productId])
 }
 
 // ─── Login Attempt ──────────────────────────────────────
@@ -254,6 +268,7 @@ model Product {
   supportTickets SupportTicket[]
   reviews        Review[]
   guides         Guide[]
+  favorites      FavoriteProduct[]
 }
 
 model Guide {
