@@ -10,24 +10,22 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const adminId = (session.user as any).id as string;
     const ip = getClientIp(req);
     const userAgent = req.headers.get("user-agent") || undefined;
+
     const body = await req.json().catch(() => ({}));
     const reviewNote = typeof body.reviewNote === "string" ? body.reviewNote.trim() : "";
 
     const existing = await prisma.topUpRequest.findUnique({ where: { id: params.id } });
-    if (!existing) return NextResponse.json({ success: false, error: "Request not found" }, { status: 404 });
+    if (!existing) {
+      return NextResponse.json({ success: false, error: "Request not found" }, { status: 404 });
+    }
+
     if (existing.status !== "PENDING") {
       return NextResponse.json({ success: false, error: "Request already processed" }, { status: 409 });
     }
 
-    const updated = await prisma.$transaction(async (tx) => {
-      const request = await tx.topUpRequest.update({
-        where: { id: params.id },
-        data: {
-          status: "REJECTED",
-        },
-      });
-
-      return request;
+    const updated = await prisma.topUpRequest.update({
+      where: { id: params.id },
+      data: { status: "REJECTED" },
     });
 
     await createAuditLog({
@@ -43,9 +41,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error: any) {
-    if (error.message === "Unauthorized") return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    if (error.message?.includes("Forbidden")) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    if (error.message === "Unauthorized") {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    if (error.message?.includes("Forbidden")) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+
     console.error("PATCH /api/topup/[id]/reject error:", error);
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error?.message || "Internal server error" },
+      { status: 500 }
+    );
   }
 }
