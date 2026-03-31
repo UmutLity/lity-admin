@@ -38,6 +38,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         customerId: true,
         status: true,
         deliveryContent: true,
+        deliveredAt: true,
+        deliveredBy: { select: { name: true } },
         updatedAt: true,
       },
     });
@@ -54,6 +56,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       data: {
         orderId: order.id,
         deliveryContent: order.deliveryContent,
+        deliveredAt: order.deliveredAt,
+        deliveredByName: order.deliveredBy?.name || null,
         updatedAt: order.updatedAt,
       },
     }, { headers: corsHeaders(req) });

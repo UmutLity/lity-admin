@@ -35,6 +35,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
             couponCode: true,
             customerNote: true,
             deliveryContent: true,
+            deliveredAt: true,
+            deliveredBy: { select: { id: true, name: true } },
             createdAt: true,
             timeline: true,
             items: {
@@ -87,6 +89,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
             proofImageUrl: true,
             reviewNote: true,
             createdAt: true,
+            approvedAt: true,
+            rejectedAt: true,
           },
         },
       },

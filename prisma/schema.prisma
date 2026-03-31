@@ -47,6 +47,7 @@ model User {
   adminSessions  AdminSession[]
   notifications  AdminNotification[]
   reviewedTopUpRequests TopUpRequest[] @relation("TopUpReviewedBy")
+  deliveredOrders Order[] @relation("OrderDeliveredBy")
   blogPosts      BlogPost[]
 }
 
@@ -246,6 +247,9 @@ model Product {
   buyUrl               String?
   accessRoleKey        String?
   defaultLoaderUrl     String?
+  stockStatus          String   @default("IN_STOCK")
+  deliveryType         String   @default("MANUAL")
+  estimatedDelivery    String?
   sortOrder            Int      @default(0)
   displayOrder         Int      @default(0)
   createdAt            DateTime @default(now())
@@ -598,6 +602,8 @@ model Order {
   id         String   @id @default(cuid())
   customerId String?
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  deliveredById String?
+  deliveredBy User? @relation("OrderDeliveredBy", fields: [deliveredById], references: [id], onDelete: SetNull)
   status     String   @default("PENDING") // PENDING | PAID | PROCESSING | DELIVERED | REFUNDED | CANCELED
   paymentMethod String @default("BALANCE") // BALANCE | MANUAL | EXTERNAL
   currency   String   @default("USD")
@@ -607,6 +613,7 @@ model Order {
   couponCode String?
   customerNote String?
   deliveryContent String?
+  deliveredAt DateTime?
   timeline String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -614,6 +621,7 @@ model Order {
   items OrderItem[]
 
   @@index([customerId])
+  @@index([deliveredById])
   @@index([status])
   @@index([createdAt])
 }

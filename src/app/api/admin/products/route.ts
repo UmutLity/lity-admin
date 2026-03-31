@@ -84,6 +84,7 @@ export async function POST(req: NextRequest) {
           buyUrl: productData.buyUrl || null,
           accessRoleKey: productData.accessRoleKey || null,
           defaultLoaderUrl: productData.defaultLoaderUrl || null,
+          estimatedDelivery: productData.estimatedDelivery || null,
           prices: prices?.length
             ? { create: prices.map((p) => ({ plan: p.plan, price: p.price })) }
             : undefined,

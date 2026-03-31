@@ -7,7 +7,7 @@ const LICENSE_MATCH_WINDOW_MS = 10 * 60 * 1000;
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await requireAdmin();
+    const session = await requireAdmin();
     const body = await req.json().catch(() => ({}));
     const deliveryContent = typeof body.deliveryContent === "string" ? body.deliveryContent.trim() : "";
 
@@ -65,10 +65,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         data: {
           status: "DELIVERED",
           deliveryContent,
+          deliveredAt: new Date(),
+          deliveredById: (session.user as any).id,
           timeline: appendOrderTimeline(order.timeline, {
             type: "DELIVERED",
             title: "Manual delivery completed",
-            description: `${matchedLicenses.length || order.items.length} item(s) delivered by admin.`,
+            description: `${matchedLicenses.length || order.items.length} item(s) delivered by ${(session.user as any).name || "admin"}.`,
           }),
         },
       });

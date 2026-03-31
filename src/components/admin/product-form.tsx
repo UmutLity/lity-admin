@@ -73,6 +73,18 @@ const currencyOptions = [
   { value: "TRY", label: "TRY" },
 ];
 
+const stockStatusOptions = [
+  { value: "IN_STOCK", label: "In Stock" },
+  { value: "LOW_STOCK", label: "Low Stock" },
+  { value: "OUT_OF_STOCK", label: "Out of Stock" },
+];
+
+const deliveryTypeOptions = [
+  { value: "MANUAL", label: "Manual Delivery" },
+  { value: "INSTANT", label: "Instant Delivery" },
+  { value: "SCHEDULED", label: "Scheduled Delivery" },
+];
+
 const tabs: Array<{ key: TabKey; label: string; icon: any }> = [
   { key: "general", label: "General", icon: Ticket },
   { key: "media", label: "Media", icon: ImageIcon },
@@ -150,6 +162,9 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
     buyUrl: initialData?.buyUrl || "",
     accessRoleKey: initialData?.accessRoleKey || "",
     defaultLoaderUrl: initialData?.defaultLoaderUrl || "",
+    stockStatus: initialData?.stockStatus || "IN_STOCK",
+    deliveryType: initialData?.deliveryType || "MANUAL",
+    estimatedDelivery: initialData?.estimatedDelivery || "",
     isActive: initialData?.isActive ?? true,
     isFeatured: initialData?.isFeatured ?? false,
     sortOrder: initialData?.sortOrder ?? 0,
@@ -496,6 +511,46 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                   <input type="checkbox" checked={autoSlug} onChange={(event) => setAutoSlug(event.target.checked)} />
                   Auto slug
                 </label>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-zinc-300">Stock Status</label>
+                  <select
+                    value={form.stockStatus}
+                    onChange={(event) => updateField("stockStatus", event.target.value)}
+                    className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  >
+                    {stockStatusOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-zinc-300">Delivery Type</label>
+                  <select
+                    value={form.deliveryType}
+                    onChange={(event) => updateField("deliveryType", event.target.value)}
+                    className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  >
+                    {deliveryTypeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-zinc-300">Estimated Delivery</label>
+                  <input
+                    value={form.estimatedDelivery}
+                    onChange={(event) => updateField("estimatedDelivery", event.target.value)}
+                    className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                    placeholder="5-30 min / 1-6 hours / instant"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">

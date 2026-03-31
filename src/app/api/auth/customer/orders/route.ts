@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
     const orders = await prisma.order.findMany({
       where: { customerId: payload.id },
       include: {
+        deliveredBy: { select: { name: true } },
         items: {
           include: {
             product: {
@@ -30,6 +31,7 @@ export async function GET(req: NextRequest) {
         ...order,
         deliveryAvailable: String(order.status) === "DELIVERED" && !!order.deliveryContent,
         timeline: parseOrderTimeline(order.timeline),
+        deliveredByName: order.deliveredBy?.name || null,
       })),
     });
   } catch (error) {

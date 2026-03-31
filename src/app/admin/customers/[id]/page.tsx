@@ -27,6 +27,8 @@ type CustomerProfile = {
     couponCode: string | null;
     customerNote: string | null;
     deliveryContent: string | null;
+    deliveredAt: string | null;
+    deliveredBy: { id: string; name: string } | null;
     timeline: any;
     createdAt: string;
     items: Array<{ id: string; plan: string; amount: number; product: { name: string; slug: string } }>;
@@ -60,6 +62,8 @@ type CustomerProfile = {
     proofImageUrl?: string | null;
     reviewNote?: string | null;
     createdAt: string;
+    approvedAt?: string | null;
+    rejectedAt?: string | null;
   }>;
   tickets: Array<{
     id: string;
@@ -80,6 +84,11 @@ function money(value: number) {
 function date(value?: string | null) {
   if (!value) return "N/A";
   return new Date(value).toLocaleString("tr-TR");
+}
+
+function copyValue(value: string, label: string) {
+  navigator.clipboard.writeText(value);
+  window.alert(`${label} copied.`);
 }
 
 function statusTone(status: string) {
@@ -252,6 +261,32 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
                 <p className="mt-2">{data.mustChangePassword ? "Required" : "Not required"}</p>
               </div>
             </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => copyValue(data.email, "Email")}
+                className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-sm font-medium text-zinc-200"
+              >
+                Copy Email
+              </button>
+              <button
+                type="button"
+                onClick={() => copyValue(data.username, "Username")}
+                className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-sm font-medium text-zinc-200"
+              >
+                Copy Username
+              </button>
+              <Link href={`/admin/orders?search=${encodeURIComponent(data.email)}`} className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-sm font-medium text-zinc-200">
+                Open Orders
+              </Link>
+              <Link href={`/admin/topups?search=${encodeURIComponent(data.email)}`} className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-sm font-medium text-zinc-200">
+                Open Top-ups
+              </Link>
+              <Link href={`/admin/tickets?search=${encodeURIComponent(data.email)}`} className="rounded-xl border border-violet-500/25 bg-violet-500/10 px-4 py-2 text-sm font-medium text-violet-200">
+                Open Tickets
+              </Link>
+            </div>
           </section>
 
           <div className="grid gap-4 xl:grid-cols-[1.4fr_0.8fr]">
@@ -326,7 +361,11 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
                       ))}
                     </div>
                     {order.customerNote ? <p className="mt-3 text-sm text-zinc-400">Customer note: {order.customerNote}</p> : null}
-                    {order.deliveryContent ? <p className="mt-2 text-sm text-emerald-300">Delivery content saved.</p> : null}
+                    {order.deliveryContent ? (
+                      <p className="mt-2 text-sm text-emerald-300">
+                        Delivered {order.deliveredAt ? `on ${date(order.deliveredAt)}` : ""}{order.deliveredBy?.name ? ` by ${order.deliveredBy.name}` : ""}.
+                      </p>
+                    ) : null}
                     {order.couponCode ? <p className="mt-1 text-sm text-zinc-500">Coupon: {order.couponCode} (-{money(order.discountAmount)})</p> : null}
                   </div>
                 )) : <div className="text-sm text-zinc-500">No recent orders.</div>}
@@ -386,6 +425,11 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
                         <p className="text-sm text-zinc-400">{topup.senderBankName} · {topup.senderName}</p>
                         {topup.note ? <p className="mt-2 text-sm text-zinc-500">Customer note: {topup.note}</p> : null}
                         {topup.reviewNote ? <p className="mt-1 text-sm text-violet-300">Admin note: {topup.reviewNote}</p> : null}
+                        <p className="mt-1 text-xs text-zinc-500">
+                          Submitted: {date(topup.createdAt)}
+                          {topup.approvedAt ? ` · Approved: ${date(topup.approvedAt)}` : ""}
+                          {topup.rejectedAt ? ` · Rejected: ${date(topup.rejectedAt)}` : ""}
+                        </p>
                       </div>
                       <div className="text-right">
                         <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${statusTone(topup.status)}`}>

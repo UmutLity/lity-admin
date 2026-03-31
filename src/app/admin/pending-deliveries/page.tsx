@@ -13,12 +13,14 @@ type DeliveryRow = {
   id: string;
   status: string;
   createdAt: string;
+  deliveredAt?: string | null;
   totalAmount: number;
   customerNote: string | null;
   couponCode: string | null;
   discountAmount: number;
   pendingCount: number;
   deliveryContent?: string | null;
+  deliveredBy?: { id: string; name: string } | null;
   customer: { id: string; username: string; email: string } | null;
   items: Array<{ id: string; productName: string; productSlug: string; plan: string; amount: number }>;
 };
@@ -241,6 +243,12 @@ export default function PendingDeliveriesPage() {
                           <div className="rounded-xl border border-emerald-500/10 bg-emerald-500/5 p-3">
                             <p className="mb-2 text-xs uppercase tracking-[0.12em] text-emerald-300">Current Delivery Content</p>
                             <p className="whitespace-pre-wrap text-sm text-zinc-200">{row.deliveryContent}</p>
+                            {(row.deliveredAt || row.deliveredBy?.name) ? (
+                              <p className="mt-2 text-xs text-zinc-400">
+                                {row.deliveredAt ? `Delivered ${new Date(row.deliveredAt).toLocaleString("tr-TR")}` : "Delivered"}
+                                {row.deliveredBy?.name ? ` by ${row.deliveredBy.name}` : ""}
+                              </p>
+                            ) : null}
                           </div>
                         ) : null}
                       </div>

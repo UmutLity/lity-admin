@@ -59,6 +59,7 @@ export async function GET(req: NextRequest) {
       prisma.order.findMany({
         where: { customerId: customer.id },
         include: {
+          deliveredBy: { select: { name: true } },
           items: {
             include: { product: { select: { id: true, name: true, slug: true } } },
           },
@@ -362,6 +363,7 @@ export async function GET(req: NextRequest) {
         },
         recentOrders: recentOrders.map((order) => ({
           ...order,
+          deliveredByName: order.deliveredBy?.name || null,
           timeline: parseOrderTimeline(order.timeline),
         })),
         recentTransactions,

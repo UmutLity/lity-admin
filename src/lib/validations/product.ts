@@ -25,6 +25,9 @@ export const productSchema = z.object({
       return false;
     }
   }, "Loader link must be a valid Mega URL"),
+  stockStatus: z.enum(["IN_STOCK", "LOW_STOCK", "OUT_OF_STOCK"]).default("IN_STOCK"),
+  deliveryType: z.enum(["MANUAL", "INSTANT", "SCHEDULED"]).default("MANUAL"),
+  estimatedDelivery: z.string().max(80).optional().nullable().or(z.literal("")),
   sortOrder: z.number().int().default(0),
   displayOrder: z.number().int().default(0),
   prices: z.array(z.object({

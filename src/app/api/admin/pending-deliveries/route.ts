@@ -14,6 +14,7 @@ export async function GET() {
         where: { status: { in: ["PAID", "PROCESSING", "DELIVERED"] } },
         include: {
           customer: { select: { id: true, username: true, email: true } },
+          deliveredBy: { select: { id: true, name: true } },
           items: { include: { product: { select: { id: true, name: true, slug: true } } } },
         },
         orderBy: { createdAt: "desc" },
@@ -52,6 +53,8 @@ export async function GET() {
           couponCode: order.couponCode,
           discountAmount: order.discountAmount,
           deliveryContent: order.deliveryContent,
+          deliveredAt: order.deliveredAt,
+          deliveredBy: order.deliveredBy,
           customer: order.customer,
           items: order.items.map((item) => ({
             id: item.id,
