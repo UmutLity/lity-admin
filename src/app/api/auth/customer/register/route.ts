@@ -84,6 +84,26 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    try {
+      await prisma.adminNotification.create({
+        data: {
+          userId: null,
+          type: "SYSTEM",
+          severity: "INFO",
+          title: "New customer registration",
+          message: `${customer.username} registered with ${customer.email}.`,
+          meta: JSON.stringify({
+            customerId: customer.id,
+            username: customer.username,
+            email: customer.email,
+            createdAt: customer.createdAt,
+          }),
+        },
+      });
+    } catch (notificationError) {
+      console.error("Admin notification create failed on customer registration:", notificationError);
+    }
+
     const token = createCustomerToken({
       id: customer.id,
       email: customer.email,

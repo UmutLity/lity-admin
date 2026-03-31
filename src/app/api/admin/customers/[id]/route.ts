@@ -4,6 +4,11 @@ import { requireAdmin } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
 import bcrypt from "bcryptjs";
 
+function isSchemaMismatch(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  return message.includes("P2021") || message.includes("P2022");
+}
+
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     await requireAdmin();
@@ -94,6 +99,105 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
           },
         },
       },
+    }).catch(async (error) => {
+      if (!isSchemaMismatch(error)) throw error;
+      const legacyCustomer = await prisma.customer.findUnique({
+        where: { id: params.id },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          avatar: true,
+          role: true,
+          isActive: true,
+          balance: true,
+          totalSpent: true,
+          createdAt: true,
+          updatedAt: true,
+          lastLoginAt: true,
+          mustChangePassword: true,
+          orders: {
+            orderBy: { createdAt: "desc" },
+            take: 12,
+            select: {
+              id: true,
+              status: true,
+              totalAmount: true,
+              createdAt: true,
+              items: {
+                select: {
+                  id: true,
+                  plan: true,
+                  amount: true,
+                  product: { select: { id: true, name: true, slug: true } },
+                },
+              },
+            },
+          },
+          licenses: {
+            orderBy: { createdAt: "desc" },
+            take: 12,
+            select: {
+              id: true,
+              key: true,
+              status: true,
+              plan: true,
+              note: true,
+              expiresAt: true,
+              createdAt: true,
+              product: { select: { id: true, name: true, slug: true } },
+            },
+          },
+          balanceTransactions: {
+            orderBy: { createdAt: "desc" },
+            take: 12,
+            select: {
+              id: true,
+              type: true,
+              amount: true,
+              balanceBefore: true,
+              balanceAfter: true,
+              reason: true,
+              createdAt: true,
+            },
+          },
+          topUpRequests: {
+            orderBy: { createdAt: "desc" },
+            take: 10,
+            select: {
+              id: true,
+              amount: true,
+              status: true,
+              senderName: true,
+              senderBankName: true,
+              note: true,
+              createdAt: true,
+            },
+          },
+        },
+      });
+      if (!legacyCustomer) return null;
+      return {
+        ...legacyCustomer,
+        adminNotes: null,
+        orders: legacyCustomer.orders.map((order) => ({
+          ...order,
+          discountAmount: 0,
+          couponCode: null,
+          customerNote: null,
+          deliveryContent: null,
+          deliveredAt: null,
+          deliveredBy: null,
+          timeline: null,
+        })),
+        topUpRequests: legacyCustomer.topUpRequests.map((row) => ({
+          ...row,
+          proofImageUrl: null,
+          reviewNote: null,
+          approvedAt: null,
+          rejectedAt: null,
+        })),
+      };
     });
 
     if (!customer) return NextResponse.json({ error: "Customer not found" }, { status: 404 });

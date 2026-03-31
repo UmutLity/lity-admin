@@ -6,6 +6,11 @@ import { sendOrderNotificationToDiscord } from "@/lib/discord";
 
 const LICENSE_MATCH_WINDOW_MS = 10 * 60 * 1000;
 
+function isSchemaMismatch(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  return message.includes("P2021") || message.includes("P2022");
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await requireAdmin();
@@ -22,6 +27,38 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
           },
         },
       },
+    }).catch(async (error) => {
+      if (!isSchemaMismatch(error)) throw error;
+      const legacyOrder = await prisma.order.findUnique({
+        where: { id: params.id },
+        select: {
+          id: true,
+          customerId: true,
+          status: true,
+          paymentMethod: true,
+          totalAmount: true,
+          createdAt: true,
+          customer: { select: { id: true, email: true, username: true } },
+          items: {
+            select: {
+              id: true,
+              productId: true,
+              plan: true,
+              amount: true,
+              product: { select: { id: true, name: true, slug: true, defaultLoaderUrl: true } },
+            },
+          },
+        },
+      });
+      if (!legacyOrder) return null;
+      return {
+        ...legacyOrder,
+        subtotalAmount: legacyOrder.totalAmount,
+        discountAmount: 0,
+        couponCode: null,
+        customerNote: null,
+        timeline: null,
+      };
     });
 
     if (!order) return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });

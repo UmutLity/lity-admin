@@ -5,6 +5,11 @@ import { parseOrderTimeline } from "@/lib/orders";
 
 const LICENSE_MATCH_WINDOW_MS = 10 * 60 * 1000;
 
+function isSchemaMismatch(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  return message.includes("P2021") || message.includes("P2022");
+}
+
 function clampLimit(raw: string | null) {
   const parsed = Number(raw || 50);
   if (!Number.isFinite(parsed)) return 50;
@@ -74,6 +79,49 @@ export async function GET(req: NextRequest) {
             },
           },
         },
+      }).catch(async (error) => {
+        if (!isSchemaMismatch(error)) throw error;
+        return prisma.order.findMany({
+          where,
+          take: limit,
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            customerId: true,
+            status: true,
+            paymentMethod: true,
+            totalAmount: true,
+            createdAt: true,
+            customer: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                avatar: true,
+              },
+            },
+            items: {
+              select: {
+                id: true,
+                productId: true,
+                plan: true,
+                amount: true,
+                product: {
+                  select: { id: true, name: true, slug: true },
+                },
+              },
+            },
+          },
+        }).then((legacyOrders) =>
+          legacyOrders.map((order) => ({
+            ...order,
+            subtotalAmount: null,
+            discountAmount: 0,
+            couponCode: null,
+            customerNote: null,
+            timeline: null,
+          }))
+        );
       }),
     ]);
 
