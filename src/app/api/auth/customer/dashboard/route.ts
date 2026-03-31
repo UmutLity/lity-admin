@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Your account is not eligible." }, { status: 403 });
     }
 
-    const [activeLicenses, totalOrders, deliveredOrders, recentOrders, openTickets, recentTransactions, ownedRoles, totalSpentAgg, leaderboard, pendingTopups, orderRankRows, licenses, tickets, topups, latestChangelogs, announcements, communityCount, ownedProducts, approvedReviews, pendingDeliveries] = await Promise.all([
+    const [activeLicenses, totalOrders, deliveredOrders, openTickets, recentOrders, recentTransactions, ownedRoles, totalSpentAgg, leaderboard, pendingTopups, orderRankRows, licenses, tickets, topups, latestChangelogs, announcements, communityCount, ownedProducts, approvedReviews, pendingDeliveries] = await Promise.all([
       prisma.license.count({
         where: {
           customerId: customer.id,
