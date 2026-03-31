@@ -3,6 +3,11 @@ import prisma from "@/lib/prisma";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
 import { parseOrderTimeline } from "@/lib/orders";
 
+function isSchemaMismatch(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  return message.includes("P2021") || message.includes("P2022");
+}
+
 export async function GET(req: NextRequest) {
   try {
     const token = getCustomerTokenFromRequest(req);
@@ -23,6 +28,41 @@ export async function GET(req: NextRequest) {
         },
       },
       orderBy: { createdAt: "desc" },
+    }).catch(async (error) => {
+      if (!isSchemaMismatch(error)) throw error;
+      const legacyOrders = await prisma.order.findMany({
+        where: { customerId: payload.id },
+        select: {
+          id: true,
+          status: true,
+          paymentMethod: true,
+          totalAmount: true,
+          createdAt: true,
+          items: {
+            select: {
+              id: true,
+              productId: true,
+              plan: true,
+              amount: true,
+              product: {
+                select: { id: true, name: true, slug: true, status: true },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      return legacyOrders.map((order) => ({
+        ...order,
+        subtotalAmount: order.totalAmount,
+        discountAmount: 0,
+        couponCode: null,
+        customerNote: null,
+        deliveryContent: null,
+        deliveredAt: null,
+        deliveredBy: null,
+        timeline: null,
+      }));
     });
 
     return NextResponse.json({

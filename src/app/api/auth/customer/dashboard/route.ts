@@ -3,6 +3,11 @@ import prisma from "@/lib/prisma";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
 import { parseOrderTimeline } from "@/lib/orders";
 
+function isSchemaMismatch(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  return message.includes("P2021") || message.includes("P2022");
+}
+
 function normalizeLicenseStatus(status: string, expiresAt: Date | null) {
   if (status === "REVOKED") return "REVOKED";
   if (expiresAt && expiresAt.getTime() < Date.now()) return "EXPIRED";
@@ -66,6 +71,41 @@ export async function GET(req: NextRequest) {
         },
         orderBy: { createdAt: "desc" },
         take: 10,
+      }).catch(async (error) => {
+        if (!isSchemaMismatch(error)) throw error;
+        const legacyOrders = await prisma.order.findMany({
+          where: { customerId: customer.id },
+          select: {
+            id: true,
+            status: true,
+            paymentMethod: true,
+            totalAmount: true,
+            createdAt: true,
+            items: {
+              select: {
+                id: true,
+                productId: true,
+                plan: true,
+                amount: true,
+                product: { select: { id: true, name: true, slug: true } },
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        });
+        return legacyOrders.map((order) => ({
+          ...order,
+          customerId: customer.id,
+          subtotalAmount: order.totalAmount,
+          discountAmount: 0,
+          couponCode: null,
+          customerNote: null,
+          deliveryContent: null,
+          deliveredAt: null,
+          deliveredBy: null,
+          timeline: null,
+        }));
       }),
       prisma.balanceTransaction.findMany({
         where: { customerId: customer.id },
