@@ -48,6 +48,7 @@ export default function TopUpsPage() {
   const [query, setQuery] = useState("");
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [proofModal, setProofModal] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -99,6 +100,15 @@ export default function TopUpsPage() {
     }
   }
 
+  function findPossibleDuplicates(row: TopUpRequestRow) {
+    return rows.filter((item) =>
+      item.id !== row.id &&
+      item.status === "PENDING" &&
+      Number(item.amount) === Number(row.amount) &&
+      String(item.senderName || "").toLowerCase() === String(row.senderName || "").toLowerCase()
+    );
+  }
+
   return (
     <div>
       <Topbar title="Top-up Requests" description="Approve or reject manual deposit requests" />
@@ -129,6 +139,11 @@ export default function TopUpsPage() {
             <div className="space-y-3">
               {rows.map((row) => (
                 <div key={row.id} className="rounded-xl border border-white/[0.08] bg-white/[0.01] p-4">
+                  {findPossibleDuplicates(row).length ? (
+                    <div className="mb-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                      Possible duplicate request detected: same sender and amount exists in another pending request.
+                    </div>
+                  ) : null}
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-zinc-100">
@@ -142,6 +157,9 @@ export default function TopUpsPage() {
                     <div className="text-right">
                       <div className="text-lg font-bold text-emerald-300">${Number(row.amount || 0).toFixed(2)}</div>
                       <div className="text-xs text-zinc-400">Current balance: ${Number(row.customer.balance || 0).toFixed(2)}</div>
+                      <a href={`/admin/customers/${row.customer.id}`} className="mt-2 inline-block text-xs text-violet-300 hover:text-violet-200">
+                        Open customer
+                      </a>
                     </div>
                   </div>
 
@@ -149,6 +167,8 @@ export default function TopUpsPage() {
                     <div className="grid gap-2 text-sm text-zinc-300 md:grid-cols-2">
                       <div><span className="text-zinc-500">Sender Name:</span> {row.senderName}</div>
                       <div><span className="text-zinc-500">Bank Name:</span> {row.senderBankName}</div>
+                      <div><span className="text-zinc-500">Previous requests:</span> {rows.filter((item) => item.customer.id === row.customer.id).length}</div>
+                      <div><span className="text-zinc-500">Approved requests:</span> {rows.filter((item) => item.customer.id === row.customer.id && item.status === "APPROVED").length}</div>
                       <div className="md:col-span-2"><span className="text-zinc-500">Customer Note:</span> {row.note || "-"}</div>
                       {row.reviewNote ? (
                         <div className="md:col-span-2 text-xs text-violet-300">Review Note: {row.reviewNote}</div>
@@ -158,13 +178,17 @@ export default function TopUpsPage() {
                     <div className="rounded-xl border border-white/[0.06] bg-[#121520] p-3">
                       <div className="mb-2 text-xs uppercase tracking-[0.14em] text-zinc-500">Proof Screenshot</div>
                       {row.proofImageUrl ? (
-                        <a href={row.proofImageUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-white/[0.08]">
+                        <button
+                          type="button"
+                          onClick={() => setProofModal(row.proofImageUrl || null)}
+                          className="block w-full overflow-hidden rounded-lg border border-white/[0.08]"
+                        >
                           <img
                             src={row.proofImageUrl}
                             alt="Payment proof"
                             className="h-36 w-full object-cover"
                           />
-                        </a>
+                        </button>
                       ) : (
                         <div className="rounded-lg border border-dashed border-white/[0.1] px-4 py-8 text-center text-xs text-zinc-500">
                           No proof uploaded
@@ -182,7 +206,7 @@ export default function TopUpsPage() {
                         className="max-w-md"
                       />
                       <Button size="sm" disabled={busyId === row.id} onClick={() => processRequest(row.id, "APPROVE")}>
-                        Approve
+                        Approve ${Number(row.amount || 0).toFixed(2)}
                       </Button>
                       <Button size="sm" variant="outline" disabled={busyId === row.id} onClick={() => processRequest(row.id, "REJECT")}>
                         Reject
@@ -199,6 +223,14 @@ export default function TopUpsPage() {
           )}
         </div>
       </div>
+
+      {proofModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6" onClick={() => setProofModal(null)}>
+          <div className="max-w-4xl overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0f1119]" onClick={(e) => e.stopPropagation()}>
+            <img src={proofModal} alt="Payment proof enlarged" className="max-h-[80vh] w-auto max-w-full object-contain" />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

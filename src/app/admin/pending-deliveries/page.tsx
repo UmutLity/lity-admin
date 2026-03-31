@@ -42,7 +42,9 @@ export default function PendingDeliveriesPage() {
   const { addToast } = useToast();
   const [rows, setRows] = useState<DeliveryRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"ALL" | "PENDING" | "DELIVERED">("PENDING");
+  const [filter, setFilter] = useState<"ALL" | "PENDING" | "PROCESSING" | "DELIVERED">("PENDING");
+  const [query, setQuery] = useState("");
+  const [gameFilter, setGameFilter] = useState("ALL");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [selectedRow, setSelectedRow] = useState<DeliveryRow | null>(null);
   const [deliveryContent, setDeliveryContent] = useState("");
@@ -71,6 +73,26 @@ export default function PendingDeliveriesPage() {
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || "Could not send reminder");
       addToast({ type: "success", title: "Reminder sent", description: "Order reminder was sent to Discord." });
+      await loadRows();
+    } catch (error: any) {
+      addToast({ type: "error", title: "Error", description: error.message || "Action failed" });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function markProcessing(orderId: string) {
+    try {
+      setBusyId(orderId);
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action: "MARK_PROCESSING" }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Could not move order to processing");
+      addToast({ type: "success", title: "Processing", description: "Order moved to processing and customer notified." });
       await loadRows();
     } catch (error: any) {
       addToast({ type: "error", title: "Error", description: error.message || "Action failed" });
@@ -128,18 +150,56 @@ export default function PendingDeliveriesPage() {
   }, []);
 
   const filteredRows = useMemo(() => {
-    if (filter === "ALL") return rows;
-    if (filter === "DELIVERED") return rows.filter((row) => String(row.status).toUpperCase() === "DELIVERED");
-    return rows.filter((row) => String(row.status).toUpperCase() !== "DELIVERED");
-  }, [filter, rows]);
+    let next = rows;
+    if (filter !== "ALL") {
+      next = next.filter((row) => String(row.status).toUpperCase() === filter);
+    }
+    if (gameFilter !== "ALL") {
+      next = next.filter((row) => row.items.some((item) => item.productName.toLowerCase().includes(gameFilter.toLowerCase())));
+    }
+    if (query.trim()) {
+      const q = query.trim().toLowerCase();
+      next = next.filter((row) =>
+        row.customer?.username?.toLowerCase().includes(q) ||
+        row.customer?.email?.toLowerCase().includes(q) ||
+        row.items.some((item) => item.productName.toLowerCase().includes(q))
+      );
+    }
+    return next;
+  }, [filter, gameFilter, query, rows]);
+
+  const gameOptions = useMemo(() => {
+    const names = Array.from(new Set(rows.flatMap((row) => row.items.map((item) => item.productName))));
+    return names.sort((a, b) => a.localeCompare(b));
+  }, [rows]);
 
   return (
     <div className="space-y-4">
       <Topbar title="Pending Deliveries" description="Manual delivery queue for paid orders" />
       <div className="flex flex-wrap gap-2">
         <Button size="sm" variant={filter === "PENDING" ? "default" : "outline"} onClick={() => setFilter("PENDING")}>Pending</Button>
+        <Button size="sm" variant={filter === "PROCESSING" ? "default" : "outline"} onClick={() => setFilter("PROCESSING")}>Processing</Button>
         <Button size="sm" variant={filter === "DELIVERED" ? "default" : "outline"} onClick={() => setFilter("DELIVERED")}>Delivered</Button>
         <Button size="sm" variant={filter === "ALL" ? "default" : "outline"} onClick={() => setFilter("ALL")}>All</Button>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search customer or product"
+          className="h-10 min-w-[240px] rounded-xl border border-white/[0.08] bg-[#10131c] px-3 text-sm text-zinc-100 outline-none"
+        />
+        <select
+          value={gameFilter}
+          onChange={(e) => setGameFilter(e.target.value)}
+          className="h-10 rounded-xl border border-white/[0.08] bg-[#10131c] px-3 text-sm text-zinc-100 outline-none"
+        >
+          <option value="ALL">All Products</option>
+          {gameOptions.map((name) => (
+            <option key={name} value={name}>{name}</option>
+          ))}
+        </select>
       </div>
 
       <div className="premium-card overflow-hidden">
@@ -184,6 +244,13 @@ export default function PendingDeliveriesPage() {
                         onClick={() => navigator.clipboard.writeText(row.customer?.email || row.customer?.username || "")}
                       >
                         <Copy className="mr-2 inline h-4 w-4" /> Copy User
+                      </button>
+                      <button
+                        className="rounded-xl border border-amber-400/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-300 disabled:opacity-50"
+                        onClick={() => markProcessing(row.id)}
+                        disabled={busyId === row.id || String(row.status).toUpperCase() === "DELIVERED"}
+                      >
+                        <Truck className="mr-2 inline h-4 w-4" /> Processing
                       </button>
                       <button
                         className="rounded-xl border border-white/[0.08] px-3 py-2 text-sm text-zinc-200"

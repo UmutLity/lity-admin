@@ -8,7 +8,7 @@ const LICENSE_MATCH_WINDOW_MS = 10 * 60 * 1000;
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await requireAdmin();
+    const session = await requireAdmin();
     const body = await req.json();
     const action = String(body?.action || "").toUpperCase();
 
@@ -25,6 +25,36 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     });
 
     if (!order) return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
+
+    if (action === "MARK_PROCESSING") {
+      if (String(order.status || "").toUpperCase() === "DELIVERED") {
+        return NextResponse.json({ success: false, error: "Delivered orders cannot be moved back to processing." }, { status: 409 });
+      }
+
+      const updated = await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          status: "PROCESSING",
+          timeline: appendOrderTimeline(order.timeline, {
+            type: "PROCESSING",
+            title: "Manual delivery in progress",
+            description: `${(session.user as any).name || "Admin"} started preparing this delivery.`,
+          }),
+        },
+      });
+
+      if (order.customerId) {
+        await prisma.notification.create({
+          data: {
+            userId: order.customerId,
+            type: "DELIVERY_PROCESSING",
+            message: `Your order #${order.id.slice(-8)} is now being prepared by staff.`,
+          },
+        });
+      }
+
+      return NextResponse.json({ success: true, data: updated });
+    }
 
     if (action === "MARK_DELIVERED") {
       if (!order.customerId || !order.items.length) {
