@@ -47,6 +47,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     await prisma.customer.update({
       where: { id: request.customer.id },
       data: { balance: after },
+      select: { id: true },
     });
 
     const updatedRequest = await prisma.topUpRequest.update({

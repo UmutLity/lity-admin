@@ -127,6 +127,7 @@ export async function PATCH(req: NextRequest) {
             balance: after,
             ...(shouldPromoteToCustomer ? { role: "CUSTOMER" } : {}),
           },
+          select: { id: true },
         });
 
         await tx.balanceTransaction.create({
