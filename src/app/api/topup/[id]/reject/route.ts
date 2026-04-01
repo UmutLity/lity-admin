@@ -16,7 +16,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const body = await req.json().catch(() => ({}));
     const reviewNote = typeof body.reviewNote === "string" ? body.reviewNote.trim() : "";
 
-    const existing = await prisma.topUpRequest.findUnique({ where: { id: params.id } });
+    const existing = await prisma.topUpRequest.findUnique({
+      where: { id: params.id },
+      select: { id: true, status: true },
+    });
     if (!existing) {
       return NextResponse.json({ success: false, error: "Request not found" }, { status: 404 });
     }

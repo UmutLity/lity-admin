@@ -17,7 +17,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     const request = await prisma.topUpRequest.findUnique({
       where: { id: params.id },
-      include: {
+      select: {
+        id: true,
+        status: true,
+        amount: true,
+        customerId: true,
         customer: {
           select: { id: true, balance: true, isActive: true, role: true },
         },

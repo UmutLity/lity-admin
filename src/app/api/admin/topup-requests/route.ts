@@ -100,7 +100,11 @@ export async function PATCH(req: NextRequest) {
       const result = await prisma.$transaction(async (tx) => {
         const request = await tx.topUpRequest.findUnique({
           where: { id },
-          include: {
+          select: {
+            id: true,
+            customerId: true,
+            amount: true,
+            status: true,
             customer: {
               select: { id: true, username: true, email: true, isActive: true, role: true, balance: true },
             },
@@ -167,7 +171,10 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ success: true, data: result.updatedRequest });
     }
 
-    const existing = await prisma.topUpRequest.findUnique({ where: { id } });
+    const existing = await prisma.topUpRequest.findUnique({
+      where: { id },
+      select: { id: true, status: true },
+    });
     if (!existing) return NextResponse.json({ success: false, error: "Request not found" }, { status: 404 });
     if (existing.status !== "PENDING") {
       return NextResponse.json({ success: false, error: "Request already processed" }, { status: 409 });
