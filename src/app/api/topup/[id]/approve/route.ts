@@ -53,6 +53,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const updatedRequest = await prisma.topUpRequest.update({
       where: { id: request.id },
       data: { status: "APPROVED" },
+      select: {
+        id: true,
+        customerId: true,
+        amount: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     try {

@@ -147,6 +147,14 @@ export async function PATCH(req: NextRequest) {
           data: {
             status: "APPROVED",
           },
+          select: {
+            id: true,
+            customerId: true,
+            amount: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+          },
         });
 
         return { request, updatedRequest, before, after };
@@ -185,6 +193,14 @@ export async function PATCH(req: NextRequest) {
       where: { id },
       data: {
         status: "REJECTED",
+      },
+      select: {
+        id: true,
+        customerId: true,
+        amount: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
 
