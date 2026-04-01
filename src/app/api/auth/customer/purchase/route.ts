@@ -9,6 +9,11 @@ export const dynamic = "force-dynamic";
 
 const AUTO_PROMOTE_ROLES = new Set(["MEMBER", "USER", "CUSTOMER"]);
 
+function isSchemaMismatch(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  return message.includes("P2021") || message.includes("P2022");
+}
+
 function getPlanExpiry(plan: string): Date | null {
   const normalized = String(plan || "").toUpperCase().trim();
   const now = Date.now();
@@ -166,36 +171,83 @@ export async function POST(req: NextRequest) {
       const normalizedRole = String(current.role || "").toUpperCase();
       const shouldPromoteToCustomer = AUTO_PROMOTE_ROLES.has(normalizedRole);
 
-      const updatedCustomer = await tx.customer.update({
-        where: { id: customer.id },
-        data: {
-          balance: after,
-          totalSpent: { increment: amount },
-          ...(shouldPromoteToCustomer ? { role: "CUSTOMER" } : {}),
-        },
-        select: { id: true, balance: true, totalSpent: true, role: true },
-      });
+      let updatedCustomer: { id: string; balance: number; totalSpent: number; role: string };
+      try {
+        updatedCustomer = await tx.customer.update({
+          where: { id: customer.id },
+          data: {
+            balance: after,
+            totalSpent: { increment: amount },
+            ...(shouldPromoteToCustomer ? { role: "CUSTOMER" } : {}),
+          },
+          select: { id: true, balance: true, totalSpent: true, role: true },
+        });
+      } catch (error) {
+        if (!isSchemaMismatch(error)) throw error;
+        const fallbackCustomer = await tx.customer.update({
+          where: { id: customer.id },
+          data: {
+            balance: after,
+            ...(shouldPromoteToCustomer ? { role: "CUSTOMER" } : {}),
+          },
+          select: { id: true, balance: true, role: true },
+        });
+        updatedCustomer = {
+          ...fallbackCustomer,
+          totalSpent: Number(current.totalSpent || 0) + amount,
+        };
+      }
 
-      const order = await tx.order.create({
-        data: {
-          customerId: customer.id,
-          status: "PAID",
-          paymentMethod: "BALANCE",
-          currency: product.currency || "USD",
-          totalAmount: amount,
-          subtotalAmount: baseAmount,
-          discountAmount,
-          couponCode: coupon?.code || null,
-          customerNote: customerNote || null,
-          timeline: appendOrderTimeline(null, {
-            type: "ORDER_CREATED",
-            title: "Order placed",
-            description: manualDelivery
-              ? "Payment received. Manual delivery queue created."
-              : "Payment received.",
-          }),
-        },
-      });
+      let order: { id: string; customerId: string; status: string; paymentMethod: string; currency: string; totalAmount: number };
+      try {
+        order = await tx.order.create({
+          data: {
+            customerId: customer.id,
+            status: "PAID",
+            paymentMethod: "BALANCE",
+            currency: product.currency || "USD",
+            totalAmount: amount,
+            subtotalAmount: baseAmount,
+            discountAmount,
+            couponCode: coupon?.code || null,
+            customerNote: customerNote || null,
+            timeline: appendOrderTimeline(null, {
+              type: "ORDER_CREATED",
+              title: "Order placed",
+              description: manualDelivery
+                ? "Payment received. Manual delivery queue created."
+                : "Payment received.",
+            }),
+          },
+          select: {
+            id: true,
+            customerId: true,
+            status: true,
+            paymentMethod: true,
+            currency: true,
+            totalAmount: true,
+          },
+        });
+      } catch (error) {
+        if (!isSchemaMismatch(error)) throw error;
+        order = await tx.order.create({
+          data: {
+            customerId: customer.id,
+            status: "PAID",
+            paymentMethod: "BALANCE",
+            currency: product.currency || "USD",
+            totalAmount: amount,
+          },
+          select: {
+            id: true,
+            customerId: true,
+            status: true,
+            paymentMethod: true,
+            currency: true,
+            totalAmount: true,
+          },
+        });
+      }
 
       await tx.orderItem.create({
         data: {
