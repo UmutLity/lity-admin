@@ -198,7 +198,7 @@ export async function POST(req: NextRequest) {
         };
       }
 
-      let order: { id: string; customerId: string; status: string; paymentMethod: string; currency: string; totalAmount: number };
+      let order: { id: string; customerId: string | null; status: string; paymentMethod: string; currency: string; totalAmount: number };
       try {
         order = await tx.order.create({
           data: {
