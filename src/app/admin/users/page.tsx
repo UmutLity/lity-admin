@@ -11,7 +11,6 @@ import { Select } from "@/components/ui/select-native";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/toast";
 import {
   Plus, MoreHorizontal, Trash2, Users, UserCog, Shield,
@@ -82,6 +81,7 @@ export default function UsersPage() {
   const [deleting, setDeleting] = useState(false);
   const [customerSearch, setCustomerSearch] = useState("");
   const [editCustomer, setEditCustomer] = useState<any>(null);
+  const [showEditCustomerPassword, setShowEditCustomerPassword] = useState(false);
   const [balanceTarget, setBalanceTarget] = useState<any>(null);
   const [balanceAmount, setBalanceAmount] = useState("");
   const [balanceReason, setBalanceReason] = useState("");
@@ -325,6 +325,9 @@ export default function UsersPage() {
     return "";
   };
 
+  const getLinkedAdmin = (customer: any) =>
+    users.find((user) => String(user.email || "").toLowerCase() === String(customer.email || "").toLowerCase()) || null;
+
   return (
     <div>
       <Topbar title="Users & Customers" description="Manage admin staff and customer accounts. Only admins can create accounts.">
@@ -390,25 +393,12 @@ export default function UsersPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="customers" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="customers" className="gap-2">
-            <Users className="h-4 w-4" /> Customers
-            <Badge variant="secondary" className="ml-1 text-[10px]">{customers.length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="admins" className="gap-2">
-            <Shield className="h-4 w-4" /> Admin Staff
-            <Badge variant="secondary" className="ml-1 text-[10px]">{users.length}</Badge>
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Customers Tab */}
-        <TabsContent value="customers">
-          <div className="premium-card overflow-hidden">
+      <div className="space-y-4">
+        <div className="premium-card overflow-hidden">
             <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-white">Customer Accounts</h3>
-                <p className="text-xs text-zinc-500 mt-0.5">Accounts can only be created by administrators</p>
+                <h3 className="text-sm font-semibold text-white">User Accounts</h3>
+                <p className="text-xs text-zinc-500 mt-0.5">Manage customers and grant admin panel access from a single list</p>
               </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
@@ -433,7 +423,8 @@ export default function UsersPage() {
                     <tr className="border-b border-white/[0.06]">
                       <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">User</th>
                       <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Email</th>
-                      <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Role</th>
+                      <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Customer Role</th>
+                      <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Admin Access</th>
                       <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
                       <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Balance</th>
                       <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Last Login</th>
@@ -442,7 +433,9 @@ export default function UsersPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/[0.04]">
-                    {filteredCustomers.map((customer) => (
+                    {filteredCustomers.map((customer) => {
+                      const linkedAdmin = getLinkedAdmin(customer);
+                      return (
                       <tr key={customer.id} className="group">
                         <td className="px-6 py-3">
                           <div className="flex items-center gap-3">
@@ -468,6 +461,15 @@ export default function UsersPage() {
                         </td>
                         <td className="px-6 py-3 text-sm text-zinc-500">{customer.email}</td>
                         <td className="px-6 py-3">{customerRoleBadge(customer.role)}</td>
+                        <td className="px-6 py-3">
+                          {linkedAdmin ? (
+                            <Badge variant="secondary" className={cn(adminRoleClass(linkedAdmin.role))}>
+                              {linkedAdmin.role}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-zinc-600">No panel access</span>
+                          )}
+                        </td>
                         <td className="px-6 py-3">
                           <span className={cn(
                             "inline-flex items-center gap-1.5 text-xs font-medium",
@@ -499,8 +501,15 @@ export default function UsersPage() {
                               <DropdownMenuItem onClick={() => window.location.assign(`/admin/customers/${customer.id}`)}>
                                 <Eye className="h-4 w-4 mr-2" /> Open Profile
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setEditCustomer(customer)}>
-                                <Crown className="h-4 w-4 mr-2" /> Change Role
+                              <DropdownMenuItem onClick={() => {
+                                setShowEditCustomerPassword(false);
+                                setEditCustomer({
+                                  ...customer,
+                                  adminAccessRole: linkedAdmin?.role || "NONE",
+                                  adminAccessPassword: generatePassword(),
+                                });
+                              }}>
+                                <Crown className="h-4 w-4 mr-2" /> Roles & Access
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => {
                                 const pw = generatePassword();
@@ -528,97 +537,13 @@ export default function UsersPage() {
                           </DropdownMenu>
                         </td>
                       </tr>
-                    ))}
+                    )})}
                   </tbody>
                 </table>
               </div>
             )}
           </div>
-        </TabsContent>
-
-        {/* Admin Staff Tab */}
-        <TabsContent value="admins">
-          <div className="premium-card overflow-hidden">
-            <div className="px-6 py-4 border-b border-white/[0.06]">
-              <h3 className="text-sm font-semibold text-white">Admin Staff</h3>
-            </div>
-            {loading ? (
-              <div className="p-6 space-y-3">{[1,2].map(i => <div key={i} className="skeleton h-14 w-full" />)}</div>
-            ) : users.length === 0 ? (
-              <div className="p-8"><EmptyState icon={Users} title="No admin users" /></div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full premium-table">
-                  <thead>
-                    <tr className="border-b border-white/[0.06]">
-                      <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Name</th>
-                      <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Email</th>
-                      <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Role</th>
-                      <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
-                      <th className="text-left px-6 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Created</th>
-                      <th className="w-[50px] px-4"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/[0.04]">
-                    {users.map((user) => (
-                      <tr key={user.id} className="group">
-                        <td className="px-6 py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-purple-500/20 to-violet-500/20 flex items-center justify-center text-purple-400 text-xs font-bold flex-shrink-0">
-                              {(user.name || "A").charAt(0).toUpperCase()}
-                            </div>
-                            <span className="text-sm font-medium text-zinc-200">{user.name}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-3 text-sm text-zinc-500">{user.email}</td>
-                        <td className="px-6 py-3">
-                          <Badge
-                            variant={user.role === "FOUNDER" || user.role === "ADMIN" ? "default" : "secondary"}
-                            className={cn(adminRoleClass(user.role))}
-                          >
-                            {user.role}
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-3">
-                          <span className={cn(
-                            "inline-flex items-center gap-1.5 text-xs font-medium",
-                            user.isActive ? "text-emerald-400" : "text-zinc-500"
-                          )}>
-                            <span className={cn(
-                              "w-1.5 h-1.5 rounded-full",
-                              user.isActive ? "bg-emerald-400" : "bg-zinc-500"
-                            )} />
-                            {user.isActive ? "Active" : "Disabled"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-3 text-xs text-zinc-600">{formatDate(user.createdAt)}</td>
-                        <td className="px-4 py-3">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-[#0d1424] border-white/[0.08]">
-                              <DropdownMenuItem onClick={() => toggleActive(user.id, user.isActive, "user")}>
-                                <UserCog className="h-4 w-4 mr-2" /> {user.isActive ? "Disable" : "Enable"}
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator className="bg-white/[0.06]" />
-                              <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => setDeleteTarget({ id: user.id, type: "user" })}>
-                                <Trash2 className="h-4 w-4 mr-2" /> Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
+      </div>
 
       {/* ═══ Create Admin User Dialog ═══ */}
       <Dialog open={showCreateAdmin} onOpenChange={setShowCreateAdmin}>
@@ -841,7 +766,7 @@ export default function UsersPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Role</Label>
+                <Label>Customer Role</Label>
                 <Select
                   options={[
                     { value: "MEMBER", label: "Member - Standard access" },
@@ -852,11 +777,85 @@ export default function UsersPage() {
                   onChange={(e) => setEditCustomer({ ...editCustomer, role: e.target.value })}
                 />
               </div>
+              <div className="space-y-2">
+                <Label>Admin Panel Access</Label>
+                <Select
+                  options={[
+                    { value: "NONE", label: "No panel access" },
+                    { value: "FOUNDER", label: "Founder" },
+                    { value: "ADMIN", label: "Admin" },
+                    { value: "MODERATOR", label: "Moderator" },
+                    { value: "SUPPORT", label: "Support" },
+                  ]}
+                  value={editCustomer.adminAccessRole || "NONE"}
+                  onChange={(e) => setEditCustomer({ ...editCustomer, adminAccessRole: e.target.value })}
+                />
+              </div>
+              {(editCustomer.adminAccessRole || "NONE") !== "NONE" && !getLinkedAdmin(editCustomer) && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Admin Password</Label>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-[11px] text-purple-400 hover:text-purple-300"
+                        onClick={() => setEditCustomer({ ...editCustomer, adminAccessPassword: generatePassword() })}
+                      >
+                        <RefreshCw className="h-3 w-3 mr-1" /> Generate
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => setShowEditCustomerPassword(!showEditCustomerPassword)}
+                      >
+                        {showEditCustomerPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <Input
+                    type={showEditCustomerPassword ? "text" : "password"}
+                    value={editCustomer.adminAccessPassword || ""}
+                    onChange={(e) => setEditCustomer({ ...editCustomer, adminAccessPassword: e.target.value })}
+                    placeholder="Password for the new admin account"
+                  />
+                  <p className="text-[11px] text-zinc-500">A linked admin user will be created with the same email as this customer.</p>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditCustomer(null)}>Cancel</Button>
-            <Button onClick={() => editCustomer && updateCustomerRole(editCustomer.id, editCustomer.role)} className="bg-gradient-to-r from-purple-600 to-violet-600 border-0 text-white">Save</Button>
+            <Button
+              onClick={() => {
+                if (!editCustomer) return;
+                fetch(`/api/admin/customers/${editCustomer.id}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  credentials: "include",
+                  body: JSON.stringify({
+                    role: editCustomer.role,
+                    adminAccessRole: editCustomer.adminAccessRole || "NONE",
+                    adminAccessPassword: editCustomer.adminAccessPassword || "",
+                  }),
+                })
+                  .then(async (res) => {
+                    const data = await res.json();
+                    if (!res.ok || !data.success) throw new Error(data.error || "Could not update access");
+                    addToast({ type: "success", title: "Account updated" });
+                    setEditCustomer(null);
+                    setShowEditCustomerPassword(false);
+                    loadData();
+                  })
+                  .catch((error) => addToast({ type: "error", title: "Failed", description: error.message }));
+              }}
+              className="bg-gradient-to-r from-purple-600 to-violet-600 border-0 text-white"
+            >
+              Save
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

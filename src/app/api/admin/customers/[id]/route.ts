@@ -6,6 +6,8 @@ import bcrypt from "bcryptjs";
 
 export const dynamic = "force-dynamic";
 
+const STAFF_ROLES = new Set(["FOUNDER", "ADMIN", "MODERATOR", "SUPPORT"]);
+
 function isSchemaMismatch(error: unknown) {
   const message = error instanceof Error ? error.message : String(error || "");
   return message.includes("P2021") || message.includes("P2022");
@@ -237,10 +239,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   try {
     const session = await requireAdmin();
     const body = await req.json();
-    const { role, isActive, newPassword, mustChangePassword, balanceAdjustment, balanceReason, adminNotes } = body;
+    const { role, isActive, newPassword, mustChangePassword, balanceAdjustment, balanceReason, adminNotes, adminAccessRole, adminAccessPassword } = body;
 
     const existing = await prisma.customer.findUnique({ where: { id: params.id } });
     if (!existing) return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+
+    const normalizedAdminAccessRole = typeof adminAccessRole === "string" ? adminAccessRole.trim().toUpperCase() : undefined;
+    const wantsStaffAccess = normalizedAdminAccessRole && STAFF_ROLES.has(normalizedAdminAccessRole);
+    const removeStaffAccess = normalizedAdminAccessRole === "NONE";
+    const linkedAdmin = await prisma.user.findUnique({ where: { email: existing.email } }).catch(() => null);
 
     const updateData: any = {};
     const changes: Record<string, any> = {};
@@ -272,6 +279,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       changes.passwordReset = true;
     }
 
+    if (wantsStaffAccess && !linkedAdmin && (!adminAccessPassword || String(adminAccessPassword).trim().length < 6)) {
+      return NextResponse.json({ error: "Admin password must be at least 6 characters" }, { status: 400 });
+    }
+
     let updated: any;
     const adjustment = Number(balanceAdjustment);
     const hasBalanceAdjustment = Number.isFinite(adjustment) && adjustment !== 0;
@@ -291,6 +302,37 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
             balance: after,
           },
         });
+
+        if (wantsStaffAccess) {
+          if (linkedAdmin) {
+            await tx.user.update({
+              where: { id: linkedAdmin.id },
+              data: {
+                role: normalizedAdminAccessRole,
+                isActive: isActive !== undefined ? isActive : linkedAdmin.isActive,
+                name: existing.username,
+              },
+              select: { id: true },
+            });
+          } else {
+            await tx.user.create({
+              data: {
+                email: existing.email,
+                name: existing.username,
+                password: await bcrypt.hash(String(adminAccessPassword).trim(), 12),
+                role: normalizedAdminAccessRole,
+                isActive: isActive !== undefined ? isActive : true,
+              },
+              select: { id: true },
+            });
+          }
+          changes.adminAccessRole = normalizedAdminAccessRole;
+        } else if (removeStaffAccess && linkedAdmin) {
+          await tx.user.delete({
+            where: { id: linkedAdmin.id },
+          });
+          changes.adminAccessRole = "REMOVED";
+        }
 
         await tx.balanceTransaction.create({
           data: {
@@ -312,9 +354,44 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       updated = result;
       changes.balance = { from: before, to: after, delta: adjustment };
     } else {
-      updated = await prisma.customer.update({
-        where: { id: params.id },
-        data: updateData,
+      updated = await prisma.$transaction(async (tx) => {
+        const customerUpdated = await tx.customer.update({
+          where: { id: params.id },
+          data: updateData,
+        });
+
+        if (wantsStaffAccess) {
+          if (linkedAdmin) {
+            await tx.user.update({
+              where: { id: linkedAdmin.id },
+              data: {
+                role: normalizedAdminAccessRole,
+                isActive: isActive !== undefined ? isActive : linkedAdmin.isActive,
+                name: existing.username,
+              },
+              select: { id: true },
+            });
+          } else {
+            await tx.user.create({
+              data: {
+                email: existing.email,
+                name: existing.username,
+                password: await bcrypt.hash(String(adminAccessPassword).trim(), 12),
+                role: normalizedAdminAccessRole,
+                isActive: isActive !== undefined ? isActive : true,
+              },
+              select: { id: true },
+            });
+          }
+          changes.adminAccessRole = normalizedAdminAccessRole;
+        } else if (removeStaffAccess && linkedAdmin) {
+          await tx.user.delete({
+            where: { id: linkedAdmin.id },
+          });
+          changes.adminAccessRole = "REMOVED";
+        }
+
+        return customerUpdated;
       });
     }
 
