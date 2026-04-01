@@ -7,6 +7,16 @@ import bcrypt from "bcryptjs";
 export const dynamic = "force-dynamic";
 
 const STAFF_ROLES = new Set(["FOUNDER", "ADMIN", "MODERATOR", "SUPPORT"]);
+const SAFE_CUSTOMER_SELECT = {
+  id: true,
+  email: true,
+  username: true,
+  role: true,
+  isActive: true,
+  balance: true,
+  totalSpent: true,
+  mustChangePassword: true,
+} as const;
 
 function isSchemaMismatch(error: unknown) {
   const message = error instanceof Error ? error.message : String(error || "");
@@ -241,7 +251,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const body = await req.json();
     const { role, isActive, newPassword, mustChangePassword, balanceAdjustment, balanceReason, adminNotes, adminAccessRole, adminAccessPassword } = body;
 
-    const existing = await prisma.customer.findUnique({ where: { id: params.id } });
+    const existing = await prisma.customer.findUnique({
+      where: { id: params.id },
+      select: SAFE_CUSTOMER_SELECT,
+    });
     if (!existing) return NextResponse.json({ error: "Customer not found" }, { status: 404 });
 
     const normalizedAdminAccessRole = typeof adminAccessRole === "string" ? adminAccessRole.trim().toUpperCase() : undefined;
@@ -295,13 +308,28 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       }
 
       const result = await prisma.$transaction(async (tx) => {
-        const customerUpdated = await tx.customer.update({
-          where: { id: params.id },
-          data: {
-            ...updateData,
-            balance: after,
-          },
-        });
+        let customerUpdated;
+        try {
+          customerUpdated = await tx.customer.update({
+            where: { id: params.id },
+            data: {
+              ...updateData,
+              balance: after,
+            },
+            select: SAFE_CUSTOMER_SELECT,
+          });
+        } catch (error) {
+          if (!isSchemaMismatch(error) || updateData.adminNotes === undefined) throw error;
+          const { adminNotes: _adminNotes, ...safeUpdateData } = updateData;
+          customerUpdated = await tx.customer.update({
+            where: { id: params.id },
+            data: {
+              ...safeUpdateData,
+              balance: after,
+            },
+            select: SAFE_CUSTOMER_SELECT,
+          });
+        }
 
         if (wantsStaffAccess) {
           if (linkedAdmin) {
@@ -355,10 +383,22 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       changes.balance = { from: before, to: after, delta: adjustment };
     } else {
       updated = await prisma.$transaction(async (tx) => {
-        const customerUpdated = await tx.customer.update({
-          where: { id: params.id },
-          data: updateData,
-        });
+        let customerUpdated;
+        try {
+          customerUpdated = await tx.customer.update({
+            where: { id: params.id },
+            data: updateData,
+            select: SAFE_CUSTOMER_SELECT,
+          });
+        } catch (error) {
+          if (!isSchemaMismatch(error) || updateData.adminNotes === undefined) throw error;
+          const { adminNotes: _adminNotes, ...safeUpdateData } = updateData;
+          customerUpdated = await tx.customer.update({
+            where: { id: params.id },
+            data: safeUpdateData,
+            select: SAFE_CUSTOMER_SELECT,
+          });
+        }
 
         if (wantsStaffAccess) {
           if (linkedAdmin) {
