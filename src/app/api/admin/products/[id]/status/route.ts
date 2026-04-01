@@ -6,6 +6,8 @@ import { createAuditLog } from "@/lib/audit";
 import { detectRapidStatusChanges } from "@/lib/security";
 import { getClientIp } from "@/lib/ip-utils";
 
+export const dynamic = "force-dynamic";
+
 // PATCH /api/admin/products/[id]/status - Quick status change
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {

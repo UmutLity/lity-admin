@@ -4,6 +4,8 @@ import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer
 import { sendTopUpNotificationToDiscord } from "@/lib/discord";
 import { uploadFile } from "@/lib/upload";
 
+export const dynamic = "force-dynamic";
+
 function isSchemaMismatch(error: unknown) {
   const message = error instanceof Error ? error.message : String(error || "");
   return message.includes("P2021") || message.includes("P2022");

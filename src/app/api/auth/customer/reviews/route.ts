@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
 
+export const dynamic = "force-dynamic";
+
 function parseReviewMeta(meta: string | null | undefined) {
   if (!meta) return { moderationStatus: "APPROVED", rejectionReason: null };
   try {

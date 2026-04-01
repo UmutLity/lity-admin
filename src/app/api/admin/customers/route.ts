@@ -4,6 +4,8 @@ import { requireAdmin } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
 import bcrypt from "bcryptjs";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/admin/customers - List all customers
 export async function GET() {
   try {

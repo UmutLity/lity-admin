@@ -5,6 +5,8 @@ import { hasPermission } from "@/lib/permissions";
 import { createAuditLog } from "@/lib/audit";
 import { getClientIp } from "@/lib/ip-utils";
 
+export const dynamic = "force-dynamic";
+
 // DELETE /api/admin/security/locks - Unlock account
 export async function DELETE(req: NextRequest) {
   try {

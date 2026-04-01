@@ -4,6 +4,8 @@ import { requireRole } from "@/lib/auth";
 import { uploadFile } from "@/lib/upload";
 import { createAuditLog } from "@/lib/audit";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/admin/media
 export async function GET() {
   try {

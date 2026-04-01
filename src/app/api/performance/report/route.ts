@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 // POST /api/performance/report - Accept Web Vitals data from client (PUBLIC)
 export async function POST(req: NextRequest) {
   try {

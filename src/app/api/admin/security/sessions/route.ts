@@ -4,6 +4,8 @@ import { requireRole } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
 import { getClientIp } from "@/lib/ip-utils";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/admin/security/sessions
 export async function GET() {
   try {

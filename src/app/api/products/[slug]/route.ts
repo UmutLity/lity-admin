@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 function isSchemaMismatchError(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && (error.code === "P2021" || error.code === "P2022");
 }

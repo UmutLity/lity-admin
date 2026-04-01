@@ -6,6 +6,8 @@ import { createAuditLog } from "@/lib/audit";
 import { getClientIp } from "@/lib/ip-utils";
 import { hash } from "bcryptjs";
 
+export const dynamic = "force-dynamic";
+
 // POST /api/admin/users/[id]/two-factor - Enable 2FA (setup)
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {

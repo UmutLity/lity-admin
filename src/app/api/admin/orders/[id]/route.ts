@@ -4,6 +4,8 @@ import { requireAdmin } from "@/lib/auth";
 import { appendOrderTimeline } from "@/lib/orders";
 import { sendOrderNotificationToDiscord } from "@/lib/discord";
 
+export const dynamic = "force-dynamic";
+
 const LICENSE_MATCH_WINDOW_MS = 10 * 60 * 1000;
 
 function isSchemaMismatch(error: unknown) {

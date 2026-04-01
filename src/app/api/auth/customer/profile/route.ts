@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
 
+export const dynamic = "force-dynamic";
+
 const USERNAME_REGEX = /^[a-zA-Z0-9_.-]{3,30}$/;
 
 function normalizeUsername(username: string): string {

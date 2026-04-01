@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { buildChangelogEmbed, buildWebhookPayload } from "@/lib/discord";
 
+export const dynamic = "force-dynamic";
+
 // POST /api/admin/discord/embed - Generate Discord embed JSON for a changelog
 export async function POST(req: NextRequest) {
   try {

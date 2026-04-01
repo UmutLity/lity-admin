@@ -4,6 +4,8 @@ import { getClientIp } from "@/lib/ip-utils";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
 import { sendSupportTicketNotificationToDiscord } from "@/lib/discord";
 
+export const dynamic = "force-dynamic";
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DISCORD_REGEX = /^.{2,32}$/;
 

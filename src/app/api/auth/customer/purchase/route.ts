@@ -5,6 +5,8 @@ import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer
 import { appendOrderTimeline } from "@/lib/orders";
 import { sendOrderNotificationToDiscord } from "@/lib/discord";
 
+export const dynamic = "force-dynamic";
+
 const AUTO_PROMOTE_ROLES = new Set(["MEMBER", "USER", "CUSTOMER"]);
 
 function getPlanExpiry(plan: string): Date | null {

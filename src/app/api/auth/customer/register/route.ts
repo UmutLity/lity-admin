@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import { createCustomerToken } from "@/lib/customer-auth";
 import { checkRateLimit, recordStrike, isIpBanned } from "@/lib/rate-limit";
 
+export const dynamic = "force-dynamic";
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERNAME_REGEX = /^[a-zA-Z0-9_.-]{3,30}$/;
 

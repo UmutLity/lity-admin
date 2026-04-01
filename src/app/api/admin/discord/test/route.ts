@@ -5,6 +5,8 @@ import { sendDiscordWebhook, buildWebhookPayload } from "@/lib/discord";
 import { createAuditLog } from "@/lib/audit";
 import { getClientIp } from "@/lib/ip-utils";
 
+export const dynamic = "force-dynamic";
+
 // POST /api/admin/discord/test - Send test webhook
 export async function POST(req: NextRequest) {
   try {

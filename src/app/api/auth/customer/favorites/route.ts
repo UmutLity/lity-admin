@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
 
+export const dynamic = "force-dynamic";
+
 async function getCustomer(req: NextRequest) {
   const token = getCustomerTokenFromRequest(req);
   if (!token) return null;

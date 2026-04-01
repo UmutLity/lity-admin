@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { verifyCustomerToken, getCustomerTokenFromRequest } from "@/lib/customer-auth";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
   try {
     const token = getCustomerTokenFromRequest(req);

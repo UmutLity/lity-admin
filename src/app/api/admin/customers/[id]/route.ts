@@ -4,6 +4,8 @@ import { requireAdmin } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
 import bcrypt from "bcryptjs";
 
+export const dynamic = "force-dynamic";
+
 function isSchemaMismatch(error: unknown) {
   const message = error instanceof Error ? error.message : String(error || "");
   return message.includes("P2021") || message.includes("P2022");

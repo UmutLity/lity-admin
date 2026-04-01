@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
 import { deleteReview, updateReview } from "@/lib/reviews-store";
 
+export const dynamic = "force-dynamic";
+
 // PUT /api/admin/reviews/[id]
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {

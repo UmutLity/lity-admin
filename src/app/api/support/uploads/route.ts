@@ -3,6 +3,8 @@ import { uploadFile } from "@/lib/upload";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
 import prisma from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 const ALLOWED_ATTACHMENT_TYPES = new Set([
   "image/jpeg",
   "image/png",

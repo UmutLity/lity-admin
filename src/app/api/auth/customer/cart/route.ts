@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { verifyCustomerToken, getCustomerTokenFromRequest } from "@/lib/customer-auth";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/auth/customer/cart - Get cart items
 export async function GET(req: NextRequest) {
   try {

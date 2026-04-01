@@ -4,6 +4,8 @@ import { requireRole } from "@/lib/auth";
 import { deleteFile } from "@/lib/upload";
 import { createAuditLog } from "@/lib/audit";
 
+export const dynamic = "force-dynamic";
+
 // DELETE /api/admin/media/[id]
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {

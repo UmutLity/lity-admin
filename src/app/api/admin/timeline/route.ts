@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/admin/timeline - Fetch audit logs formatted as timeline entries
 export async function GET(req: NextRequest) {
   try {

@@ -5,6 +5,8 @@ import { createAuditLog } from "@/lib/audit";
 import { hash } from "bcryptjs";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 const createUserSchema = z.object({
   email: z.string().email("Geçerli bir email girin"),
   name: z.string().min(1, "İsim zorunlu"),

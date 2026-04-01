@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { listVisibleReviews } from "@/lib/reviews-store";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/reviews - Public visible reviews
 export async function GET(req: NextRequest) {
   try {

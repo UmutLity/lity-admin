@@ -4,6 +4,8 @@ import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
 
+export const dynamic = "force-dynamic";
+
 const licenseSchema = z.object({
   productId: z.string().cuid(),
   plan: z.enum(["DAILY", "LIFETIME"]).default("LIFETIME"),

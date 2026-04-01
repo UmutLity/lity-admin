@@ -5,6 +5,8 @@ import { createAuditLog } from "@/lib/audit";
 import { hash } from "bcryptjs";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
   role: z.enum(["FOUNDER", "ADMIN", "EDITOR", "VIEWER", "MODERATOR", "SUPPORT", "ANALYST"]).optional(),

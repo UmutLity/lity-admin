@@ -4,6 +4,8 @@ import { requireAdmin } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
 import { getClientIp } from "@/lib/ip-utils";
 
+export const dynamic = "force-dynamic";
+
 const AUTO_PROMOTE_ROLES = new Set(["MEMBER", "USER", "CUSTOMER"]);
 
 export async function GET(req: NextRequest) {

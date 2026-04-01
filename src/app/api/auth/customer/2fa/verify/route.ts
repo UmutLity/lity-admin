@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { verifyCustomerToken, getCustomerTokenFromRequest } from "@/lib/customer-auth";
 import crypto from "crypto";
 
+export const dynamic = "force-dynamic";
+
 // Simple TOTP verification
 function verifyTOTP(secret: string, code: string): boolean {
   const time = Math.floor(Date.now() / 30000);

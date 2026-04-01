@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 
+export const dynamic = "force-dynamic";
+
 type LogType = "audit" | "payment" | "role";
 
 function parseJson(value: string | null) {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
 import { createManualReview, listAllReviews } from "@/lib/reviews-store";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/admin/reviews
 export async function GET() {
   try {

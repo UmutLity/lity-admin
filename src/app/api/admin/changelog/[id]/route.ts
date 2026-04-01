@@ -6,6 +6,8 @@ import { createAuditLog } from "@/lib/audit";
 import { sendChangelogToDiscord } from "@/lib/discord";
 import { getClientIp } from "@/lib/ip-utils";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/admin/changelog/[id]
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {

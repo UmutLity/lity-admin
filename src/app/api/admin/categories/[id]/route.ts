@@ -5,6 +5,8 @@ import { hasPermission } from "@/lib/permissions";
 import { createAuditLog } from "@/lib/audit";
 import { getClientIp } from "@/lib/ip-utils";
 
+export const dynamic = "force-dynamic";
+
 // PUT /api/admin/categories/[id]
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {

@@ -4,6 +4,8 @@ import { requireRole } from "@/lib/auth";
 import { guideSchema } from "@/lib/validations/guide";
 import { createAuditLog } from "@/lib/audit";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     await requireRole(["ADMIN", "EDITOR"]);

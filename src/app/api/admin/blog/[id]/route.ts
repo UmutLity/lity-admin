@@ -5,6 +5,8 @@ import { blogSchema } from "@/lib/validations/blog";
 import { createAuditLog } from "@/lib/audit";
 import { slugify } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     await requireRole(["ADMIN", "EDITOR"]);

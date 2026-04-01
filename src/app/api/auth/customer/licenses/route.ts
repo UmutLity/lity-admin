@@ -3,6 +3,8 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { verifyCustomerToken, getCustomerTokenFromRequest } from "@/lib/customer-auth";
 
+export const dynamic = "force-dynamic";
+
 const claimSchema = z.object({
   key: z.string().min(3).max(120),
 });

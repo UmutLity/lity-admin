@@ -4,6 +4,8 @@ import { requireAdmin } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
 import { getClientIp } from "@/lib/ip-utils";
 
+export const dynamic = "force-dynamic";
+
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await requireAdmin();

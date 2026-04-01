@@ -4,6 +4,8 @@ import { requireAdmin } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
 import { getClientIp } from "@/lib/ip-utils";
 
+export const dynamic = "force-dynamic";
+
 const SETTING_DEFAULTS: Record<string, { value: string; type: string; group: string; label: string }> = {
   announcement_active: {
     value: "true",

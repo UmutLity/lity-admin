@@ -3,6 +3,8 @@ import { randomUUID } from "crypto";
 import prisma from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/admin/resellers - List all resellers with sale counts
 export async function GET() {
   try {

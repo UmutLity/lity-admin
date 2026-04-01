@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/admin/security - Security dashboard overview
 export async function GET(req: NextRequest) {
   try {

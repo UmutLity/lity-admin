@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { verifyCustomerToken, getCustomerTokenFromRequest } from "@/lib/customer-auth";
 import crypto from "crypto";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
   try {
     const token = getCustomerTokenFromRequest(req);

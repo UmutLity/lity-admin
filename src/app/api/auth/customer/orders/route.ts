@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
 import { parseOrderTimeline } from "@/lib/orders";
 
+export const dynamic = "force-dynamic";
+
 function isSchemaMismatch(error: unknown) {
   const message = error instanceof Error ? error.message : String(error || "");
   return message.includes("P2021") || message.includes("P2022");

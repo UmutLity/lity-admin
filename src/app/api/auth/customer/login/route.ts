@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import { createCustomerToken } from "@/lib/customer-auth";
 import { checkRateLimit, recordStrike, isIpBanned } from "@/lib/rate-limit";
 
+export const dynamic = "force-dynamic";
+
 // Generic error to prevent user enumeration
 const GENERIC_ERROR = "Invalid email or password";
 

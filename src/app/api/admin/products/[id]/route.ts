@@ -4,6 +4,8 @@ import { requireRole } from "@/lib/auth";
 import { productSchema } from "@/lib/validations/product";
 import { createAuditLog, diffObjects } from "@/lib/audit";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/admin/products/[id]
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {

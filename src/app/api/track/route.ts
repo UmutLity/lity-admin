@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import crypto from "crypto";
 
+export const dynamic = "force-dynamic";
+
 // Bot user-agent patterns to filter
 const BOT_PATTERNS = /bot|crawler|spider|crawling|googlebot|bingbot|yandex|baidu|duckduck|facebook|twitter|linkedin|slack|discord|telegram|whatsapp|postman|curl|wget|python|java|php|ruby|node-fetch|axios/i;
 

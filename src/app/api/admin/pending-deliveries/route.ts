@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { parseOrderTimeline } from "@/lib/orders";
 
+export const dynamic = "force-dynamic";
+
 const LICENSE_MATCH_WINDOW_MS = 10 * 60 * 1000;
 
 export async function GET() {

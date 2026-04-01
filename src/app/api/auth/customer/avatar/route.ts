@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { deleteFile, uploadFile } from "@/lib/upload";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
 
+export const dynamic = "force-dynamic";
+
 function isManagedUpload(url: string | null | undefined): boolean {
   if (!url) return false;
   return url.startsWith("/uploads/") || url.includes("res.cloudinary.com/");

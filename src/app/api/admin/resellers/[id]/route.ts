@@ -3,6 +3,8 @@ import { randomUUID } from "crypto";
 import prisma from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 type RouteParams = { params: Promise<{ id: string }> };
 
 // GET /api/admin/resellers/[id] - Fetch reseller with full API key (for copy)

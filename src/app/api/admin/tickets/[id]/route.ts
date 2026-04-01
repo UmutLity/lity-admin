@@ -4,6 +4,8 @@ import { requireAuth } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
 import { getClientIp } from "@/lib/ip-utils";
 
+export const dynamic = "force-dynamic";
+
 const ALLOWED_STATUS = new Set(["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER", "RESOLVED", "CLOSED"]);
 const ALLOWED_PRIORITY = new Set(["LOW", "NORMAL", "HIGH"]);
 

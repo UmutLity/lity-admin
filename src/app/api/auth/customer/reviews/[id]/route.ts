@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
 
+export const dynamic = "force-dynamic";
+
 function normalizeRating(value: any): number | null {
   const parsed = Number(value);
   if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 5) return parsed;
