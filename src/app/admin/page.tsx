@@ -59,6 +59,7 @@ interface DashboardData {
     user: string;
     spent: number;
     rank: string;
+    profileHref: string | null;
   }>;
 }
 
@@ -368,13 +369,43 @@ export default function DashboardPage() {
         .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
         .slice(0, 10);
 
-      const spenderMap = new Map<string, { id: string; user: string; spent: number }>();
+      const customersById = new Map(customers.map((customer: any) => [String(customer.id || ""), customer]));
+      const customersByEmail = new Map(
+        customers
+          .filter((customer: any) => customer?.email)
+          .map((customer: any) => [String(customer.email || "").toLowerCase(), customer])
+      );
+      const customersByUsername = new Map(
+        customers
+          .filter((customer: any) => customer?.username)
+          .map((customer: any) => [String(customer.username || "").toLowerCase(), customer])
+      );
+
+      const resolveCustomerProfileHref = (payment: any) => {
+        const directId = String(payment?.customerId || payment?.customer?.id || "").trim();
+        if (directId && customersById.has(directId)) return `/admin/customers/${directId}`;
+
+        const email = String(payment?.customer?.email || "").trim().toLowerCase();
+        if (email && customersByEmail.has(email)) {
+          return `/admin/customers/${String(customersByEmail.get(email)?.id)}`;
+        }
+
+        const username = String(payment?.customer?.username || "").trim().toLowerCase();
+        if (username && customersByUsername.has(username)) {
+          return `/admin/customers/${String(customersByUsername.get(username)?.id)}`;
+        }
+
+        return null;
+      };
+
+      const spenderMap = new Map<string, { id: string; user: string; spent: number; profileHref: string | null }>();
       for (const payment of debitPayments) {
+        const profileHref = resolveCustomerProfileHref(payment);
         const cid = String(payment.customerId || payment.customer?.id || payment.customer?.email || payment.id);
         const user = payment.customer?.username || payment.customer?.email || "Guest User";
         const prev = spenderMap.get(cid);
         if (prev) prev.spent += Number(payment.amount || 0);
-        else spenderMap.set(cid, { id: cid, user, spent: Number(payment.amount || 0) });
+        else spenderMap.set(cid, { id: cid, user, spent: Number(payment.amount || 0), profileHref });
       }
 
       if (spenderMap.size === 0) {
@@ -384,6 +415,7 @@ export default function DashboardPage() {
             id: cid,
             user: c.username || c.email || `User ${idx + 1}`,
             spent: 0,
+            profileHref: c?.id ? `/admin/customers/${String(c.id)}` : null,
           });
         });
       }
@@ -638,13 +670,19 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <p className="text-sm font-semibold text-white">${row.spent.toFixed(2)}</p>
-                      <Link
-                        href={`/admin/customers/${row.id}`}
-                        className="inline-flex items-center gap-1 rounded-lg border border-violet-500/20 bg-violet-500/10 px-2.5 py-1.5 text-[11px] font-medium text-violet-200 transition hover:bg-violet-500/15 hover:text-white"
-                      >
-                        Open 360
-                        <ArrowRight className="h-3.5 w-3.5" />
-                      </Link>
+                      {row.profileHref ? (
+                        <Link
+                          href={row.profileHref}
+                          className="inline-flex items-center gap-1 rounded-lg border border-violet-500/20 bg-violet-500/10 px-2.5 py-1.5 text-[11px] font-medium text-violet-200 transition hover:bg-violet-500/15 hover:text-white"
+                        >
+                          Open 360
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </Link>
+                      ) : (
+                        <span className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5 text-[11px] font-medium text-zinc-500">
+                          No profile
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))

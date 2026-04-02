@@ -198,14 +198,14 @@ export function Sidebar() {
         href={item.href}
         title={collapsed ? item.label : undefined}
         className={cn(
-          "flex h-10 w-full items-center rounded-xl px-3 text-sm font-medium transition-all",
+          "flex h-9 w-full items-center rounded-lg px-2.5 text-[13px] font-medium transition-all",
           active
             ? "border border-white/[0.08] bg-white/[0.07] text-white shadow-none hover:bg-white/[0.08]"
             : "text-zinc-400 hover:bg-white/[0.04] hover:text-white",
           collapsed && "justify-center px-0"
         )}
       >
-        <item.icon className={cn("h-4 w-4 flex-shrink-0", !collapsed && "mr-2.5")} />
+        <item.icon className={cn("h-[15px] w-[15px] flex-shrink-0", !collapsed && "mr-2")} />
         {!collapsed ? <span className="truncate">{item.label}</span> : null}
       </Link>
     );
@@ -218,7 +218,7 @@ export function Sidebar() {
         variant="ghost"
         onClick={() => setNotifOpen((prev) => !prev)}
         className={cn(
-          "h-10 w-full justify-start rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 text-sm text-zinc-300 hover:bg-white/[0.05] hover:text-white",
+          "h-9 w-full justify-start rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 text-[13px] text-zinc-300 hover:bg-white/[0.05] hover:text-white",
           collapsed && "justify-center px-0"
         )}
       >
@@ -339,10 +339,10 @@ export function Sidebar() {
 
   const sidebarContent = (
     <div className="flex h-full flex-col">
-      <div className={cn("flex h-20 items-center border-b border-white/[0.06] px-4", collapsed ? "justify-center" : "justify-between")}>
+      <div className={cn("flex h-16 items-center border-b border-white/[0.06] px-3", collapsed ? "justify-center" : "justify-between")}>
         <Link href="/admin" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/[0.08] bg-[linear-gradient(135deg,#8f7ab0,#6e6381)] shadow-[0_12px_28px_rgba(27,23,35,0.28)]">
-            <Shield className="h-4.5 w-4.5 text-white" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.08] bg-[linear-gradient(135deg,#8f7ab0,#6e6381)] shadow-[0_10px_24px_rgba(27,23,35,0.24)]">
+            <Shield className="h-4 w-4 text-white" />
           </div>
           {!collapsed ? (
             <div>
@@ -359,11 +359,11 @@ export function Sidebar() {
         ) : null}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-4">
+      <div className="flex-1 overflow-y-auto px-2.5 py-3">
         {!collapsed ? (
-          <Card className="mb-4 border-white/[0.06] bg-white/[0.03] shadow-none">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2 text-sm text-zinc-400">
+          <Card className="mb-3 border-white/[0.06] bg-white/[0.03] shadow-none">
+            <CardContent className="p-2.5">
+              <div className="flex items-center gap-2 text-[13px] text-zinc-400">
                 <Search className="h-4 w-4 text-zinc-500" />
                 <span>Use the top search to jump fast</span>
               </div>
@@ -371,18 +371,18 @@ export function Sidebar() {
           </Card>
         ) : null}
 
-        <div className="space-y-5">
+        <div className="space-y-4">
           {filteredGroups.map((group) => (
             <div key={group.title}>
-              {!collapsed ? <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">{group.title}</p> : null}
-              <div className="space-y-1.5">{group.items.map(renderNavItem)}</div>
+              {!collapsed ? <p className="mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">{group.title}</p> : null}
+              <div className="space-y-1">{group.items.map(renderNavItem)}</div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="border-t border-white/[0.06] p-3">
-        <div className="space-y-3">
+      <div className="border-t border-white/[0.06] p-2.5">
+        <div className="space-y-2.5">
           {notificationsPanel}
           {userCard}
           {collapsed ? (
@@ -402,9 +402,9 @@ export function Sidebar() {
       <aside
         className={cn(
           "fixed left-0 top-0 z-[70] flex h-full flex-col border-r border-white/[0.06] bg-[#0d1016]/95 backdrop-blur-2xl transition-all duration-300",
-          collapsed ? "w-[88px]" : "w-[292px]",
+          collapsed ? "w-[80px]" : "w-[258px]",
           mobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full",
-          "max-lg:w-[292px] max-lg:shadow-2xl max-lg:shadow-black/50"
+          "max-lg:w-[258px] max-lg:shadow-2xl max-lg:shadow-black/50"
         )}
       >
         {sidebarContent}
