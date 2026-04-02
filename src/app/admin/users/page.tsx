@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Topbar } from "@/components/admin/topbar";
 import { EmptyState } from "@/components/admin/empty-state";
