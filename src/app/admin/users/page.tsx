@@ -451,6 +451,12 @@ export default function UsersPage() {
                             </div>
                             <div className="min-w-0">
                               <span className="text-sm font-medium text-zinc-200 block">{customer.username}</span>
+                              <Link
+                                href={`/admin/customers/${customer.id}`}
+                                className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-violet-300 transition-colors hover:text-violet-200"
+                              >
+                                <Eye className="h-3 w-3" /> Open 360
+                              </Link>
                               {customer.mustChangePassword && (
                                 <span className="text-[10px] text-amber-500 flex items-center gap-1">
                                   <KeyRound className="h-2.5 w-2.5" /> Must change password
@@ -499,7 +505,7 @@ export default function UsersPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-[#0d1424] border-white/[0.08]">
                               <DropdownMenuItem onClick={() => window.location.assign(`/admin/customers/${customer.id}`)}>
-                                <Eye className="h-4 w-4 mr-2" /> Open Profile
+                                <Eye className="h-4 w-4 mr-2" /> Open Customer 360
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => {
                                 setShowEditCustomerPassword(false);

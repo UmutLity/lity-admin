@@ -103,7 +103,7 @@ export function AdminHeader() {
       { label: "Products", path: "/admin/products", keywords: "products catalog store" },
       { label: "Orders", path: "/admin/orders", keywords: "orders purchases delivery" },
       { label: "Pending Deliveries", path: "/admin/pending-deliveries", keywords: "manual delivery pending" },
-      { label: "Users", path: "/admin/users", keywords: "customers members" },
+      { label: "Users", path: "/admin/users", keywords: "customers members customer 360 profile" },
       { label: "Tickets", path: "/admin/tickets", keywords: "support replies" },
       { label: "Licenses", path: "/admin/licenses", keywords: "keys plans" },
       { label: "Top-up Requests", path: "/admin/topups", keywords: "balance topup payments" },

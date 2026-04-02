@@ -601,8 +601,19 @@ export default function DashboardPage() {
 
           <Card className="border-white/[0.06] bg-white/[0.03] shadow-none">
             <CardHeader className="pb-4">
-              <CardTitle className="text-[22px] font-semibold text-white">Top Customers</CardTitle>
-              <CardDescription>Highest spenders this cycle</CardDescription>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="text-[22px] font-semibold text-white">Top Customers</CardTitle>
+                  <CardDescription>Highest spenders this cycle</CardDescription>
+                </div>
+                <Link
+                  href="/admin/users"
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs font-medium text-zinc-200 transition hover:bg-white/[0.05] hover:text-white"
+                >
+                  Open Users
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
             </CardHeader>
             <CardContent className="pt-0">
 
@@ -611,7 +622,7 @@ export default function DashboardPage() {
                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-5 text-zinc-500">No user data yet.</div>
               ) : (
                 data.leaderboard.map((row, idx) => (
-                  <div key={row.id} className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-3">
+                  <div key={row.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-3">
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.03] text-sm font-semibold text-zinc-300">
                         {idx + 1}
@@ -625,7 +636,16 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     </div>
-                    <p className="text-sm font-semibold text-white">${row.spent.toFixed(2)}</p>
+                    <div className="flex items-center gap-3">
+                      <p className="text-sm font-semibold text-white">${row.spent.toFixed(2)}</p>
+                      <Link
+                        href={`/admin/customers/${row.id}`}
+                        className="inline-flex items-center gap-1 rounded-lg border border-violet-500/20 bg-violet-500/10 px-2.5 py-1.5 text-[11px] font-medium text-violet-200 transition hover:bg-violet-500/15 hover:text-white"
+                      >
+                        Open 360
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
+                    </div>
                   </div>
                 ))
               )}
