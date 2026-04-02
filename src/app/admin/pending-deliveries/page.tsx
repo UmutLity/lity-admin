@@ -49,6 +49,35 @@ export default function PendingDeliveriesPage() {
   const [selectedRow, setSelectedRow] = useState<DeliveryRow | null>(null);
   const [deliveryContent, setDeliveryContent] = useState("");
   const [deliveryType, setDeliveryType] = useState<DeliveryTemplateType>("CUSTOM");
+  const [savedTemplates, setSavedTemplates] = useState<Array<{ id: string; name: string; content: string }>>([]);
+  const [templateName, setTemplateName] = useState("");
+  const [internalNotes, setInternalNotes] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    try {
+      const templatesRaw = localStorage.getItem("lity_saved_delivery_templates");
+      const notesRaw = localStorage.getItem("lity_order_internal_notes");
+      const parsedTemplates = templatesRaw ? JSON.parse(templatesRaw) : [];
+      const parsedNotes = notesRaw ? JSON.parse(notesRaw) : {};
+      setSavedTemplates(Array.isArray(parsedTemplates) ? parsedTemplates : []);
+      setInternalNotes(parsedNotes && typeof parsedNotes === "object" ? parsedNotes : {});
+    } catch {
+      setSavedTemplates([]);
+      setInternalNotes({});
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("lity_saved_delivery_templates", JSON.stringify(savedTemplates));
+    } catch {}
+  }, [savedTemplates]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("lity_order_internal_notes", JSON.stringify(internalNotes));
+    } catch {}
+  }, [internalNotes]);
 
   async function loadRows() {
     setLoading(true);
@@ -149,6 +178,26 @@ export default function PendingDeliveriesPage() {
       MIXED: `Delivery Type: Mixed Delivery\nCustomer: ${customerName}\nProduct: ${productNames}\n\nLoader URL:\n-\nLicense Key:\n-\nAccount / Extra Access:\n-\n\nInstructions:\n-`,
     };
     setDeliveryContent(templates[type]);
+  }
+
+  function saveCurrentTemplate() {
+    const name = templateName.trim();
+    const content = deliveryContent.trim();
+    if (!name || content.length < 3) {
+      addToast({ type: "error", title: "Template missing", description: "Add a template name and some delivery content first." });
+      return;
+    }
+    const next = [
+      { id: `${Date.now()}`, name, content },
+      ...savedTemplates.filter((item) => item.name.toLowerCase() !== name.toLowerCase()),
+    ].slice(0, 12);
+    setSavedTemplates(next);
+    setTemplateName("");
+    addToast({ type: "success", title: "Template saved", description: `${name} is ready for quick reuse.` });
+  }
+
+  function removeSavedTemplate(id: string) {
+    setSavedTemplates((current) => current.filter((item) => item.id !== id));
   }
 
   useEffect(() => {
@@ -312,6 +361,16 @@ export default function PendingDeliveriesPage() {
                           </p>
                           <p className="text-sm text-zinc-300">{row.customerNote || "No note left by customer."}</p>
                         </div>
+                        <div className="rounded-xl border border-violet-500/10 bg-violet-500/5 p-3">
+                          <p className="mb-2 text-xs uppercase tracking-[0.12em] text-violet-300">Internal Note</p>
+                          <textarea
+                            value={internalNotes[row.id] || ""}
+                            onChange={(e) => setInternalNotes((current) => ({ ...current, [row.id]: e.target.value }))}
+                            placeholder="Internal staff note for this order..."
+                            className="min-h-[84px] w-full rounded-xl border border-white/[0.08] bg-[#0f1119] px-3 py-2 text-sm text-zinc-100 outline-none"
+                          />
+                          <p className="mt-2 text-xs text-zinc-500">Saved locally for quick manual delivery workflow.</p>
+                        </div>
                         {row.deliveryContent ? (
                           <div className="rounded-xl border border-emerald-500/10 bg-emerald-500/5 p-3">
                             <p className="mb-2 text-xs uppercase tracking-[0.12em] text-emerald-300">Current Delivery Content</p>
@@ -359,12 +418,49 @@ export default function PendingDeliveriesPage() {
                 </Button>
               ))}
             </div>
+            {savedTemplates.length ? (
+              <div className="space-y-2">
+                <div className="text-xs uppercase tracking-[0.16em] text-zinc-500">Saved Templates</div>
+                <div className="flex flex-wrap gap-2">
+                  {savedTemplates.map((template) => (
+                    <div key={template.id} className="inline-flex items-center gap-1 rounded-full border border-white/[0.08] bg-white/[0.03] px-2 py-1">
+                      <button type="button" className="text-xs font-medium text-zinc-200" onClick={() => setDeliveryContent(template.content)}>
+                        {template.name}
+                      </button>
+                      <button type="button" className="text-xs text-zinc-500 hover:text-red-300" onClick={() => removeSavedTemplate(template.id)}>
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <Textarea
               rows={8}
               value={deliveryContent}
               onChange={(e) => setDeliveryContent(e.target.value)}
               placeholder="Paste the key, account details, download URL, or manual delivery note here..."
             />
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="Template name"
+                className="h-10 min-w-[180px] rounded-xl border border-white/[0.08] bg-[#10131c] px-3 text-sm text-zinc-100 outline-none"
+              />
+              <Button type="button" variant="outline" onClick={saveCurrentTemplate}>Save Template</Button>
+            </div>
+            {selectedRow ? (
+              <div className="rounded-xl border border-violet-500/10 bg-violet-500/5 p-3">
+                <div className="mb-2 text-xs uppercase tracking-[0.12em] text-violet-300">Internal Note</div>
+                <textarea
+                  value={internalNotes[selectedRow.id] || ""}
+                  onChange={(e) => setInternalNotes((current) => ({ ...current, [selectedRow.id]: e.target.value }))}
+                  placeholder="Internal note for this order..."
+                  className="min-h-[84px] w-full rounded-xl border border-white/[0.08] bg-[#0f1119] px-3 py-2 text-sm text-zinc-100 outline-none"
+                />
+              </div>
+            ) : null}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setSelectedRow(null); setDeliveryContent(""); setDeliveryType("CUSTOM"); }}>Cancel</Button>

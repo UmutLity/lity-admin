@@ -109,6 +109,13 @@ export default function TopUpsPage() {
     );
   }
 
+  function getCustomerHistory(row: TopUpRequestRow) {
+    return rows
+      .filter((item) => item.customer.id === row.customer.id)
+      .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+      .slice(0, 4);
+  }
+
   return (
     <div>
       <Topbar title="Top-up Requests" description="Approve or reject manual deposit requests" />
@@ -163,7 +170,7 @@ export default function TopUpsPage() {
                     </div>
                   </div>
 
-                  <div className="mt-3 grid gap-3 md:grid-cols-[1fr_220px]">
+                  <div className="mt-3 grid gap-3 md:grid-cols-[1fr_220px_220px]">
                     <div className="grid gap-2 text-sm text-zinc-300 md:grid-cols-2">
                       <div><span className="text-zinc-500">Sender Name:</span> {row.senderName}</div>
                       <div><span className="text-zinc-500">Bank Name:</span> {row.senderBankName}</div>
@@ -194,6 +201,23 @@ export default function TopUpsPage() {
                           No proof uploaded
                         </div>
                       )}
+                    </div>
+
+                    <div className="rounded-xl border border-white/[0.06] bg-[#121520] p-3">
+                      <div className="mb-2 text-xs uppercase tracking-[0.14em] text-zinc-500">Customer History</div>
+                      <div className="space-y-2">
+                        {getCustomerHistory(row).map((historyRow) => (
+                          <div key={historyRow.id} className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+                            <div className="flex items-center justify-between gap-2 text-xs">
+                              <span className="font-medium text-zinc-200">${Number(historyRow.amount || 0).toFixed(2)}</span>
+                              <span className={`rounded-full border px-2 py-0.5 ${statusBadge(historyRow.status)}`}>{historyRow.status}</span>
+                            </div>
+                            <div className="mt-1 text-[11px] text-zinc-500">
+                              {new Date(historyRow.createdAt).toLocaleString("tr-TR")}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
 

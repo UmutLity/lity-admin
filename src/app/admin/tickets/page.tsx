@@ -28,6 +28,8 @@ interface AdminTicket {
   updatedAt: string;
   conversation: TicketMessage[];
   statusHistory?: Array<{ id: string; from: string; to: string; at: string; by: string }>;
+  assignedTo?: { id: string; name: string; email?: string | null } | null;
+  assignedAt?: string | null;
 }
 
 const statusOptions: TicketStatus[] = ["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER", "RESOLVED", "CLOSED"];
@@ -107,7 +109,7 @@ export default function AdminTicketsPage() {
     return () => clearTimeout(timer);
   }, [query, statusFilter]);
 
-  async function patchTicket(payload: Partial<Pick<AdminTicket, "status" | "priority">> & { replyMessage?: string }) {
+  async function patchTicket(payload: Partial<Pick<AdminTicket, "status" | "priority">> & { replyMessage?: string; assignAction?: "ASSIGN_SELF" | "UNASSIGN" }) {
     if (!selectedTicket) return;
     setSaving(true);
     try {
@@ -127,6 +129,10 @@ export default function AdminTicketsPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function assignTicket(action: "ASSIGN_SELF" | "UNASSIGN") {
+    await patchTicket({ assignAction: action });
   }
 
   return (
@@ -220,6 +226,12 @@ export default function AdminTicketsPage() {
                 <div>
                   <h2 className="text-lg font-semibold text-white">#{selectedTicket.ticketNumber} {selectedTicket.subject}</h2>
                   <p className="text-sm text-zinc-500">{selectedTicket.email || selectedTicket.discordUsername || "Customer"}</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
+                    <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-violet-200">
+                      {selectedTicket.assignedTo?.name ? `Assigned to ${selectedTicket.assignedTo.name}` : "Unassigned"}
+                    </span>
+                    {selectedTicket.assignedAt ? <span>Updated {new Date(selectedTicket.assignedAt).toLocaleString()}</span> : null}
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <select
@@ -246,6 +258,14 @@ export default function AdminTicketsPage() {
                       </option>
                     ))}
                   </select>
+                  <button
+                    type="button"
+                    onClick={() => assignTicket(selectedTicket.assignedTo ? "UNASSIGN" : "ASSIGN_SELF")}
+                    className="h-10 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 text-xs font-semibold text-zinc-200"
+                    disabled={saving}
+                  >
+                    {selectedTicket.assignedTo ? "Unassign" : "Assign to Me"}
+                  </button>
                 </div>
               </div>
 

@@ -23,7 +23,7 @@ function safeArray(input: any): any[] {
 }
 
 function parseThreadFromAdminNotes(adminNotes: string | null) {
-  if (!adminNotes) return { notes: null as string | null, replies: [] as any[], statusHistory: [] as any[] };
+  if (!adminNotes) return { notes: null as string | null, replies: [] as any[], statusHistory: [] as any[], assignedTo: null as any, assignedAt: null as string | null };
   try {
     const parsed = JSON.parse(adminNotes);
     if (parsed && typeof parsed === "object" && Array.isArray(parsed.replies)) {
@@ -31,10 +31,12 @@ function parseThreadFromAdminNotes(adminNotes: string | null) {
         notes: typeof parsed.notes === "string" ? parsed.notes : null,
         replies: safeArray(parsed.replies),
         statusHistory: safeArray(parsed.statusHistory),
+        assignedTo: parsed.assignedTo && typeof parsed.assignedTo === "object" ? parsed.assignedTo : null,
+        assignedAt: typeof parsed.assignedAt === "string" ? parsed.assignedAt : null,
       };
     }
   } catch {}
-  return { notes: adminNotes, replies: [] as any[], statusHistory: [] as any[] };
+  return { notes: adminNotes, replies: [] as any[], statusHistory: [] as any[], assignedTo: null as any, assignedAt: null as string | null };
 }
 
 export async function PATCH(
@@ -48,6 +50,7 @@ export async function PATCH(
     const priority = typeof body.priority === "string" ? body.priority : undefined;
     const adminNotes = typeof body.adminNotes === "string" ? body.adminNotes.trim() : undefined;
     const replyMessage = typeof body.replyMessage === "string" ? body.replyMessage.trim() : "";
+    const assignAction = typeof body.assignAction === "string" ? body.assignAction.trim().toUpperCase() : "";
 
     if (status && !ALLOWED_STATUS.has(status)) {
       return NextResponse.json({ success: false, error: "Invalid status" }, { status: 400 });
@@ -68,6 +71,17 @@ export async function PATCH(
       const currentMeta: any = safeParseMeta(notification.meta);
       const currentReplies = safeArray(currentMeta.replies);
       const currentStatusHistory = safeArray(currentMeta.statusHistory);
+      const currentAssignedTo = currentMeta.assignedTo || null;
+      const nextAssignedTo =
+        assignAction === "ASSIGN_SELF"
+          ? {
+              id: (session.user as any).id,
+              name: (session.user as any).name || (session.user as any).email || "Admin",
+              email: (session.user as any).email || null,
+            }
+          : assignAction === "UNASSIGN"
+            ? null
+            : currentAssignedTo;
       const nextStatusHistory = status && status !== currentMeta.status
         ? [
             ...currentStatusHistory,
@@ -99,6 +113,8 @@ export async function PATCH(
         adminNotes: adminNotes !== undefined ? adminNotes : (currentMeta.adminNotes || null),
         replies: nextReplies,
         statusHistory: nextStatusHistory,
+        assignedTo: nextAssignedTo,
+        assignedAt: assignAction ? new Date().toISOString() : (currentMeta.assignedAt || null),
         lastAdminUpdateAt: new Date().toISOString(),
         fallback: true,
       };
@@ -143,6 +159,8 @@ export async function PATCH(
           status: updatedMeta.status,
           priority: updatedMeta.priority,
           adminNotes: updatedMeta.adminNotes,
+          assignedTo: updatedMeta.assignedTo,
+          assignedAt: updatedMeta.assignedAt,
           replies: nextReplies,
           statusHistory: nextStatusHistory,
           conversation: [
@@ -170,6 +188,16 @@ export async function PATCH(
     }
 
     const parsedThread = parseThreadFromAdminNotes(existing.adminNotes);
+    const nextAssignedTo =
+      assignAction === "ASSIGN_SELF"
+        ? {
+            id: (session.user as any).id,
+            name: (session.user as any).name || (session.user as any).email || "Admin",
+            email: (session.user as any).email || null,
+          }
+        : assignAction === "UNASSIGN"
+          ? null
+          : parsedThread.assignedTo;
     const nextStatusHistory = status && status !== existing.status
       ? [
           ...parsedThread.statusHistory,
@@ -205,6 +233,8 @@ export async function PATCH(
           notes: nextNotes,
           replies: nextReplies,
           statusHistory: nextStatusHistory,
+          assignedTo: nextAssignedTo,
+          assignedAt: assignAction ? new Date().toISOString() : parsedThread.assignedAt,
         }),
       },
     });
@@ -223,6 +253,8 @@ export async function PATCH(
         status: updated.status,
         priority: updated.priority,
         adminNotes: nextNotes,
+        assignedTo: nextAssignedTo,
+        assignedAt: assignAction ? new Date().toISOString() : parsedThread.assignedAt,
         replyAdded: !!replyMessage,
         statusHistoryCount: nextStatusHistory.length,
       },
@@ -235,6 +267,8 @@ export async function PATCH(
       data: {
         ...updated,
         adminNotes: nextNotes,
+        assignedTo: nextAssignedTo,
+        assignedAt: assignAction ? new Date().toISOString() : parsedThread.assignedAt,
         replies: nextReplies,
         statusHistory: nextStatusHistory,
         conversation: [

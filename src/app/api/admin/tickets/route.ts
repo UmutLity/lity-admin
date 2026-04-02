@@ -18,7 +18,7 @@ function safeJsonParse(input: string | null) {
 }
 
 function parseThreadFromAdminNotes(adminNotes: string | null) {
-  if (!adminNotes) return { notes: null as string | null, replies: [] as any[], statusHistory: [] as any[] };
+  if (!adminNotes) return { notes: null as string | null, replies: [] as any[], statusHistory: [] as any[], assignedTo: null as any, assignedAt: null as string | null };
   try {
     const parsed = JSON.parse(adminNotes);
     if (parsed && typeof parsed === "object" && Array.isArray(parsed.replies)) {
@@ -26,10 +26,12 @@ function parseThreadFromAdminNotes(adminNotes: string | null) {
         notes: typeof parsed.notes === "string" ? parsed.notes : null,
         replies: safeArray(parsed.replies),
         statusHistory: safeArray(parsed.statusHistory),
+        assignedTo: parsed.assignedTo && typeof parsed.assignedTo === "object" ? parsed.assignedTo : null,
+        assignedAt: typeof parsed.assignedAt === "string" ? parsed.assignedAt : null,
       };
     }
   } catch {}
-  return { notes: adminNotes, replies: [] as any[], statusHistory: [] as any[] };
+  return { notes: adminNotes, replies: [] as any[], statusHistory: [] as any[], assignedTo: null as any, assignedAt: null as string | null };
 }
 
 function matchesQuery(ticket: any, q: string) {
@@ -89,6 +91,8 @@ export async function GET(req: NextRequest) {
           adminNotes: parsed.notes,
           replies: parsed.replies,
           statusHistory: parsed.statusHistory,
+          assignedTo: parsed.assignedTo,
+          assignedAt: parsed.assignedAt,
           conversation,
         };
       });
@@ -136,6 +140,8 @@ export async function GET(req: NextRequest) {
           adminNotes: meta?.adminNotes || null,
           replies: safeArray(meta?.replies),
           statusHistory: safeArray(meta?.statusHistory),
+          assignedTo: meta?.assignedTo || null,
+          assignedAt: meta?.assignedAt || null,
           conversation: [
             {
               id: `fallback-${notification.id}-customer`,
