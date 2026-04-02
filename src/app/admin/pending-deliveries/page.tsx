@@ -257,6 +257,24 @@ export default function PendingDeliveriesPage() {
         </select>
       </div>
 
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+          <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Saved Templates</p>
+          <p className="mt-2 text-2xl font-semibold text-white">{savedTemplates.length}</p>
+          <p className="mt-1 text-sm text-zinc-400">Reusable delivery presets ready for one-click fill.</p>
+        </div>
+        <div className="rounded-2xl border border-violet-500/10 bg-violet-500/5 p-4">
+          <p className="text-xs uppercase tracking-[0.16em] text-violet-300">Internal Notes</p>
+          <p className="mt-2 text-2xl font-semibold text-white">{Object.values(internalNotes).filter((value) => value?.trim()).length}</p>
+          <p className="mt-1 text-sm text-zinc-400">Private staff notes saved locally for manual delivery flow.</p>
+        </div>
+        <div className="rounded-2xl border border-emerald-500/10 bg-emerald-500/5 p-4">
+          <p className="text-xs uppercase tracking-[0.16em] text-emerald-300">Visible Orders</p>
+          <p className="mt-2 text-2xl font-semibold text-white">{filteredRows.length}</p>
+          <p className="mt-1 text-sm text-zinc-400">Orders in the current delivery filter.</p>
+        </div>
+      </div>
+
       <div className="premium-card overflow-hidden">
         {loading ? (
           <div className="space-y-2 p-4">
@@ -279,6 +297,12 @@ export default function PendingDeliveriesPage() {
                           {row.customer?.username || "Unknown customer"} <span className="text-zinc-500">#{row.id.slice(-8)}</span>
                         </p>
                         <Badge variant="outline" className={state.className}>{state.label}</Badge>
+                        {(internalNotes[row.id] || "").trim() ? (
+                          <Badge variant="outline" className="border-violet-500/20 bg-violet-500/10 text-violet-200">Internal Note</Badge>
+                        ) : null}
+                        {row.customerNote ? (
+                          <Badge variant="outline" className="border-sky-500/20 bg-sky-500/10 text-sky-200">Customer Note</Badge>
+                        ) : null}
                       </div>
                       <p className="mt-1 text-xs text-zinc-500">{row.customer?.email || "-"}</p>
                       <p className="mt-2 text-xs text-zinc-400">
@@ -404,6 +428,17 @@ export default function PendingDeliveriesPage() {
           <div className="space-y-3">
             <div className="text-sm text-zinc-400">
               {selectedRow?.customer?.username || "Customer"} · {selectedRow?.items.map((item) => item.productName).join(", ")}
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-xl border border-white/[0.08] bg-[#10131c] p-3">
+                <div className="text-xs uppercase tracking-[0.12em] text-zinc-500">Template Library</div>
+                <div className="mt-2 text-lg font-semibold text-white">{savedTemplates.length}</div>
+                <p className="mt-1 text-xs text-zinc-500">Apply a saved layout or create a new delivery preset below.</p>
+              </div>
+              <div className="rounded-xl border border-violet-500/10 bg-violet-500/5 p-3">
+                <div className="text-xs uppercase tracking-[0.12em] text-violet-300">Current Internal Note</div>
+                <p className="mt-2 text-sm text-zinc-300">{(selectedRow && internalNotes[selectedRow.id]?.trim()) || "No internal note saved for this order yet."}</p>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               {([
