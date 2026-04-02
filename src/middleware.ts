@@ -168,7 +168,6 @@ export default withAuth(
       "/admin/system",
       "/admin/executive",
       "/admin/revenue",
-      "/admin/leaderboard",
       "/admin/categories",
       "/admin/notifications",
       "/admin/topups",

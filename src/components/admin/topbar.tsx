@@ -106,7 +106,6 @@ export function AdminHeader() {
       { label: "Users", path: "/admin/users", keywords: "customers members" },
       { label: "Tickets", path: "/admin/tickets", keywords: "support replies" },
       { label: "Licenses", path: "/admin/licenses", keywords: "keys plans" },
-      { label: "Leaderboard", path: "/admin/leaderboard", keywords: "top spenders ranking customers" },
       { label: "Top-up Requests", path: "/admin/topups", keywords: "balance topup payments" },
       { label: "Coupons", path: "/admin/coupons", keywords: "discount promos" },
       { label: "Reviews", path: "/admin/reviews", keywords: "feedback ratings" },
