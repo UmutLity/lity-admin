@@ -183,6 +183,7 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
 
   const [tabTitle, setTabTitle] = useState("");
   const [tabDescription, setTabDescription] = useState("");
+  const [bulkFeatureInput, setBulkFeatureInput] = useState("");
   const [featureTabs, setFeatureTabs] = useState<FeatureTab[]>(initialFeatureTabs);
 
   const computedSlug = useMemo(() => (autoSlug ? slugify(form.name || "") : form.slug), [form.name, form.slug, autoSlug]);
@@ -221,6 +222,45 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
     setFeatureTabs((prev) => [...prev, { title, description: tabDescription.trim() }]);
     setTabTitle("");
     setTabDescription("");
+  };
+
+  const addBulkFeatureTabs = () => {
+    const lines = bulkFeatureInput
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (!lines.length) return;
+
+    const parsed = lines
+      .map((line) => {
+        const [rawTitle, ...rest] = line.split("|");
+        const title = String(rawTitle || "").trim();
+        const description = rest.join("|").trim();
+        return {
+          title,
+          description,
+        };
+      })
+      .filter((item) => item.title.length > 0);
+
+    if (!parsed.length) return;
+
+    setFeatureTabs((prev) => {
+      const existingKeys = new Set(prev.map((item) => `${item.title.toLowerCase()}::${item.description.toLowerCase()}`));
+      const next = [...prev];
+
+      parsed.forEach((item) => {
+        const key = `${item.title.toLowerCase()}::${item.description.toLowerCase()}`;
+        if (existingKeys.has(key)) return;
+        existingKeys.add(key);
+        next.push(item);
+      });
+
+      return next;
+    });
+
+    setBulkFeatureInput("");
   };
 
   function buildFinalDescription() {
@@ -674,6 +714,28 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                   <Plus className="mr-1 inline h-4 w-4" />
                   Tab Add
                 </button>
+              </div>
+
+              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
+                <div className="mb-3 space-y-1">
+                  <label className="text-sm font-medium text-zinc-200">Bulk Add</label>
+                  <p className="text-xs text-zinc-500">Use one line per tab. Format: <span className="text-zinc-300">Title | Description</span></p>
+                </div>
+                <div className="space-y-3">
+                  <textarea
+                    value={bulkFeatureInput}
+                    onChange={(event) => setBulkFeatureInput(event.target.value)}
+                    className="min-h-[132px] w-full rounded-2xl border border-white/[0.08] bg-white/[0.03] px-3 py-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                    placeholder={`Visuals | ESP settings, colors and visibility options\nAimbot | Smoothness, FOV and targeting behavior\nMisc | Triggerbot, radar and utility tools`}
+                  />
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-zinc-500">Duplicate rows are ignored automatically.</p>
+                    <button type="button" onClick={addBulkFeatureTabs} className="rounded-xl border border-[#c4b3de]/35 bg-[#b6a4d2]/15 px-4 py-2 text-sm font-medium text-[#ded4ec]">
+                      <Plus className="mr-1 inline h-4 w-4" />
+                      Bulk Add
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
