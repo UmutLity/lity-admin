@@ -84,9 +84,6 @@ async function createProductWithFallbacks(
     accessRoleKey: _legacyAccessRoleKey,
     defaultLoaderUrl: _legacyDefaultLoaderUrl,
     displayOrder: _legacyDisplayOrder,
-    lastStatusChangeAt: _legacyLastStatusChangeAt,
-    lastUpdateAt: _legacyLastUpdateAt,
-    lastUpdateChangelogId: _legacyLastUpdateChangelogId,
     ...legacyProductFields
   } = productData;
 
