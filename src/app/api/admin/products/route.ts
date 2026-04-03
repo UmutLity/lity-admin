@@ -28,6 +28,66 @@ function withProductDefaults<T extends Record<string, any>>(product: T) {
   };
 }
 
+async function loadProductListFallback(where: any) {
+  try {
+    return await prisma.product.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        shortDescription: true,
+        description: true,
+        longDescription: true,
+        technicalDescription: true,
+        featureSectionTitle: true,
+        category: true,
+        status: true,
+        statusNote: true,
+        lastStatusChangeAt: true,
+        isFeatured: true,
+        isActive: true,
+        currency: true,
+        buyUrl: true,
+        accessRoleKey: true,
+        defaultLoaderUrl: true,
+        sortOrder: true,
+        displayOrder: true,
+        createdAt: true,
+        updatedAt: true,
+        lastUpdateAt: true,
+        lastUpdateChangelogId: true,
+        prices: { orderBy: { plan: "asc" } },
+        images: {
+          include: { media: true },
+          orderBy: { order: "asc" },
+        },
+      },
+      orderBy: { sortOrder: "asc" },
+    });
+  } catch (fallbackError) {
+    console.warn("GET /api/admin/products fallback query degraded to minimal fields", fallbackError);
+    return prisma.product.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        category: true,
+        status: true,
+        statusNote: true,
+        isFeatured: true,
+        isActive: true,
+        currency: true,
+        createdAt: true,
+        updatedAt: true,
+        lastUpdateAt: true,
+      },
+      orderBy: [{ updatedAt: "desc" }],
+    });
+  }
+}
+
 // GET /api/admin/products - Admin: all products
 export async function GET(req: NextRequest) {
   try {
@@ -61,47 +121,12 @@ export async function GET(req: NextRequest) {
         orderBy: { sortOrder: "asc" },
       });
     } catch (error) {
-      if (!isSchemaMismatchError(error)) throw error;
-
-      console.warn("GET /api/admin/products schema mismatch fallback enabled");
-      products = await prisma.product.findMany({
-        where,
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          shortDescription: true,
-          description: true,
-          longDescription: true,
-          technicalDescription: true,
-          featureSectionTitle: true,
-          category: true,
-          status: true,
-          statusNote: true,
-          lastStatusChangeAt: true,
-          isFeatured: true,
-          isActive: true,
-          currency: true,
-          buyUrl: true,
-          accessRoleKey: true,
-          defaultLoaderUrl: true,
-          stockStatus: true,
-          deliveryType: true,
-          estimatedDelivery: true,
-          sortOrder: true,
-          displayOrder: true,
-          createdAt: true,
-          updatedAt: true,
-          lastUpdateAt: true,
-          lastUpdateChangelogId: true,
-          prices: { orderBy: { plan: "asc" } },
-          images: {
-            include: { media: true },
-            orderBy: { order: "asc" },
-          },
-        },
-        orderBy: { sortOrder: "asc" },
-      });
+      if (isSchemaMismatchError(error)) {
+        console.warn("GET /api/admin/products schema mismatch fallback enabled");
+      } else {
+        console.warn("GET /api/admin/products primary query failed, trying fallback", error);
+      }
+      products = await loadProductListFallback(where);
     }
 
     return NextResponse.json({ success: true, data: products.map(withProductDefaults) });
