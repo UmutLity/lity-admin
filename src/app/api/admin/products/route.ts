@@ -16,6 +16,18 @@ function asKnownRequestError(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError ? error : null;
 }
 
+function withProductDefaults<T extends Record<string, any>>(product: T) {
+  return {
+    ...product,
+    stockStatus: product.stockStatus || "IN_STOCK",
+    deliveryType: product.deliveryType || "MANUAL",
+    estimatedDelivery: product.estimatedDelivery || null,
+    prices: Array.isArray(product.prices) ? product.prices : [],
+    images: Array.isArray(product.images) ? product.images : [],
+    _count: product._count || { changelogs: 0 },
+  };
+}
+
 // GET /api/admin/products - Admin: all products
 export async function GET(req: NextRequest) {
   try {
@@ -36,17 +48,63 @@ export async function GET(req: NextRequest) {
     if (category) where.category = category;
     if (status) where.status = status;
 
-    const products = await prisma.product.findMany({
-      where,
-      include: {
-        prices: { orderBy: { plan: "asc" } },
-        images: { include: { media: true }, orderBy: { order: "asc" } },
-        _count: { select: { changelogs: true } },
-      },
-      orderBy: { sortOrder: "asc" },
-    });
+    let products: any[] = [];
 
-    return NextResponse.json({ success: true, data: products });
+    try {
+      products = await prisma.product.findMany({
+        where,
+        include: {
+          prices: { orderBy: { plan: "asc" } },
+          images: { include: { media: true }, orderBy: { order: "asc" } },
+          _count: { select: { changelogs: true } },
+        },
+        orderBy: { sortOrder: "asc" },
+      });
+    } catch (error) {
+      if (!isSchemaMismatchError(error)) throw error;
+
+      console.warn("GET /api/admin/products schema mismatch fallback enabled");
+      products = await prisma.product.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          shortDescription: true,
+          description: true,
+          longDescription: true,
+          technicalDescription: true,
+          featureSectionTitle: true,
+          category: true,
+          status: true,
+          statusNote: true,
+          lastStatusChangeAt: true,
+          isFeatured: true,
+          isActive: true,
+          currency: true,
+          buyUrl: true,
+          accessRoleKey: true,
+          defaultLoaderUrl: true,
+          stockStatus: true,
+          deliveryType: true,
+          estimatedDelivery: true,
+          sortOrder: true,
+          displayOrder: true,
+          createdAt: true,
+          updatedAt: true,
+          lastUpdateAt: true,
+          lastUpdateChangelogId: true,
+          prices: { orderBy: { plan: "asc" } },
+          images: {
+            include: { media: true },
+            orderBy: { order: "asc" },
+          },
+        },
+        orderBy: { sortOrder: "asc" },
+      });
+    }
+
+    return NextResponse.json({ success: true, data: products.map(withProductDefaults) });
   } catch (error: any) {
     if (error.message === "Unauthorized") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (error.message?.includes("Forbidden")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });

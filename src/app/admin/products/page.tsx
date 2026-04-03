@@ -60,9 +60,14 @@ export default function ProductsPage() {
 
       const res = await fetch(`/api/admin/products?${params}`);
       const data = await res.json();
-      setProducts(data.data || []);
+      if (!res.ok || data?.success === false) {
+        throw new Error(data?.error || "Failed to load products");
+      }
+      setProducts(Array.isArray(data.data) ? data.data : []);
     } catch (error) {
       console.error(error);
+      setProducts([]);
+      addToast({ type: "error", title: "Products failed to load", description: "Admin product list could not be fetched." });
     } finally {
       setLoading(false);
     }
