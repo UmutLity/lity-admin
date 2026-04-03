@@ -73,6 +73,24 @@ function buildMinimalProductCreateData(
   };
 }
 
+async function productSlugExists(slug: string) {
+  try {
+    const existing = await prisma.product.findFirst({
+      where: { slug },
+      select: { id: true },
+    });
+    return Boolean(existing);
+  } catch (error) {
+    if (!isSchemaMismatchError(error)) throw error;
+    console.warn("POST /api/admin/products slug lookup schema mismatch, retrying with raw SQL");
+  }
+
+  const rows = await prisma.$queryRaw<Array<{ id: string }>>(
+    Prisma.sql`SELECT "id" FROM "Product" WHERE "slug" = ${slug} LIMIT 1`
+  );
+  return rows.length > 0;
+}
+
 async function createProductWithRawFallback(
   productData: Omit<ProductFormData, "prices" | "features">
 ) {
@@ -407,7 +425,7 @@ export async function POST(req: NextRequest) {
     const { prices, features, ...productData } = validation.data;
 
     // Check slug uniqueness
-    const existing = await prisma.product.findUnique({ where: { slug: productData.slug } });
+    const existing = await productSlugExists(productData.slug);
     if (existing) {
       return NextResponse.json({ error: "This slug is already in use", errors: { slug: "Slug already exists" } }, { status: 400 });
     }
