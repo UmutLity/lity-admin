@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
-import { productSchema } from "@/lib/validations/product";
+import { productSchema, type ProductFormData } from "@/lib/validations/product";
 import { createAuditLog, diffObjects } from "@/lib/audit";
 import { Prisma } from "@prisma/client";
 
@@ -152,6 +152,172 @@ async function safeLoadProductRelations(id: string) {
   return result;
 }
 
+async function productSlugExists(slug: string, excludeId?: string) {
+  try {
+    const row = await prisma.product.findFirst({
+      where: excludeId ? { slug, NOT: { id: excludeId } } : { slug },
+      select: { id: true },
+    });
+    return Boolean(row);
+  } catch (error) {
+    if (!isSchemaMismatchError(error)) throw error;
+  }
+
+  const rows = excludeId
+    ? await prisma.$queryRaw<Array<{ id: string }>>(
+        Prisma.sql`SELECT "id" FROM "Product" WHERE "slug" = ${slug} AND "id" <> ${excludeId} LIMIT 1`
+      )
+    : await prisma.$queryRaw<Array<{ id: string }>>(
+        Prisma.sql`SELECT "id" FROM "Product" WHERE "slug" = ${slug} LIMIT 1`
+      );
+  return rows.length > 0;
+}
+
+function buildMinimalProductUpdateData(productData: Omit<ProductFormData, "prices" | "features">) {
+  return {
+    name: productData.name,
+    slug: productData.slug,
+    shortDescription: productData.shortDescription || null,
+    description: productData.description || null,
+    category: productData.category,
+    status: productData.status,
+    isFeatured: Boolean(productData.isFeatured),
+    isActive: Boolean(productData.isActive),
+    currency: productData.currency || "USD",
+    buyUrl: productData.buyUrl || null,
+    sortOrder: Number(productData.sortOrder || 0),
+  };
+}
+
+async function updateProductCoreWithFallbacks(
+  id: string,
+  productData: Omit<ProductFormData, "prices" | "features">,
+  statusChanged: boolean
+) {
+  try {
+    return await prisma.product.update({
+      where: { id },
+      data: {
+        ...productData,
+        buyUrl: productData.buyUrl || null,
+        accessRoleKey: productData.accessRoleKey || null,
+        defaultLoaderUrl: productData.defaultLoaderUrl || null,
+        estimatedDelivery: productData.estimatedDelivery || null,
+        ...(statusChanged ? { lastStatusChangeAt: new Date() } : {}),
+      },
+    });
+  } catch (error) {
+    if (!isSchemaMismatchError(error)) throw error;
+  }
+
+  try {
+    return await prisma.product.update({
+      where: { id },
+      data: {
+        name: productData.name,
+        slug: productData.slug,
+        shortDescription: productData.shortDescription || null,
+        description: productData.description || null,
+        longDescription: productData.longDescription || null,
+        technicalDescription: productData.technicalDescription || null,
+        featureSectionTitle: productData.featureSectionTitle || null,
+        category: productData.category,
+        status: productData.status,
+        statusNote: productData.statusNote || null,
+        isFeatured: Boolean(productData.isFeatured),
+        isActive: Boolean(productData.isActive),
+        currency: productData.currency || "USD",
+        buyUrl: productData.buyUrl || null,
+        sortOrder: Number(productData.sortOrder || 0),
+        displayOrder: Number(productData.displayOrder || productData.sortOrder || 0),
+        ...(statusChanged ? { lastStatusChangeAt: new Date() } : {}),
+      },
+    });
+  } catch (error) {
+    if (!isSchemaMismatchError(error)) throw error;
+  }
+
+  try {
+    return await prisma.product.update({
+      where: { id },
+      data: buildMinimalProductUpdateData(productData),
+    });
+  } catch (error) {
+    if (!isSchemaMismatchError(error)) throw error;
+  }
+
+  const rows = await prisma.$queryRaw<Array<Record<string, any>>>(
+    Prisma.sql`
+      UPDATE "Product"
+      SET
+        "name" = ${productData.name},
+        "slug" = ${productData.slug},
+        "shortDescription" = ${productData.shortDescription || null},
+        "description" = ${productData.description || null},
+        "category" = ${productData.category},
+        "status" = ${productData.status},
+        "isFeatured" = ${Boolean(productData.isFeatured)},
+        "isActive" = ${Boolean(productData.isActive)},
+        "currency" = ${productData.currency || "USD"},
+        "buyUrl" = ${productData.buyUrl || null},
+        "sortOrder" = ${Number(productData.sortOrder || 0)},
+        "updatedAt" = ${new Date()}
+      WHERE "id" = ${id}
+      RETURNING "id", "name", "slug", "status"
+    `
+  );
+
+  if (!rows.length) {
+    throw new Error("Product update failed");
+  }
+
+  return rows[0];
+}
+
+async function syncProductRelationsWithFallbacks(
+  productId: string,
+  prices?: ProductFormData["prices"],
+  features?: ProductFormData["features"]
+) {
+  try {
+    await prisma.productPrice.deleteMany({ where: { productId } });
+  } catch (error) {
+    if (!isSchemaMismatchError(error)) throw error;
+  }
+
+  if (prices?.length) {
+    try {
+      await prisma.productPrice.createMany({
+        data: prices.map((p) => ({ productId, plan: p.plan, price: p.price })),
+      });
+    } catch (error) {
+      if (!isSchemaMismatchError(error)) throw error;
+    }
+  }
+
+  try {
+    await prisma.productFeature.deleteMany({ where: { productId } });
+  } catch (error) {
+    if (!isSchemaMismatchError(error)) throw error;
+  }
+
+  if (features?.length) {
+    try {
+      await prisma.productFeature.createMany({
+        data: features.map((feature, index) => ({
+          productId,
+          title: feature.title,
+          description: feature.description || null,
+          icon: feature.icon || null,
+          order: feature.order ?? index,
+        })),
+      });
+    } catch (error) {
+      if (!isSchemaMismatchError(error)) throw error;
+    }
+  }
+}
+
 async function findProductForDelete(id: string) {
   try {
     return await prisma.product.findFirst({
@@ -249,10 +415,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: "Validation failed", errors }, { status: 400 });
     }
 
-    const existing = await prisma.product.findUnique({
-      where: { id: params.id },
-      include: { prices: true, features: true },
-    });
+    const existing = await findProductDetailBase(params.id);
 
     if (!existing) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -262,7 +425,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     // Check slug uniqueness if changed
     if (productData.slug !== existing.slug) {
-      const slugExists = await prisma.product.findUnique({ where: { slug: productData.slug } });
+      const slugExists = await productSlugExists(productData.slug, params.id);
       if (slugExists) {
         return NextResponse.json({ error: "This slug is already in use", errors: { slug: "This slug already exists" } }, { status: 400 });
       }
@@ -271,35 +434,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     // Check if status changed
     const statusChanged = productData.status !== existing.status;
 
-    const product = await prisma.product.update({
-      where: { id: params.id },
-      data: {
-        ...productData,
-        buyUrl: productData.buyUrl || null,
-        accessRoleKey: productData.accessRoleKey || null,
-        defaultLoaderUrl: productData.defaultLoaderUrl || null,
-        estimatedDelivery: productData.estimatedDelivery || null,
-        lastStatusChangeAt: statusChanged ? new Date() : existing.lastStatusChangeAt,
-        prices: {
-          deleteMany: {},
-          create: prices?.map((p) => ({ plan: p.plan, price: p.price })) || [],
-        },
-        ...(features
-          ? {
-              features: {
-                deleteMany: {},
-                create: features.map((feature, index) => ({
-                  title: feature.title,
-                  description: feature.description || null,
-                  icon: feature.icon || null,
-                  order: feature.order ?? index,
-                })),
-              },
-            }
-          : {}),
-      },
-      include: { prices: true, features: { orderBy: { order: "asc" } } },
-    });
+    const product = await updateProductCoreWithFallbacks(params.id, productData, statusChanged);
+    await syncProductRelationsWithFallbacks(params.id, prices, features);
 
     const diff = diffObjects(
       { name: existing.name, slug: existing.slug, status: existing.status },
