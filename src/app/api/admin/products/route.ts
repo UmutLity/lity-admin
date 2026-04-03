@@ -55,18 +55,34 @@ function buildProductCreateData(
   };
 }
 
+function buildMinimalProductCreateData(
+  productData: Omit<ProductFormData, "prices" | "features">
+): Prisma.ProductUncheckedCreateInput {
+  return {
+    name: productData.name,
+    slug: productData.slug,
+    shortDescription: productData.shortDescription || null,
+    description: productData.description || null,
+    category: productData.category,
+    status: productData.status,
+    isFeatured: Boolean(productData.isFeatured),
+    isActive: Boolean(productData.isActive),
+    currency: productData.currency || "USD",
+    buyUrl: productData.buyUrl || null,
+    sortOrder: Number(productData.sortOrder || 0),
+  };
+}
+
 async function createProductWithFallbacks(
   productData: Omit<ProductFormData, "prices" | "features">,
   prices?: ProductFormData["prices"],
   features?: ProductFormData["features"]
 ) {
-  const include = { prices: true, features: { orderBy: { order: "asc" as const } } };
   const fullData = buildProductCreateData(productData, prices, features);
 
   try {
     return await prisma.product.create({
       data: fullData,
-      include,
     });
   } catch (error) {
     if (!isSchemaMismatchError(error)) throw error;
@@ -106,19 +122,59 @@ async function createProductWithFallbacks(
             }
           : undefined,
       } as Prisma.ProductCreateInput,
-      include,
     });
   } catch (error) {
     if (!isSchemaMismatchError(error)) throw error;
-    console.warn("POST /api/admin/products legacy create still mismatched, retrying without nested relations");
+    console.warn("POST /api/admin/products legacy create still mismatched, retrying with minimal base fields");
   }
 
   return prisma.product.create({
-    data: {
-      ...legacyProductFields,
-      buyUrl: legacyProductFields.buyUrl || null,
-    } as Prisma.ProductUncheckedCreateInput,
+    data: buildMinimalProductCreateData(productData),
   });
+}
+
+async function attachProductRelationsWithFallbacks(
+  productId: string,
+  prices?: ProductFormData["prices"],
+  features?: ProductFormData["features"]
+) {
+  if (prices?.length) {
+    try {
+      await prisma.productPrice.createMany({
+        data: prices.map((p) => ({
+          productId,
+          plan: p.plan,
+          price: p.price,
+        })),
+      });
+    } catch (error) {
+      if (isSchemaMismatchError(error)) {
+        console.warn("POST /api/admin/products prices schema mismatch, skipping price attach");
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  if (features?.length) {
+    try {
+      await prisma.productFeature.createMany({
+        data: features.map((feature, index) => ({
+          productId,
+          title: feature.title,
+          description: feature.description || null,
+          icon: feature.icon || null,
+          order: feature.order ?? index,
+        })),
+      });
+    } catch (error) {
+      if (isSchemaMismatchError(error)) {
+        console.warn("POST /api/admin/products features schema mismatch, skipping feature attach");
+      } else {
+        throw error;
+      }
+    }
+  }
 }
 
 async function loadProductListFallback(where: any) {
@@ -256,7 +312,8 @@ export async function POST(req: NextRequest) {
 
     let product: any;
     try {
-      product = await createProductWithFallbacks(productData, prices, features);
+      product = await createProductWithFallbacks(productData, undefined, undefined);
+      await attachProductRelationsWithFallbacks(product.id, prices, features);
     } catch (error: unknown) {
       const known = asKnownRequestError(error);
       if (isSchemaMismatchError(error)) {
