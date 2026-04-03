@@ -28,6 +28,102 @@ function withProductDefaults<T extends Record<string, any>>(product: T) {
   };
 }
 
+function buildProductCreateData(
+  productData: Record<string, any>,
+  prices?: Array<{ plan: string; price: number }>,
+  features?: Array<{ title: string; description?: string | null; icon?: string | null; order?: number }>
+) {
+  return {
+    ...productData,
+    buyUrl: productData.buyUrl || null,
+    accessRoleKey: productData.accessRoleKey || null,
+    defaultLoaderUrl: productData.defaultLoaderUrl || null,
+    estimatedDelivery: productData.estimatedDelivery || null,
+    prices: prices?.length
+      ? { create: prices.map((p) => ({ plan: p.plan, price: p.price })) }
+      : undefined,
+    features: features?.length
+      ? {
+          create: features.map((feature, index) => ({
+            title: feature.title,
+            description: feature.description || null,
+            icon: feature.icon || null,
+            order: feature.order ?? index,
+          })),
+        }
+      : undefined,
+  };
+}
+
+async function createProductWithFallbacks(
+  productData: Record<string, any>,
+  prices?: Array<{ plan: string; price: number }>,
+  features?: Array<{ title: string; description?: string | null; icon?: string | null; order?: number }>
+) {
+  const include = { prices: true, features: { orderBy: { order: "asc" as const } } };
+  const fullData = buildProductCreateData(productData, prices, features);
+
+  try {
+    return await prisma.product.create({
+      data: fullData,
+      include,
+    });
+  } catch (error) {
+    if (!isSchemaMismatchError(error)) throw error;
+    console.warn("POST /api/admin/products full create schema mismatch, retrying with legacy fields only");
+  }
+
+  const {
+    longDescription: _legacyLongDescription,
+    technicalDescription: _legacyTechnicalDescription,
+    featureSectionTitle: _legacyFeatureSectionTitle,
+    statusNote: _legacyStatusNote,
+    stockStatus: _legacyStockStatus,
+    deliveryType: _legacyDeliveryType,
+    estimatedDelivery: _legacyEstimatedDelivery,
+    accessRoleKey: _legacyAccessRoleKey,
+    defaultLoaderUrl: _legacyDefaultLoaderUrl,
+    displayOrder: _legacyDisplayOrder,
+    lastStatusChangeAt: _legacyLastStatusChangeAt,
+    lastUpdateAt: _legacyLastUpdateAt,
+    lastUpdateChangelogId: _legacyLastUpdateChangelogId,
+    ...legacyProductFields
+  } = productData;
+
+  try {
+    return await prisma.product.create({
+      data: {
+        ...legacyProductFields,
+        buyUrl: legacyProductFields.buyUrl || null,
+        prices: prices?.length
+          ? { create: prices.map((p) => ({ plan: p.plan, price: p.price })) }
+          : undefined,
+        features: features?.length
+          ? {
+              create: features.map((feature, index) => ({
+                title: feature.title,
+                description: feature.description || null,
+                icon: feature.icon || null,
+                order: feature.order ?? index,
+              })),
+            }
+          : undefined,
+      },
+      include,
+    });
+  } catch (error) {
+    if (!isSchemaMismatchError(error)) throw error;
+    console.warn("POST /api/admin/products legacy create still mismatched, retrying without nested relations");
+  }
+
+  return prisma.product.create({
+    data: {
+      ...legacyProductFields,
+      buyUrl: legacyProductFields.buyUrl || null,
+    },
+  });
+}
+
 async function loadProductListFallback(where: any) {
   try {
     return await prisma.product.findMany({
@@ -163,29 +259,7 @@ export async function POST(req: NextRequest) {
 
     let product: any;
     try {
-      product = await prisma.product.create({
-        data: {
-          ...productData,
-          buyUrl: productData.buyUrl || null,
-          accessRoleKey: productData.accessRoleKey || null,
-          defaultLoaderUrl: productData.defaultLoaderUrl || null,
-          estimatedDelivery: productData.estimatedDelivery || null,
-          prices: prices?.length
-            ? { create: prices.map((p) => ({ plan: p.plan, price: p.price })) }
-            : undefined,
-          features: features?.length
-            ? {
-                create: features.map((feature, index) => ({
-                  title: feature.title,
-                  description: feature.description || null,
-                  icon: feature.icon || null,
-                  order: feature.order ?? index,
-                })),
-              }
-            : undefined,
-        },
-        include: { prices: true, features: { orderBy: { order: "asc" } } },
-      });
+      product = await createProductWithFallbacks(productData, prices, features);
     } catch (error: unknown) {
       const known = asKnownRequestError(error);
       if (isSchemaMismatchError(error)) {
@@ -229,44 +303,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    try {
-      await createAuditLog({
-        userId: (session.user as any).id,
-        action: "CREATE",
-        entity: "Product",
-        entityId: product.id,
-        after: { name: product.name, slug: product.slug, status: product.status },
-      });
-    } catch (error: unknown) {
-      const known = asKnownRequestError(error);
-      if (isSchemaMismatchError(error)) {
-        console.error("POST /api/admin/products audit schema mismatch:", {
-          code: known?.code,
-          meta: known?.meta,
-        });
-        return NextResponse.json(
-          {
-            success: false,
-            code: "DB_SCHEMA_MISMATCH",
-            error: "Database schema is out of date. Run migrations.",
-          },
-          { status: 500 }
-        );
-      }
-      console.error("POST /api/admin/products audit failed:", {
-        code: known?.code,
-        meta: known?.meta,
-        error,
-      });
-      return NextResponse.json(
-        {
-          success: false,
-          code: "PRODUCT_CREATE_FAILED",
-          error: "Product created but audit log could not be written.",
-        },
-        { status: 500 }
-      );
-    }
+    await createAuditLog({
+      userId: (session.user as any).id,
+      action: "CREATE",
+      entity: "Product",
+      entityId: product.id,
+      after: { name: product.name, slug: product.slug, status: product.status },
+    });
 
     return NextResponse.json({ success: true, data: product }, { status: 201 });
   } catch (error: any) {
