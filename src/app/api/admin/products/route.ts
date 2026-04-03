@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
-import { productSchema } from "@/lib/validations/product";
+import { productSchema, type ProductFormData } from "@/lib/validations/product";
 import { createAuditLog } from "@/lib/audit";
 import { Prisma } from "@prisma/client";
 
@@ -29,10 +29,10 @@ function withProductDefaults<T extends Record<string, any>>(product: T) {
 }
 
 function buildProductCreateData(
-  productData: Record<string, any>,
-  prices?: Array<{ plan: string; price: number }>,
-  features?: Array<{ title: string; description?: string | null; icon?: string | null; order?: number }>
-) {
+  productData: Omit<ProductFormData, "prices" | "features">,
+  prices?: ProductFormData["prices"],
+  features?: ProductFormData["features"]
+): Prisma.ProductCreateInput {
   return {
     ...productData,
     buyUrl: productData.buyUrl || null,
@@ -56,9 +56,9 @@ function buildProductCreateData(
 }
 
 async function createProductWithFallbacks(
-  productData: Record<string, any>,
-  prices?: Array<{ plan: string; price: number }>,
-  features?: Array<{ title: string; description?: string | null; icon?: string | null; order?: number }>
+  productData: Omit<ProductFormData, "prices" | "features">,
+  prices?: ProductFormData["prices"],
+  features?: ProductFormData["features"]
 ) {
   const include = { prices: true, features: { orderBy: { order: "asc" as const } } };
   const fullData = buildProductCreateData(productData, prices, features);
@@ -108,7 +108,7 @@ async function createProductWithFallbacks(
               })),
             }
           : undefined,
-      },
+      } as Prisma.ProductCreateInput,
       include,
     });
   } catch (error) {
@@ -120,7 +120,7 @@ async function createProductWithFallbacks(
     data: {
       ...legacyProductFields,
       buyUrl: legacyProductFields.buyUrl || null,
-    },
+    } as Prisma.ProductUncheckedCreateInput,
   });
 }
 
