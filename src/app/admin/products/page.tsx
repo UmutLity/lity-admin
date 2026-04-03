@@ -82,11 +82,18 @@ export default function ProductsPage() {
     setDeleting(true);
     try {
       const res = await fetch(`/api/admin/products/${deleteId}`, { method: "DELETE" });
+      const data = await res.json().catch(() => null);
       if (res.ok) {
-        addToast({ type: "success", title: "Deleted", description: "Product deleted successfully" });
+        addToast({
+          type: "success",
+          title: data?.mode === "archived" ? "Archived" : "Deleted",
+          description: data?.message || (data?.mode === "archived"
+            ? "Product had linked records, so it was archived instead."
+            : "Product deleted successfully"),
+        });
         loadProducts();
       } else {
-        addToast({ type: "error", title: "Error", description: "Delete operation failed" });
+        addToast({ type: "error", title: "Error", description: data?.error || "Delete operation failed" });
       }
     } catch (error) {
       addToast({ type: "error", title: "Error" });
