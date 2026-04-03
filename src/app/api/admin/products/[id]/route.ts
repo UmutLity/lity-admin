@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 // GET /api/admin/products/[id]
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await requireRole(["ADMIN", "EDITOR"]);
+    await requireRole(["FOUNDER", "ADMIN", "EDITOR"]);
 
     const product = await prisma.product.findUnique({
       where: { id: params.id },
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 // PUT /api/admin/products/[id]
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await requireRole(["ADMIN", "EDITOR"]);
+    const session = await requireRole(["FOUNDER", "ADMIN", "EDITOR"]);
     const body = await req.json();
 
     const validation = productSchema.safeParse(body);
@@ -125,7 +125,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 // DELETE /api/admin/products/[id]
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await requireRole(["ADMIN", "EDITOR"]);
+    const session = await requireRole(["FOUNDER", "ADMIN", "EDITOR"]);
 
     const product = await prisma.product.findUnique({ where: { id: params.id } });
     if (!product) {

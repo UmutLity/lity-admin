@@ -31,7 +31,7 @@ function withProductDefaults<T extends Record<string, any>>(product: T) {
 // GET /api/admin/products - Admin: all products
 export async function GET(req: NextRequest) {
   try {
-    await requireRole(["ADMIN", "EDITOR"]);
+    await requireRole(["FOUNDER", "ADMIN", "EDITOR"]);
 
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search") || "";
@@ -116,7 +116,7 @@ export async function GET(req: NextRequest) {
 // POST /api/admin/products - Create new product
 export async function POST(req: NextRequest) {
   try {
-    const session = await requireRole(["ADMIN", "EDITOR"]);
+    const session = await requireRole(["FOUNDER", "ADMIN", "EDITOR"]);
     const body = await req.json();
 
     const validation = productSchema.safeParse(body);

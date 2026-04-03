@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 // GET /api/admin/products/[id]/features
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await requireRole(["ADMIN", "EDITOR"]);
+    await requireRole(["FOUNDER", "ADMIN", "EDITOR"]);
 
     const features = await prisma.productFeature.findMany({
       where: { productId: params.id },
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 // POST /api/admin/products/[id]/features
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await requireRole(["ADMIN", "EDITOR"]);
+    await requireRole(["FOUNDER", "ADMIN", "EDITOR"]);
 
     const product = await prisma.product.findUnique({ where: { id: params.id } });
     if (!product) return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 // PUT /api/admin/products/[id]/features
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await requireRole(["ADMIN", "EDITOR"]);
+    await requireRole(["FOUNDER", "ADMIN", "EDITOR"]);
 
     const body = await req.json();
     const { featureId, title, description, icon, order } = body;
@@ -125,7 +125,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 // DELETE /api/admin/products/[id]/features
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await requireRole(["ADMIN", "EDITOR"]);
+    await requireRole(["FOUNDER", "ADMIN", "EDITOR"]);
 
     const body = await req.json();
     const { featureId } = body;

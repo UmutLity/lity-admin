@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 // PATCH /api/admin/products/[id]/status - Quick status change
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await requireRole(["ADMIN", "EDITOR"]);
+    const session = await requireRole(["FOUNDER", "ADMIN", "EDITOR"]);
     const body = await req.json();
     const ip = getClientIp(req);
     const userId = (session.user as any).id;
