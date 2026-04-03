@@ -73,6 +73,101 @@ function buildMinimalProductCreateData(
   };
 }
 
+async function createProductWithRawFallback(
+  productData: Omit<ProductFormData, "prices" | "features">
+) {
+  const rows = await prisma.$queryRaw<
+    Array<{
+      id: string;
+      name: string;
+      slug: string;
+      shortDescription: string | null;
+      description: string | null;
+      longDescription: string | null;
+      technicalDescription: string | null;
+      featureSectionTitle: string | null;
+      category: string;
+      status: string;
+      statusNote: string | null;
+      isFeatured: boolean;
+      isActive: boolean;
+      currency: string;
+      buyUrl: string | null;
+      sortOrder: number;
+      displayOrder: number;
+      createdAt: Date;
+      updatedAt: Date;
+    }>
+  >(Prisma.sql`
+    INSERT INTO "Product" (
+      "id",
+      "name",
+      "slug",
+      "shortDescription",
+      "description",
+      "longDescription",
+      "technicalDescription",
+      "featureSectionTitle",
+      "category",
+      "status",
+      "statusNote",
+      "isFeatured",
+      "isActive",
+      "currency",
+      "buyUrl",
+      "sortOrder",
+      "displayOrder",
+      "updatedAt"
+    )
+    VALUES (
+      ${crypto.randomUUID()},
+      ${productData.name},
+      ${productData.slug},
+      ${productData.shortDescription || null},
+      ${productData.description || null},
+      ${productData.longDescription || null},
+      ${productData.technicalDescription || null},
+      ${productData.featureSectionTitle || null},
+      ${productData.category},
+      ${productData.status},
+      ${productData.statusNote || null},
+      ${Boolean(productData.isFeatured)},
+      ${Boolean(productData.isActive)},
+      ${productData.currency || "USD"},
+      ${productData.buyUrl || null},
+      ${Number(productData.sortOrder || 0)},
+      ${Number(productData.displayOrder || productData.sortOrder || 0)},
+      ${new Date()}
+    )
+    RETURNING
+      "id",
+      "name",
+      "slug",
+      "shortDescription",
+      "description",
+      "longDescription",
+      "technicalDescription",
+      "featureSectionTitle",
+      "category",
+      "status",
+      "statusNote",
+      "isFeatured",
+      "isActive",
+      "currency",
+      "buyUrl",
+      "sortOrder",
+      "displayOrder",
+      "createdAt",
+      "updatedAt"
+  `);
+
+  if (!rows.length) {
+    throw new Error("Raw product insert returned no rows");
+  }
+
+  return rows[0];
+}
+
 async function createProductWithFallbacks(
   productData: Omit<ProductFormData, "prices" | "features">,
   prices?: ProductFormData["prices"],
@@ -128,9 +223,16 @@ async function createProductWithFallbacks(
     console.warn("POST /api/admin/products legacy create still mismatched, retrying with minimal base fields");
   }
 
-  return prisma.product.create({
-    data: buildMinimalProductCreateData(productData),
-  });
+  try {
+    return await prisma.product.create({
+      data: buildMinimalProductCreateData(productData),
+    });
+  } catch (error) {
+    if (!isSchemaMismatchError(error)) throw error;
+    console.warn("POST /api/admin/products minimal Prisma create still mismatched, retrying with raw SQL");
+  }
+
+  return createProductWithRawFallback(productData);
 }
 
 async function attachProductRelationsWithFallbacks(
