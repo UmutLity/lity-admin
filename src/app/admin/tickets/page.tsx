@@ -253,8 +253,8 @@ export default function AdminTicketsPage() {
                       : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.03]"
                   }`}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-sm font-semibold text-zinc-300">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-sm font-semibold text-zinc-300">
                       {avatarLabel(ticket)}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -272,22 +272,22 @@ export default function AdminTicketsPage() {
                         ) : null}
                       </div>
 
-                      <div className="mt-2 flex items-start justify-between gap-4">
+                      <div className="mt-1.5 flex items-center justify-between gap-4">
                         <div className="min-w-0">
-                          <p className="truncate text-[1.65rem] font-medium leading-none text-white">{ticket.subject}</p>
-                          <p className="mt-1 truncate text-sm text-zinc-500">
+                          <p className="truncate text-[1.05rem] font-semibold leading-tight text-white">{ticket.subject}</p>
+                          <p className="mt-0.5 truncate text-sm text-zinc-500">
                             {ticket.email || ticket.discordUsername || "Customer"}
                           </p>
-                          <p className="mt-1 line-clamp-1 text-sm text-zinc-400">{ticket.message}</p>
+                          <p className="mt-0.5 line-clamp-1 text-sm text-zinc-400">{ticket.message}</p>
                         </div>
 
                         <div className="flex shrink-0 items-center gap-3 text-zinc-500">
-                          <div className="text-right text-sm">
+                          <div className="text-right text-xs">
                             <div className="flex items-center justify-end gap-1">
                               <MessageSquareMore className="h-4 w-4" />
                               <span>{ticket.conversation?.length || 1}</span>
                             </div>
-                            <div className="mt-1 text-xs">{new Date(ticket.updatedAt).toLocaleDateString()}</div>
+                            <div className="mt-0.5 text-xs">{new Date(ticket.updatedAt).toLocaleDateString()}</div>
                           </div>
                           <ChevronRight className="h-4 w-4" />
                         </div>
