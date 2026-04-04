@@ -172,7 +172,7 @@ export default function AdminTicketsPage() {
   }
 
   return (
-    <div className="max-w-6xl">
+    <div>
       <Topbar title="Tickets" description="Simple queue for support replies" />
 
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
