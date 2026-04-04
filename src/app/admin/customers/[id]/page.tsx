@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Topbar } from "@/components/admin/topbar";
-import { ArrowLeft, CreditCard, KeyRound, NotebookPen, ShoppingCart, Ticket, Truck } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CreditCard, Heart, KeyRound, NotebookPen, ShoppingCart, Star, Ticket, Truck } from "lucide-react";
 
 type CustomerProfile = {
   id: string;
@@ -64,6 +64,18 @@ type CustomerProfile = {
     createdAt: string;
     approvedAt?: string | null;
     rejectedAt?: string | null;
+  }>;
+  favorites: Array<{
+    id: string;
+    createdAt: string;
+    product: { id: string; name: string; slug: string; status: string; category: string };
+  }>;
+  reviews: Array<{
+    id: string;
+    rating: number;
+    content: string;
+    createdAt: string;
+    product: { id: string; name: string; slug: string };
   }>;
   tickets: Array<{
     id: string;
@@ -159,6 +171,23 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
     return [...orderEvents, ...topupEvents, ...ticketEvents]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 12);
+  }, [data]);
+
+  const riskFlags = useMemo(() => {
+    if (!data) return [];
+    const flags: Array<{ label: string; tone: string }> = [];
+    const pendingTopups = data.topUpRequests.filter((row) => row.status === "PENDING").length;
+    const rejectedTopups = data.topUpRequests.filter((row) => row.status === "REJECTED").length;
+    const openTickets = data.tickets.filter((row) => !["RESOLVED", "CLOSED"].includes(String(row.status || "").toUpperCase())).length;
+    const pendingOrders = data.orders.filter((row) => ["PENDING", "PAID", "PROCESSING"].includes(String(row.status || "").toUpperCase())).length;
+
+    if (!data.isActive) flags.push({ label: "Account disabled", tone: "border-red-500/20 bg-red-500/10 text-red-300" });
+    if (data.mustChangePassword) flags.push({ label: "Password reset pending", tone: "border-amber-500/20 bg-amber-500/10 text-amber-300" });
+    if (pendingTopups >= 2) flags.push({ label: `${pendingTopups} pending top-ups`, tone: "border-amber-500/20 bg-amber-500/10 text-amber-300" });
+    if (rejectedTopups >= 2) flags.push({ label: `${rejectedTopups} rejected top-ups`, tone: "border-red-500/20 bg-red-500/10 text-red-300" });
+    if (openTickets >= 2) flags.push({ label: `${openTickets} open support tickets`, tone: "border-violet-500/20 bg-violet-500/10 text-violet-200" });
+    if (pendingOrders >= 3) flags.push({ label: `${pendingOrders} orders awaiting delivery`, tone: "border-sky-500/20 bg-sky-500/10 text-sky-300" });
+    return flags.slice(0, 6);
   }, [data]);
 
   async function saveAdminNotes() {
@@ -331,6 +360,66 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
                     </div>
                   </div>
                 )) : <div className="text-sm text-zinc-500">No recent activity.</div>}
+              </div>
+            </section>
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr_1.2fr]">
+            <section className="premium-card p-5">
+              <div className="mb-4 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-[#c7bdd8]" />
+                <h3 className="text-lg font-semibold text-white">Risk Flags</h3>
+              </div>
+              <div className="space-y-2">
+                {riskFlags.length ? riskFlags.map((flag) => (
+                  <div key={flag.label} className={`rounded-2xl border px-3 py-2 text-sm font-medium ${flag.tone}`}>
+                    {flag.label}
+                  </div>
+                )) : <div className="text-sm text-zinc-500">No obvious customer risk signals.</div>}
+              </div>
+            </section>
+
+            <section className="premium-card p-5">
+              <div className="mb-4 flex items-center gap-2">
+                <Heart className="h-4 w-4 text-[#c7bdd8]" />
+                <h3 className="text-lg font-semibold text-white">Favorite Products</h3>
+              </div>
+              <div className="space-y-3">
+                {data.favorites.length ? data.favorites.map((favorite) => (
+                  <div key={favorite.id} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-white">{favorite.product.name}</p>
+                        <p className="text-xs text-zinc-500">/{favorite.product.slug} · {favorite.product.category}</p>
+                      </div>
+                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${statusTone(favorite.product.status)}`}>
+                        {favorite.product.status}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs text-zinc-500">Favorited on {date(favorite.createdAt)}</p>
+                  </div>
+                )) : <div className="text-sm text-zinc-500">No favorite products yet.</div>}
+              </div>
+            </section>
+
+            <section className="premium-card p-5">
+              <div className="mb-4 flex items-center gap-2">
+                <Star className="h-4 w-4 text-[#c7bdd8]" />
+                <h3 className="text-lg font-semibold text-white">Review Activity</h3>
+              </div>
+              <div className="space-y-3">
+                {data.reviews.length ? data.reviews.map((review) => (
+                  <div key={review.id} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-white">{review.product.name}</p>
+                        <p className="text-xs text-zinc-500">{date(review.createdAt)}</p>
+                      </div>
+                      <span className="text-sm font-semibold text-amber-300">{`${Math.max(1, Math.min(5, Number(review.rating || 0)))}★`}</span>
+                    </div>
+                    <p className="mt-2 text-sm text-zinc-400">{review.content || "No review text provided."}</p>
+                  </div>
+                )) : <div className="text-sm text-zinc-500">No review activity yet.</div>}
               </div>
             </section>
           </div>

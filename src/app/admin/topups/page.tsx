@@ -49,6 +49,9 @@ export default function TopUpsPage() {
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [proofModal, setProofModal] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkReviewNote, setBulkReviewNote] = useState("");
+  const [bulkBusy, setBulkBusy] = useState<"APPROVE" | "REJECT" | null>(null);
 
   async function load() {
     setLoading(true);
@@ -61,7 +64,9 @@ export default function TopUpsPage() {
       const res = await fetch(`/api/admin/topup-requests?${params.toString()}`, { credentials: "include" });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || "Failed to load");
-      setRows(Array.isArray(data.data) ? data.data : []);
+      const nextRows: TopUpRequestRow[] = Array.isArray(data.data) ? data.data : [];
+      setRows(nextRows);
+      setSelectedIds((prev) => prev.filter((id) => nextRows.some((row: TopUpRequestRow) => row.id === id)));
     } catch (error: any) {
       addToast({ type: "error", title: "Error", description: error.message || "Could not load top-up requests" });
     } finally {
@@ -78,12 +83,11 @@ export default function TopUpsPage() {
     try {
       setBusyId(id);
       const reviewNote = (reviewNotes[id] || "").trim();
-      const endpoint = action === "APPROVE" ? `/api/topup/${id}/approve` : `/api/topup/${id}/reject`;
-      const res = await fetch(endpoint, {
+      const res = await fetch("/api/admin/topup-requests", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ reviewNote }),
+        body: JSON.stringify({ id, action, reviewNote }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || "Failed");
@@ -99,6 +103,51 @@ export default function TopUpsPage() {
       setBusyId(null);
     }
   }
+
+  async function processBulk(action: "APPROVE" | "REJECT") {
+    const ids = selectedIds.filter((id) => rows.some((row) => row.id === id && row.status === "PENDING"));
+    if (!ids.length) {
+      addToast({ type: "error", title: "No pending requests selected", description: "Select at least one pending top-up request." });
+      return;
+    }
+
+    try {
+      setBulkBusy(action);
+      for (const id of ids) {
+        const note = (reviewNotes[id] || bulkReviewNote || "").trim();
+        const res = await fetch("/api/admin/topup-requests", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ id, action, reviewNote: note }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || `Failed on request ${id}`);
+      }
+
+      addToast({
+        type: "success",
+        title: action === "APPROVE" ? "Bulk approval complete" : "Bulk rejection complete",
+        description: `${ids.length} request(s) processed successfully.`,
+      });
+      setSelectedIds([]);
+      setBulkReviewNote("");
+      await load();
+    } catch (error: any) {
+      addToast({ type: "error", title: "Bulk action failed", description: error.message || "Could not process selected requests" });
+    } finally {
+      setBulkBusy(null);
+    }
+  }
+
+  const pendingRows = rows.filter((row) => row.status === "PENDING");
+  const selectedPendingCount = selectedIds.filter((id) => pendingRows.some((row) => row.id === id)).length;
+  const summary = {
+    pendingCount: pendingRows.length,
+    pendingAmount: pendingRows.reduce((sum, row) => sum + Number(row.amount || 0), 0),
+    approvedToday: rows.filter((row) => row.status === "APPROVED" && new Date(row.createdAt).toDateString() === new Date().toDateString()).length,
+    suspiciousCount: rows.filter((row) => findPossibleDuplicates(row).length > 0).length,
+  };
 
   function findPossibleDuplicates(row: TopUpRequestRow) {
     return rows.filter((item) =>
@@ -121,6 +170,29 @@ export default function TopUpsPage() {
       <Topbar title="Top-up Requests" description="Approve or reject manual deposit requests" />
 
       <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl border border-white/[0.08] bg-[#0f1119] p-4">
+            <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">Pending Queue</div>
+            <div className="mt-2 text-2xl font-semibold text-white">{summary.pendingCount}</div>
+            <div className="mt-1 text-sm text-zinc-500">Requests awaiting manual review</div>
+          </div>
+          <div className="rounded-2xl border border-white/[0.08] bg-[#0f1119] p-4">
+            <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">Pending Volume</div>
+            <div className="mt-2 text-2xl font-semibold text-emerald-300">${summary.pendingAmount.toFixed(2)}</div>
+            <div className="mt-1 text-sm text-zinc-500">Cash still waiting to be credited</div>
+          </div>
+          <div className="rounded-2xl border border-white/[0.08] bg-[#0f1119] p-4">
+            <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">Selected Pending</div>
+            <div className="mt-2 text-2xl font-semibold text-violet-200">{selectedPendingCount}</div>
+            <div className="mt-1 text-sm text-zinc-500">Ready for bulk action</div>
+          </div>
+          <div className="rounded-2xl border border-white/[0.08] bg-[#0f1119] p-4">
+            <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">Duplicate Signals</div>
+            <div className="mt-2 text-2xl font-semibold text-amber-300">{summary.suspiciousCount}</div>
+            <div className="mt-1 text-sm text-zinc-500">Potential duplicate bank submissions</div>
+          </div>
+        </div>
+
         <div className="rounded-2xl border border-white/[0.08] bg-[#0f1119] p-4">
           <div className="flex flex-wrap items-center gap-2">
             <Button size="sm" variant={status === "PENDING" ? "default" : "outline"} onClick={() => setStatus("PENDING")}>Pending</Button>
@@ -134,6 +206,37 @@ export default function TopUpsPage() {
               className="ml-auto max-w-sm"
             />
             <Button size="sm" variant="outline" onClick={load}>Search</Button>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-white/[0.08] bg-[#0f1119] p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setSelectedIds(pendingRows.map((row) => row.id))}
+              >
+                Select Pending
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setSelectedIds([])}>
+                Clear Selection
+              </Button>
+            </div>
+            <Input
+              value={bulkReviewNote}
+              onChange={(e) => setBulkReviewNote(e.target.value)}
+              placeholder="Bulk review note (optional)"
+              className="lg:ml-auto lg:max-w-md"
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" disabled={bulkBusy !== null} onClick={() => processBulk("APPROVE")}>
+                {bulkBusy === "APPROVE" ? "Approving..." : `Approve Selected (${selectedPendingCount})`}
+              </Button>
+              <Button size="sm" variant="outline" disabled={bulkBusy !== null} onClick={() => processBulk("REJECT")}>
+                {bulkBusy === "REJECT" ? "Rejecting..." : "Reject Selected"}
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -154,6 +257,16 @@ export default function TopUpsPage() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-zinc-100">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(row.id)}
+                          onChange={(e) => {
+                            setSelectedIds((prev) =>
+                              e.target.checked ? [...new Set([...prev, row.id])] : prev.filter((item) => item !== row.id)
+                            );
+                          }}
+                          className="h-4 w-4 rounded border-white/10 bg-transparent"
+                        />
                         <span>{row.customer.username}</span>
                         <Badge variant="outline" className={statusBadge(row.status)}>{row.status}</Badge>
                       </div>

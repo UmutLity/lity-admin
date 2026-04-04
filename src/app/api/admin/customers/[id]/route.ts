@@ -112,6 +112,30 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
             rejectedAt: true,
           },
         },
+        favorites: {
+          orderBy: { createdAt: "desc" },
+          take: 8,
+          select: {
+            id: true,
+            createdAt: true,
+            product: {
+              select: { id: true, name: true, slug: true, status: true, category: true },
+            },
+          },
+        },
+        reviews: {
+          orderBy: { createdAt: "desc" },
+          take: 8,
+          select: {
+            id: true,
+            rating: true,
+            content: true,
+            createdAt: true,
+            product: {
+              select: { id: true, name: true, slug: true },
+            },
+          },
+        },
       },
     }).catch(async (error) => {
       if (!isSchemaMismatch(error)) throw error;
@@ -186,6 +210,30 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
               senderBankName: true,
               note: true,
               createdAt: true,
+            },
+          },
+          favorites: {
+            orderBy: { createdAt: "desc" },
+            take: 8,
+            select: {
+              id: true,
+              createdAt: true,
+              product: {
+                select: { id: true, name: true, slug: true, status: true, category: true },
+              },
+            },
+          },
+          reviews: {
+            orderBy: { createdAt: "desc" },
+            take: 8,
+            select: {
+              id: true,
+              rating: true,
+              content: true,
+              createdAt: true,
+              product: {
+                select: { id: true, name: true, slug: true },
+              },
             },
           },
         },
