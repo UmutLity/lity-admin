@@ -81,7 +81,6 @@ export default function AdminTicketsPage() {
   const [statusFilter, setStatusFilter] = useState<"ALL" | TicketStatus>("ALL");
   const [selectedId, setSelectedId] = useState<string>("");
   const [replyMessage, setReplyMessage] = useState("");
-  const [adminNotesDraft, setAdminNotesDraft] = useState("");
   const [saving, setSaving] = useState(false);
 
   const filteredTickets = useMemo(() => tickets, [tickets]);
@@ -99,10 +98,6 @@ export default function AdminTicketsPage() {
       unassigned: filteredTickets.filter((ticket) => !ticket.assignedTo).length,
     };
   }, [filteredTickets]);
-
-  useEffect(() => {
-    setAdminNotesDraft(selectedTicket?.adminNotes || "");
-  }, [selectedTicket?.id, selectedTicket?.adminNotes]);
 
   async function loadTickets() {
     setLoading(true);
@@ -133,7 +128,7 @@ export default function AdminTicketsPage() {
   }, [query, statusFilter]);
 
   async function patchTicket(
-    payload: Partial<Pick<AdminTicket, "status" | "priority" | "adminNotes">> & {
+    payload: Partial<Pick<AdminTicket, "status" | "priority">> & {
       replyMessage?: string;
       assignAction?: "ASSIGN_SELF" | "UNASSIGN";
     }
@@ -341,62 +336,39 @@ export default function AdminTicketsPage() {
                 </div>
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3">
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <div className="text-sm font-semibold text-zinc-200">Internal Notes</div>
-                    <button
-                      type="button"
-                      onClick={() => patchTicket({ adminNotes: adminNotesDraft })}
-                      disabled={saving}
-                      className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-zinc-200"
-                    >
-                      Save
-                    </button>
-                  </div>
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3">
+                <div className="mb-3 text-sm font-semibold text-zinc-200">Reply</div>
 
-                  <textarea
-                    value={adminNotesDraft}
-                    onChange={(event) => setAdminNotesDraft(event.target.value)}
-                    placeholder="Private admin notes..."
-                    className="min-h-[190px] w-full rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 text-sm text-zinc-200 outline-none transition focus:border-[#b9accf]/40"
-                  />
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {quickReplies.map((item) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => setReplyMessage(item.message)}
+                      className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-zinc-300 transition hover:border-[#b9accf]/35 hover:bg-[#a996c4]/12 hover:text-white"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
                 </div>
 
-                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3">
-                  <div className="mb-3 text-sm font-semibold text-zinc-200">Reply</div>
+                <textarea
+                  value={replyMessage}
+                  onChange={(event) => setReplyMessage(event.target.value)}
+                  placeholder="Write your response..."
+                  className="min-h-[220px] w-full rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 text-sm text-zinc-200 outline-none transition focus:border-[#b9accf]/40"
+                />
 
-                  <div className="mb-3 flex flex-wrap gap-2">
-                    {quickReplies.map((item) => (
-                      <button
-                        key={item.label}
-                        type="button"
-                        onClick={() => setReplyMessage(item.message)}
-                        className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-zinc-300 transition hover:border-[#b9accf]/35 hover:bg-[#a996c4]/12 hover:text-white"
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <textarea
-                    value={replyMessage}
-                    onChange={(event) => setReplyMessage(event.target.value)}
-                    placeholder="Write your response..."
-                    className="min-h-[190px] w-full rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 text-sm text-zinc-200 outline-none transition focus:border-[#b9accf]/40"
-                  />
-
-                  <div className="mt-3 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => patchTicket({ replyMessage })}
-                      disabled={saving || !replyMessage.trim()}
-                      className="inline-flex items-center gap-2 rounded-xl border border-[#b9accf]/35 bg-[#a996c4]/15 px-4 py-2 text-sm font-semibold text-[#ddd4ea] transition hover:bg-[#a996c4]/25 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <Send className="h-4 w-4" />
-                      Send Reply
-                    </button>
-                  </div>
+                <div className="mt-3 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => patchTicket({ replyMessage })}
+                    disabled={saving || !replyMessage.trim()}
+                    className="inline-flex items-center gap-2 rounded-xl border border-[#b9accf]/35 bg-[#a996c4]/15 px-4 py-2 text-sm font-semibold text-[#ddd4ea] transition hover:bg-[#a996c4]/25 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Send className="h-4 w-4" />
+                    Send Reply
+                  </button>
                 </div>
               </div>
             </div>
