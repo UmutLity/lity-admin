@@ -247,14 +247,14 @@ export default function AdminTicketsPage() {
                   key={ticket.id}
                   type="button"
                   onClick={() => setSelectedId(ticket.id)}
-                  className={`w-full rounded-2xl border p-4 text-left transition ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
                     selectedTicket?.id === ticket.id
                       ? "border-[#b9accf]/35 bg-[#a996c4]/10"
                       : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.03]"
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-sm font-semibold text-zinc-300">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-sm font-semibold text-zinc-300">
                       {avatarLabel(ticket)}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -272,9 +272,9 @@ export default function AdminTicketsPage() {
                         ) : null}
                       </div>
 
-                      <div className="mt-3 flex items-start justify-between gap-4">
+                      <div className="mt-2 flex items-start justify-between gap-4">
                         <div className="min-w-0">
-                          <p className="truncate text-xl font-medium text-white">{ticket.subject}</p>
+                          <p className="truncate text-[1.65rem] font-medium leading-none text-white">{ticket.subject}</p>
                           <p className="mt-1 truncate text-sm text-zinc-500">
                             {ticket.email || ticket.discordUsername || "Customer"}
                           </p>
