@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Topbar } from "@/components/admin/topbar";
-import { Send, Ticket } from "lucide-react";
+import { ChevronRight, MessageSquareMore, Send, Ticket } from "lucide-react";
 
 type TicketStatus = "OPEN" | "IN_PROGRESS" | "WAITING_CUSTOMER" | "RESOLVED" | "CLOSED";
 type TicketPriority = "LOW" | "NORMAL" | "HIGH";
@@ -72,6 +72,17 @@ function priorityClass(priority: TicketPriority) {
   if (priority === "HIGH") return "text-rose-300 border-rose-400/25 bg-rose-500/10";
   if (priority === "LOW") return "text-zinc-300 border-zinc-400/20 bg-zinc-500/10";
   return "text-violet-200 border-violet-400/20 bg-violet-500/10";
+}
+
+function compactStatusLabel(status: TicketStatus) {
+  if (status === "WAITING_CUSTOMER") return "Awaiting Reply";
+  if (status === "IN_PROGRESS") return "In Progress";
+  return formatStatus(status);
+}
+
+function avatarLabel(ticket: AdminTicket) {
+  const source = ticket.email || ticket.discordUsername || ticket.subject || "T";
+  return source.charAt(0).toUpperCase();
 }
 
 export default function AdminTicketsPage() {
@@ -164,50 +175,70 @@ export default function AdminTicketsPage() {
     <div>
       <Topbar title="Tickets" description="Simple queue for support replies" />
 
-      <div className="mb-5 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-sm text-zinc-400">
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <span>{queueStats.total} tickets</span>
-          <span>{queueStats.waitingCustomer} waiting customer</span>
-          <span>{queueStats.highPriority} high priority</span>
-          <span>{queueStats.unassigned} unassigned</span>
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-3xl font-semibold text-white">
+            <Ticket className="h-6 w-6 text-rose-400" />
+            <span>Support Tickets</span>
+          </div>
+          <p className="mt-1 text-sm text-zinc-400">Manage customer support requests</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded-full border border-sky-400/20 bg-sky-500/10 px-3 py-1.5 text-sm font-medium text-sky-300">
+            {filteredTickets.filter((ticket) => ticket.status === "OPEN").length} Open
+          </span>
+          <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-3 py-1.5 text-sm font-medium text-amber-300">
+            {queueStats.waitingCustomer} Awaiting
+          </span>
         </div>
       </div>
 
-      <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-[1fr_220px]">
+      <div className="mb-5 grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search by subject, email, or Discord..."
           className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-200 outline-none transition focus:border-[#b9accf]/40"
         />
-        <select
-          value={statusFilter}
-          onChange={(event) => setStatusFilter(event.target.value as "ALL" | TicketStatus)}
-          className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-200 outline-none"
-        >
-          <option value="ALL">All Status</option>
-          {statusOptions.map((status) => (
-            <option key={status} value={status}>
-              {formatStatus(status)}
-            </option>
+        <div className="flex flex-wrap gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] p-1">
+          {(["ALL", "OPEN", "WAITING_CUSTOMER", "CLOSED"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setStatusFilter(value)}
+              className={`rounded-lg px-4 py-2 text-sm transition ${
+                statusFilter === value
+                  ? "bg-[#ff5b57] text-white"
+                  : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"
+              }`}
+            >
+              {value === "ALL" ? "All" : compactStatusLabel(value as TicketStatus)}
+            </button>
           ))}
-        </select>
+        </div>
       </div>
 
-      <div className={`grid grid-cols-1 gap-4 ${selectedTicket ? "xl:grid-cols-[320px_1fr]" : ""}`}>
-        <div className="premium-card p-3">
-          <div className="mb-3 flex items-center gap-2 px-1 text-sm font-semibold text-zinc-200">
-            <Ticket className="h-4 w-4 text-[#c7bdd8]" />
-            Ticket List
-          </div>
+      <div className={`grid grid-cols-1 gap-4 ${selectedTicket ? "xl:grid-cols-[1.05fr_0.95fr]" : ""}`}>
+        <div className="space-y-3">
+          {!selectedTicket ? null : (
+            <div className="flex justify-start">
+              <button
+                type="button"
+                onClick={() => setSelectedId("")}
+                className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs font-semibold text-zinc-200"
+              >
+                Back to List
+              </button>
+            </div>
+          )}
 
-          <div className="max-h-[720px] space-y-2 overflow-y-auto pr-1">
+          <div className="space-y-3">
             {loading ? (
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 text-sm text-zinc-500">
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 text-sm text-zinc-500">
                 Loading tickets...
               </div>
             ) : filteredTickets.length === 0 ? (
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 text-sm text-zinc-500">
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 text-sm text-zinc-500">
                 No tickets found.
               </div>
             ) : (
@@ -216,27 +247,53 @@ export default function AdminTicketsPage() {
                   key={ticket.id}
                   type="button"
                   onClick={() => setSelectedId(ticket.id)}
-                  className={`w-full rounded-xl border p-3 text-left transition ${
+                  className={`w-full rounded-2xl border p-4 text-left transition ${
                     selectedTicket?.id === ticket.id
                       ? "border-[#b9accf]/35 bg-[#a996c4]/10"
-                      : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12]"
+                      : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.03]"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-white">
-                        #{ticket.ticketNumber} {ticket.subject}
-                      </p>
-                      <p className="mt-1 truncate text-xs text-zinc-500">
-                        {ticket.email || ticket.discordUsername || "Customer"}
-                      </p>
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-sm font-semibold text-zinc-300">
+                      {avatarLabel(ticket)}
                     </div>
-                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusClass(ticket.status)}`}>
-                      {formatStatus(ticket.status)}
-                    </span>
-                  </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${statusClass(ticket.status)}`}>
+                          {compactStatusLabel(ticket.status)}
+                        </span>
+                        <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${priorityClass(ticket.priority)}`}>
+                          {ticket.priority}
+                        </span>
+                        {ticket.assignedTo ? (
+                          <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[11px] text-zinc-400">
+                            {ticket.assignedTo.name}
+                          </span>
+                        ) : null}
+                      </div>
 
-                  <p className="mt-2 line-clamp-2 text-xs text-zinc-400">{ticket.message}</p>
+                      <div className="mt-3 flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="truncate text-xl font-medium text-white">{ticket.subject}</p>
+                          <p className="mt-1 truncate text-sm text-zinc-500">
+                            {ticket.email || ticket.discordUsername || "Customer"}
+                          </p>
+                          <p className="mt-1 line-clamp-1 text-sm text-zinc-400">{ticket.message}</p>
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-3 text-zinc-500">
+                          <div className="text-right text-sm">
+                            <div className="flex items-center justify-end gap-1">
+                              <MessageSquareMore className="h-4 w-4" />
+                              <span>{ticket.conversation?.length || 1}</span>
+                            </div>
+                            <div className="mt-1 text-xs">{new Date(ticket.updatedAt).toLocaleDateString()}</div>
+                          </div>
+                          <ChevronRight className="h-4 w-4" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </button>
               ))
             )}
