@@ -86,7 +86,7 @@ export default function AdminTicketsPage() {
   const filteredTickets = useMemo(() => tickets, [tickets]);
 
   const selectedTicket = useMemo(
-    () => filteredTickets.find((ticket) => ticket.id === selectedId) || filteredTickets[0] || null,
+    () => filteredTickets.find((ticket) => ticket.id === selectedId) || null,
     [filteredTickets, selectedId]
   );
 
@@ -113,7 +113,7 @@ export default function AdminTicketsPage() {
       setTickets(nextTickets);
       setSelectedId((current) => {
         if (current && nextTickets.some((ticket) => ticket.id === current)) return current;
-        return nextTickets[0]?.id || "";
+        return "";
       });
     } finally {
       setLoading(false);
@@ -194,7 +194,7 @@ export default function AdminTicketsPage() {
         </select>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[320px_1fr]">
+      <div className={`grid grid-cols-1 gap-4 ${selectedTicket ? "xl:grid-cols-[320px_1fr]" : ""}`}>
         <div className="premium-card p-3">
           <div className="mb-3 flex items-center gap-2 px-1 text-sm font-semibold text-zinc-200">
             <Ticket className="h-4 w-4 text-[#c7bdd8]" />
@@ -243,12 +243,8 @@ export default function AdminTicketsPage() {
           </div>
         </div>
 
-        <div className="premium-card p-4">
-          {!selectedTicket ? (
-            <div className="flex min-h-[560px] items-center justify-center text-sm text-zinc-500">
-              Select a ticket to view details.
-            </div>
-          ) : (
+        {selectedTicket ? (
+          <div className="premium-card p-4">
             <div className="space-y-4">
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/[0.06] pb-4">
                 <div className="min-w-0">
@@ -275,6 +271,13 @@ export default function AdminTicketsPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId("")}
+                    className="h-10 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 text-xs font-semibold text-zinc-200"
+                  >
+                    Back to List
+                  </button>
                   <select
                     value={selectedTicket.status}
                     onChange={(event) => patchTicket({ status: event.target.value as TicketStatus })}
@@ -372,8 +375,8 @@ export default function AdminTicketsPage() {
                 </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
