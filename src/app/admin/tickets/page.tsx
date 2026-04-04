@@ -61,9 +61,9 @@ function formatStatus(status: TicketStatus) {
 }
 
 function statusClass(status: TicketStatus) {
-  if (status === "OPEN") return "text-sky-300 border-sky-400/25 bg-sky-500/10";
-  if (status === "IN_PROGRESS") return "text-amber-300 border-amber-400/25 bg-amber-500/10";
-  if (status === "WAITING_CUSTOMER") return "text-orange-300 border-orange-400/25 bg-orange-500/10";
+  if (status === "OPEN") return "text-violet-200 border-violet-400/25 bg-violet-500/10";
+  if (status === "IN_PROGRESS") return "text-fuchsia-200 border-fuchsia-400/20 bg-fuchsia-500/10";
+  if (status === "WAITING_CUSTOMER") return "text-violet-100 border-violet-300/25 bg-violet-400/12";
   if (status === "RESOLVED") return "text-emerald-300 border-emerald-400/25 bg-emerald-500/10";
   return "text-zinc-300 border-zinc-400/20 bg-zinc-500/10";
 }
@@ -172,22 +172,22 @@ export default function AdminTicketsPage() {
   }
 
   return (
-    <div>
+    <div className="max-w-6xl">
       <Topbar title="Tickets" description="Simple queue for support replies" />
 
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 text-3xl font-semibold text-white">
-            <Ticket className="h-6 w-6 text-rose-400" />
+          <div className="flex items-center gap-2 text-[2rem] font-semibold text-white">
+            <Ticket className="h-5 w-5 text-[#b9accf]" />
             <span>Support Tickets</span>
           </div>
           <p className="mt-1 text-sm text-zinc-400">Manage customer support requests</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <span className="rounded-full border border-sky-400/20 bg-sky-500/10 px-3 py-1.5 text-sm font-medium text-sky-300">
+          <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-3 py-1.5 text-sm font-medium text-violet-200">
             {filteredTickets.filter((ticket) => ticket.status === "OPEN").length} Open
           </span>
-          <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-3 py-1.5 text-sm font-medium text-amber-300">
+          <span className="rounded-full border border-violet-300/20 bg-violet-400/10 px-3 py-1.5 text-sm font-medium text-violet-100">
             {queueStats.waitingCustomer} Awaiting
           </span>
         </div>
@@ -205,13 +205,13 @@ export default function AdminTicketsPage() {
             <button
               key={value}
               type="button"
-              onClick={() => setStatusFilter(value)}
-              className={`rounded-lg px-4 py-2 text-sm transition ${
-                statusFilter === value
-                  ? "bg-[#ff5b57] text-white"
-                  : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"
-              }`}
-            >
+                onClick={() => setStatusFilter(value)}
+                className={`rounded-lg px-4 py-2 text-sm transition ${
+                  statusFilter === value
+                    ? "bg-[#a996c4] text-white"
+                    : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"
+                }`}
+              >
               {value === "ALL" ? "All" : compactStatusLabel(value as TicketStatus)}
             </button>
           ))}
