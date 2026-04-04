@@ -86,6 +86,7 @@ function statusClass(status: string) {
 
 export default function OrdersPage() {
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "PAID" | "PENDING" | "REFUNDED" | "CANCELED">("ALL");
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<OrdersPayload>(EMPTY_DATA);
   const [openRows, setOpenRows] = useState<Record<string, boolean>>({});
@@ -166,6 +167,23 @@ export default function OrdersPage() {
     [data.summary]
   );
 
+  const queueCards = useMemo(() => {
+    const orders = data.orders || [];
+    const countBy = (status: string) => orders.filter((order) => String(order.status || "").toUpperCase() === status).length;
+    return [
+      { key: "ALL" as const, label: "All Orders", value: orders.length, tone: "border-white/[0.08] bg-white/[0.03] text-zinc-200" },
+      { key: "PENDING" as const, label: "Pending", value: countBy("PENDING"), tone: "border-amber-400/20 bg-amber-500/10 text-amber-300" },
+      { key: "PAID" as const, label: "Paid", value: countBy("PAID"), tone: "border-emerald-400/20 bg-emerald-500/10 text-emerald-300" },
+      { key: "REFUNDED" as const, label: "Refunded", value: countBy("REFUNDED"), tone: "border-sky-400/20 bg-sky-500/10 text-sky-300" },
+      { key: "CANCELED" as const, label: "Canceled", value: countBy("CANCELED"), tone: "border-rose-400/20 bg-rose-500/10 text-rose-300" },
+    ];
+  }, [data.orders]);
+
+  const filteredOrders = useMemo(() => {
+    if (statusFilter === "ALL") return data.orders;
+    return data.orders.filter((order) => String(order.status || "").toUpperCase() === statusFilter);
+  }, [data.orders, statusFilter]);
+
   return (
     <div className="space-y-4">
       <Topbar title="Order Management" description="Track and manage all orders" />
@@ -188,14 +206,33 @@ export default function OrdersPage() {
       </div>
 
       <div className="premium-card p-4">
-        <div className="relative max-w-xl">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by user, product, or order ID..."
-            className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] pl-10 pr-3 text-sm text-zinc-200 outline-none transition focus:border-[#b9accf]/35"
-          />
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="relative max-w-xl">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search by user, product, or order ID..."
+              className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] pl-10 pr-3 text-sm text-zinc-200 outline-none transition focus:border-[#b9accf]/35"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {queueCards.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setStatusFilter(item.key)}
+                className={`rounded-xl border px-3 py-2 text-left transition ${
+                  statusFilter === item.key
+                    ? "border-[#b9accf]/35 bg-[#a996c4]/14 text-white"
+                    : item.tone
+                }`}
+              >
+                <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-400">{item.label}</p>
+                <p className="mt-1 text-sm font-semibold">{item.value}</p>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -206,11 +243,11 @@ export default function OrdersPage() {
               <div key={index} className="skeleton h-20 w-full rounded-xl" />
             ))}
           </div>
-        ) : data.orders.length === 0 ? (
+        ) : filteredOrders.length === 0 ? (
           <div className="p-10 text-center text-sm text-zinc-500">No orders found.</div>
         ) : (
           <div className="divide-y divide-white/[0.06]">
-            {data.orders.map((order) => {
+            {filteredOrders.map((order) => {
               const firstItem = order.items[0];
               const isOpen = !!openRows[order.id];
               return (

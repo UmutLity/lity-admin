@@ -1,17 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Topbar } from "@/components/admin/topbar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
-import {
-  ClipboardList, Download, ChevronLeft, ChevronRight, Search,
-  Eye, X, Filter,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Eye, Search, Shield, X } from "lucide-react";
 
 interface AuditEntry {
   id: string;
@@ -28,26 +21,49 @@ interface AuditEntry {
   user: { id: string; name: string; email: string };
 }
 
-const ACTION_COLORS: Record<string, string> = {
-  CREATE: "bg-green-500/10 text-green-500 border-green-500/20",
-  UPDATE: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-  DELETE: "bg-red-500/10 text-red-500 border-red-500/20",
-  PUBLISH: "bg-purple-500/10 text-purple-500 border-purple-500/20",
-  LOGIN_SUCCESS: "bg-green-500/10 text-green-500 border-green-500/20",
-  LOGIN_FAIL: "bg-red-500/10 text-red-500 border-red-500/20",
-  STATUS_CHANGE: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-  SETTINGS_UPDATE: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-  WEBHOOK_TEST: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
-  WEBHOOK_SEND: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
-  "2FA_ENABLE": "bg-green-500/10 text-green-500 border-green-500/20",
-  "2FA_DISABLE": "bg-orange-500/10 text-orange-500 border-orange-500/20",
-  LOCK: "bg-red-500/10 text-red-500 border-red-500/20",
-  UNLOCK: "bg-green-500/10 text-green-500 border-green-500/20",
-  ROLE_CHANGE: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+const ACTIONS = [
+  "CREATE",
+  "UPDATE",
+  "DELETE",
+  "PUBLISH",
+  "LOGIN_SUCCESS",
+  "LOGIN_FAIL",
+  "STATUS_CHANGE",
+  "SETTINGS_UPDATE",
+  "WEBHOOK_TEST",
+  "WEBHOOK_SEND",
+  "2FA_ENABLE",
+  "2FA_DISABLE",
+  "LOCK",
+  "UNLOCK",
+  "MEDIA_UPLOAD",
+  "MEDIA_DELETE",
+  "ROLE_CHANGE",
+];
+
+const ENTITIES = ["Product", "Changelog", "SiteSetting", "User", "Media", "Role", "Security", "Webhook"];
+
+const actionTone = (action: string) => {
+  const key = String(action || "").toUpperCase();
+  if (key.includes("DELETE") || key.includes("FAIL") || key === "LOCK") return "border-rose-400/20 bg-rose-500/10 text-rose-300";
+  if (key.includes("CREATE") || key.includes("ENABLE") || key.includes("SUCCESS") || key === "UNLOCK") return "border-emerald-400/20 bg-emerald-500/10 text-emerald-300";
+  if (key.includes("UPDATE") || key.includes("CHANGE")) return "border-sky-400/20 bg-sky-500/10 text-sky-300";
+  if (key.includes("PUBLISH") || key.includes("ROLE")) return "border-violet-400/20 bg-violet-500/10 text-violet-300";
+  return "border-amber-400/20 bg-amber-500/10 text-amber-300";
 };
 
-const ACTIONS = ["CREATE","UPDATE","DELETE","PUBLISH","LOGIN_SUCCESS","LOGIN_FAIL","STATUS_CHANGE","SETTINGS_UPDATE","WEBHOOK_TEST","WEBHOOK_SEND","2FA_ENABLE","2FA_DISABLE","LOCK","UNLOCK","MEDIA_UPLOAD","MEDIA_DELETE","ROLE_CHANGE"];
-const ENTITIES = ["Product","Changelog","SiteSetting","User","Media","Role","Security","Webhook"];
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString("tr-TR");
+}
+
+function parseJsonBlock(raw: string | null) {
+  if (!raw) return "";
+  try {
+    return JSON.stringify(JSON.parse(raw), null, 2);
+  } catch {
+    return raw;
+  }
+}
 
 export default function AuditPage() {
   const { addToast } = useToast();
@@ -56,13 +72,12 @@ export default function AuditPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [selectedLog, setSelectedLog] = useState<AuditEntry | null>(null);
-  const pageSize = 30;
-
-  // Filters
   const [filterAction, setFilterAction] = useState("");
   const [filterEntity, setFilterEntity] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [query, setQuery] = useState("");
+  const pageSize = 30;
 
   const loadLogs = useCallback(async () => {
     setLoading(true);
@@ -73,178 +88,283 @@ export default function AuditPage() {
       if (dateFrom) params.set("dateFrom", dateFrom);
       if (dateTo) params.set("dateTo", dateTo);
 
-      const res = await fetch(`/api/admin/audit?${params}`);
+      const res = await fetch(`/api/admin/audit?${params.toString()}`, { credentials: "include" });
       const data = await res.json();
-      if (data.success) {
-        setLogs(data.data);
-        setTotal(data.meta.total);
-      }
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  }, [page, filterAction, filterEntity, dateFrom, dateTo]);
+      if (!data?.success) throw new Error(data?.error || "Failed to load audit logs");
+      setLogs(Array.isArray(data.data) ? data.data : []);
+      setTotal(Number(data?.meta?.total || 0));
+    } catch (error) {
+      console.error(error);
+      setLogs([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [dateFrom, dateTo, filterAction, filterEntity, page]);
 
-  useEffect(() => { loadLogs(); }, [loadLogs]);
+  useEffect(() => {
+    loadLogs();
+  }, [loadLogs]);
 
-  const handleExport = () => {
+  const visibleLogs = useMemo(() => {
+    if (!query.trim()) return logs;
+    const needle = query.trim().toLowerCase();
+    return logs.filter((item) => {
+      const haystack = `${item.action} ${item.entity} ${item.user?.name || ""} ${item.user?.email || ""} ${item.ip || ""}`.toLowerCase();
+      return haystack.includes(needle);
+    });
+  }, [logs, query]);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const successCount = logs.filter((item) => {
+    const action = String(item.action || "").toUpperCase();
+    return action.includes("SUCCESS") || action.includes("CREATE") || action.includes("ENABLE");
+  }).length;
+  const riskyCount = logs.filter((item) => {
+    const action = String(item.action || "").toUpperCase();
+    return action.includes("DELETE") || action.includes("FAIL") || action === "LOCK";
+  }).length;
+
+  function resetFilters() {
+    setFilterAction("");
+    setFilterEntity("");
+    setDateFrom("");
+    setDateTo("");
+    setQuery("");
+    setPage(1);
+  }
+
+  function exportCsv() {
     const params = new URLSearchParams({ format: "csv" });
     if (filterAction) params.set("action", filterAction);
     if (filterEntity) params.set("entity", filterEntity);
     if (dateFrom) params.set("dateFrom", dateFrom);
     if (dateTo) params.set("dateTo", dateTo);
-    window.open(`/api/admin/audit?${params}`, "_blank");
-    addToast({ type: "success", title: "CSV indiriliyor..." });
-  };
-
-  const totalPages = Math.ceil(total / pageSize);
+    window.open(`/api/admin/audit?${params.toString()}`, "_blank");
+    addToast({ type: "success", title: "CSV export started" });
+  }
 
   return (
-    <div>
-      <Topbar title="Audit Log" description={`Toplam ${total} kayıt`}>
-        <Button variant="outline" onClick={handleExport}><Download className="h-4 w-4" /> CSV İndir</Button>
+    <div className="space-y-4">
+      <Topbar title="Audit Log" description="Track admin actions, security events, and important changes.">
+        <Button variant="outline" onClick={exportCsv}>
+          <Download className="h-4 w-4" /> Export CSV
+        </Button>
       </Topbar>
 
-      {/* Filters */}
-      <Card className="mb-4">
-        <CardContent className="pt-4 pb-4">
-          <div className="flex flex-wrap gap-3 items-end">
-            <div>
-              <Label className="text-xs">Action</Label>
-              <select value={filterAction} onChange={(e) => { setFilterAction(e.target.value); setPage(1); }} className="h-9 rounded-md border bg-background px-3 text-sm w-40">
-                <option value="">Tümü</option>
-                {ACTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
-              </select>
-            </div>
-            <div>
-              <Label className="text-xs">Entity</Label>
-              <select value={filterEntity} onChange={(e) => { setFilterEntity(e.target.value); setPage(1); }} className="h-9 rounded-md border bg-background px-3 text-sm w-36">
-                <option value="">Tümü</option>
-                {ENTITIES.map((e) => <option key={e} value={e}>{e}</option>)}
-              </select>
-            </div>
-            <div>
-              <Label className="text-xs">Başlangıç</Label>
-              <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} className="w-36 h-9" />
-            </div>
-            <div>
-              <Label className="text-xs">Bitiş</Label>
-              <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} className="w-36 h-9" />
-            </div>
-            {(filterAction || filterEntity || dateFrom || dateTo) && (
-              <Button variant="ghost" size="sm" onClick={() => { setFilterAction(""); setFilterEntity(""); setDateFrom(""); setDateTo(""); setPage(1); }}>
-                <X className="h-4 w-4" /> Temizle
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-3 md:grid-cols-4">
+        <div className="rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] p-4">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Total Logs</p>
+          <p className="mt-2 text-3xl font-semibold text-white">{total}</p>
+        </div>
+        <div className="rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(14,15,22,0.92),rgba(11,12,18,0.98))] p-4">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Current Page</p>
+          <p className="mt-2 text-3xl font-semibold text-white">{logs.length}</p>
+        </div>
+        <div className="rounded-2xl border border-emerald-400/15 bg-emerald-500/5 p-4">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Success Events</p>
+          <p className="mt-2 text-3xl font-semibold text-emerald-300">{successCount}</p>
+        </div>
+        <div className="rounded-2xl border border-rose-400/15 bg-rose-500/5 p-4">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Risk Events</p>
+          <p className="mt-2 text-3xl font-semibold text-rose-300">{riskyCount}</p>
+        </div>
+      </div>
 
-      {/* Table */}
-      <Card>
-        <CardContent className="pt-4">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left">
-                  <th className="pb-2 font-medium">Tarih</th>
-                  <th className="pb-2 font-medium">Kullanıcı</th>
-                  <th className="pb-2 font-medium">Action</th>
-                  <th className="pb-2 font-medium">Entity</th>
-                  <th className="pb-2 font-medium">IP</th>
-                  <th className="pb-2 font-medium w-10"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map((log) => (
-                  <tr key={log.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                    <td className="py-2 text-xs text-muted-foreground whitespace-nowrap">{new Date(log.createdAt).toLocaleString("tr-TR")}</td>
-                    <td className="py-2"><span className="text-xs">{log.user.name}</span></td>
-                    <td className="py-2">
-                      <Badge className={ACTION_COLORS[log.action] || "bg-muted text-muted-foreground"} variant="outline">
+      <div className="premium-card p-4">
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1.2fr)_repeat(4,auto)]">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search by action, user, entity, or IP..."
+              className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] pl-10 pr-3 text-sm text-zinc-200 outline-none transition focus:border-[#b9accf]/35"
+            />
+          </div>
+          <select
+            value={filterAction}
+            onChange={(event) => {
+              setFilterAction(event.target.value);
+              setPage(1);
+            }}
+            className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-200 outline-none"
+          >
+            <option value="">All actions</option>
+            {ACTIONS.map((action) => (
+              <option key={action} value={action}>
+                {action}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filterEntity}
+            onChange={(event) => {
+              setFilterEntity(event.target.value);
+              setPage(1);
+            }}
+            className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-200 outline-none"
+          >
+            <option value="">All entities</option>
+            {ENTITIES.map((entity) => (
+              <option key={entity} value={entity}>
+                {entity}
+              </option>
+            ))}
+          </select>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(event) => {
+              setDateFrom(event.target.value);
+              setPage(1);
+            }}
+            className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-200 outline-none"
+          />
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(event) => {
+              setDateTo(event.target.value);
+              setPage(1);
+            }}
+            className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-200 outline-none"
+          />
+          <Button variant="ghost" onClick={resetFilters} className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] text-zinc-300 hover:bg-white/[0.05]">
+            <X className="h-4 w-4" /> Clear
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_380px]">
+        <div className="premium-card overflow-hidden">
+          {loading ? (
+            <div className="space-y-2 p-4">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="skeleton h-16 w-full rounded-xl" />
+              ))}
+            </div>
+          ) : visibleLogs.length === 0 ? (
+            <div className="p-10 text-center text-sm text-zinc-500">No audit logs match the current filters.</div>
+          ) : (
+            <div className="divide-y divide-white/[0.06]">
+              {visibleLogs.map((log) => (
+                <button
+                  key={log.id}
+                  type="button"
+                  onClick={() => setSelectedLog(log)}
+                  className={`flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition hover:bg-white/[0.03] ${
+                    selectedLog?.id === log.id ? "bg-white/[0.04]" : ""
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${actionTone(log.action)}`}>
                         {log.action}
-                      </Badge>
-                    </td>
-                    <td className="py-2">
-                      <span className="text-xs font-mono">{log.entity}</span>
-                      {log.entityId && <span className="text-xs text-muted-foreground ml-1">#{log.entityId.slice(-6)}</span>}
-                    </td>
-                    <td className="py-2 font-mono text-xs text-muted-foreground">{log.ip || "-"}</td>
-                    <td className="py-2">
-                      <Button size="sm" variant="ghost" onClick={() => setSelectedLog(log)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {loading && <div className="text-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-primary mx-auto" /></div>}
-            {!loading && logs.length === 0 && <p className="text-center text-muted-foreground py-8">Kayıt bulunamadı</p>}
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 pt-4 border-t">
-              <p className="text-sm text-muted-foreground">Sayfa {page} / {totalPages}</p>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-                  <ChevronLeft className="h-4 w-4" /> Önceki
-                </Button>
-                <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-                  Sonraki <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+                      </span>
+                      <span className="text-sm font-semibold text-white">{log.entity}</span>
+                      {log.entityId ? <span className="text-xs text-zinc-500">#{log.entityId.slice(-8)}</span> : null}
+                    </div>
+                    <p className="mt-2 text-sm text-zinc-200">{log.user?.name || "System"} <span className="text-zinc-500">- {log.user?.email || "no-email"}</span></p>
+                    <p className="mt-1 text-xs text-zinc-500">{formatDateTime(log.createdAt)} {log.ip ? `• ${log.ip}` : ""}</p>
+                  </div>
+                  <div className="flex items-center gap-2 text-zinc-500">
+                    <Eye className="h-4 w-4" />
+                  </div>
+                </button>
+              ))}
             </div>
           )}
-        </CardContent>
-      </Card>
 
-      {/* Detail Modal */}
-      {selectedLog && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedLog(null)}>
-          <div className="bg-card rounded-xl border shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold">Audit Log Detayı</h3>
-              <Button size="sm" variant="ghost" onClick={() => setSelectedLog(null)}><X className="h-4 w-4" /></Button>
+          {totalPages > 1 ? (
+            <div className="flex items-center justify-between border-t border-white/[0.06] px-4 py-3">
+              <p className="text-sm text-zinc-500">
+                Page {page} / {totalPages}
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>
+                  <ChevronLeft className="h-4 w-4" /> Prev
+                </Button>
+                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((current) => current + 1)}>
+                  Next <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
+          ) : null}
+        </div>
 
-            <div className="space-y-3 text-sm">
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-xs text-muted-foreground">Tarih</Label><p>{new Date(selectedLog.createdAt).toLocaleString("tr-TR")}</p></div>
-                <div><Label className="text-xs text-muted-foreground">Kullanıcı</Label><p>{selectedLog.user.name} ({selectedLog.user.email})</p></div>
-                <div><Label className="text-xs text-muted-foreground">Action</Label><p><Badge className={ACTION_COLORS[selectedLog.action]} variant="outline">{selectedLog.action}</Badge></p></div>
-                <div><Label className="text-xs text-muted-foreground">Entity</Label><p>{selectedLog.entity} {selectedLog.entityId ? `#${selectedLog.entityId.slice(-8)}` : ""}</p></div>
-                <div><Label className="text-xs text-muted-foreground">IP</Label><p className="font-mono">{selectedLog.ip || "-"}</p></div>
-                <div><Label className="text-xs text-muted-foreground">User Agent</Label><p className="text-xs truncate">{selectedLog.userAgent || "-"}</p></div>
+        <div className="premium-card min-h-[520px] p-4">
+          {selectedLog ? (
+            <div className="space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Selected Event</p>
+                  <h3 className="mt-1 flex items-center gap-2 text-lg font-semibold text-white">
+                    <Shield className="h-4 w-4 text-[#c7bdd8]" />
+                    {selectedLog.action}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedLog(null)}
+                  className="rounded-lg border border-white/[0.08] p-2 text-zinc-400 transition hover:bg-white/[0.04] hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
 
-              {selectedLog.diff && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">Değişiklik Özeti</Label>
-                  <pre className="mt-1 p-3 bg-muted rounded-lg text-xs overflow-x-auto whitespace-pre-wrap">{selectedLog.diff}</pre>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+                  <p className="text-[11px] uppercase tracking-[0.15em] text-zinc-500">User</p>
+                  <p className="mt-2 text-sm font-medium text-white">{selectedLog.user?.name || "System"}</p>
+                  <p className="text-xs text-zinc-500">{selectedLog.user?.email || "-"}</p>
                 </div>
-              )}
+                <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+                  <p className="text-[11px] uppercase tracking-[0.15em] text-zinc-500">Entity</p>
+                  <p className="mt-2 text-sm font-medium text-white">{selectedLog.entity}</p>
+                  <p className="text-xs text-zinc-500">{selectedLog.entityId || "No entity id"}</p>
+                </div>
+                <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+                  <p className="text-[11px] uppercase tracking-[0.15em] text-zinc-500">Time</p>
+                  <p className="mt-2 text-sm font-medium text-white">{formatDateTime(selectedLog.createdAt)}</p>
+                </div>
+                <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+                  <p className="text-[11px] uppercase tracking-[0.15em] text-zinc-500">Source</p>
+                  <p className="mt-2 text-sm font-medium text-white">{selectedLog.ip || "Unknown IP"}</p>
+                  <p className="truncate text-xs text-zinc-500">{selectedLog.userAgent || "-"}</p>
+                </div>
+              </div>
 
-              {selectedLog.before && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">Önceki (Before)</Label>
-                  <pre className="mt-1 p-3 bg-red-500/5 border border-red-500/20 rounded-lg text-xs overflow-x-auto whitespace-pre-wrap">
-                    {JSON.stringify(JSON.parse(selectedLog.before), null, 2)}
-                  </pre>
+              {selectedLog.diff ? (
+                <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+                  <p className="text-[11px] uppercase tracking-[0.15em] text-zinc-500">Diff Summary</p>
+                  <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-xs leading-6 text-zinc-300">{selectedLog.diff}</pre>
                 </div>
-              )}
+              ) : null}
 
-              {selectedLog.after && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">Sonraki (After)</Label>
-                  <pre className="mt-1 p-3 bg-green-500/5 border border-green-500/20 rounded-lg text-xs overflow-x-auto whitespace-pre-wrap">
-                    {JSON.stringify(JSON.parse(selectedLog.after), null, 2)}
-                  </pre>
+              {selectedLog.before ? (
+                <div className="rounded-xl border border-rose-400/12 bg-rose-500/[0.03] p-3">
+                  <p className="text-[11px] uppercase tracking-[0.15em] text-zinc-500">Before</p>
+                  <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-xs leading-6 text-zinc-300">{parseJsonBlock(selectedLog.before)}</pre>
                 </div>
-              )}
+              ) : null}
+
+              {selectedLog.after ? (
+                <div className="rounded-xl border border-emerald-400/12 bg-emerald-500/[0.03] p-3">
+                  <p className="text-[11px] uppercase tracking-[0.15em] text-zinc-500">After</p>
+                  <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-xs leading-6 text-zinc-300">{parseJsonBlock(selectedLog.after)}</pre>
+                </div>
+              ) : null}
             </div>
-          </div>
+          ) : (
+            <div className="flex min-h-[460px] flex-col items-center justify-center text-center text-zinc-500">
+              <Shield className="mb-3 h-10 w-10 text-zinc-700" />
+              <p className="text-sm font-medium text-zinc-300">Select an audit log</p>
+              <p className="mt-1 max-w-xs text-xs text-zinc-500">Open any event from the list to inspect the user, source, and change payload.</p>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -50,6 +50,7 @@ export default function AdminReviewsPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [removingIds, setRemovingIds] = useState<string[]>([]);
+  const [productFilter, setProductFilter] = useState("ALL");
 
   async function load() {
     setLoading(true);
@@ -73,6 +74,7 @@ export default function AdminReviewsPage() {
   const filteredRows = rows.filter((row) => {
     const status = getModerationStatus(row);
     if (tab !== "ALL" && status !== tab) return false;
+    if (productFilter !== "ALL" && (row.productName || "General Review") !== productFilter) return false;
     if (!search.trim()) return true;
     const haystack = `${row.authorName || ""} ${row.productName || ""} ${row.content || ""}`.toLowerCase();
     return haystack.includes(search.trim().toLowerCase());
@@ -80,6 +82,10 @@ export default function AdminReviewsPage() {
 
   const pendingCount = rows.filter((row) => getModerationStatus(row) === "PENDING").length;
   const approvedCount = rows.filter((row) => getModerationStatus(row) === "APPROVED").length;
+  const rejectedCount = rows.filter((row) => getModerationStatus(row) === "REJECTED").length;
+  const productOptions = Array.from(
+    new Set(rows.map((row) => row.productName || "General Review"))
+  ).sort((a, b) => a.localeCompare(b));
 
   async function moderateReview(row: ReviewRow, nextStatus: "APPROVED" | "REJECTED", reason?: string) {
     setBusyId(row.id);
@@ -121,7 +127,7 @@ export default function AdminReviewsPage() {
       <Topbar title="Reviews" description="Moderate incoming customer reviews and publish approved feedback." />
 
       <div className="grid gap-4 md:grid-cols-[1fr_auto]">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-4">
           <div className="rounded-2xl border border-white/10 bg-[#111114] p-4">
             <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Pending</div>
             <div className="mt-2 text-2xl font-semibold text-white">{pendingCount}</div>
@@ -134,16 +140,34 @@ export default function AdminReviewsPage() {
             <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">All Reviews</div>
             <div className="mt-2 text-2xl font-semibold text-white">{rows.length}</div>
           </div>
+          <div className="rounded-2xl border border-white/10 bg-[#111114] p-4">
+            <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Rejected</div>
+            <div className="mt-2 text-2xl font-semibold text-white">{rejectedCount}</div>
+          </div>
         </div>
 
-        <div className="relative min-w-[260px]">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search reviews..."
-            className="w-full rounded-xl border border-white/10 bg-[#111114] py-2.5 pl-10 pr-3 text-sm text-white outline-none transition focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20"
-          />
+        <div className="grid min-w-[320px] gap-3">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search reviews..."
+              className="w-full rounded-xl border border-white/10 bg-[#111114] py-2.5 pl-10 pr-3 text-sm text-white outline-none transition focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20"
+            />
+          </div>
+          <select
+            value={productFilter}
+            onChange={(e) => setProductFilter(e.target.value)}
+            className="w-full rounded-xl border border-white/10 bg-[#111114] px-3 py-2.5 text-sm text-white outline-none transition focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20"
+          >
+            <option value="ALL">All products</option>
+            {productOptions.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -188,14 +212,14 @@ export default function AdminReviewsPage() {
             return (
               <article
                 key={row.id}
-                className={`rounded-2xl border border-white/10 bg-[#111114] p-5 transition duration-200 ${
+                className={`rounded-2xl border border-white/10 bg-[#111114] p-4 transition duration-200 ${
                   isRemoving ? "translate-y-1 opacity-0" : "translate-y-0 opacity-100"
                 }`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="space-y-3">
                     <div className="flex flex-wrap items-center gap-3">
-                      <div className="h-11 w-11 overflow-hidden rounded-full border border-white/10 bg-violet-500/10">
+                      <div className="h-10 w-10 overflow-hidden rounded-full border border-white/10 bg-violet-500/10">
                         {row.authorAvatarUrl ? (
                           <img src={row.authorAvatarUrl} alt={row.authorName} className="h-full w-full object-cover" />
                         ) : (
@@ -205,7 +229,7 @@ export default function AdminReviewsPage() {
                         )}
                       </div>
                       <div>
-                        <div className="text-base font-semibold text-white">{row.authorName}</div>
+                        <div className="text-sm font-semibold text-white">{row.authorName}</div>
                         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
                           <span>{row.productName || "General Review"}</span>
                           {row.isVerifiedPurchase ? (
@@ -218,7 +242,7 @@ export default function AdminReviewsPage() {
                     </div>
 
                     <div className="flex items-center gap-1">{renderStars(row.rating)}</div>
-                    <p className="max-w-3xl whitespace-pre-wrap text-sm leading-7 text-zinc-200">{row.content}</p>
+                    <p className="max-w-3xl whitespace-pre-wrap text-sm leading-6 text-zinc-200">{row.content}</p>
                     <div className="text-xs text-zinc-500">
                       Submitted {new Date(row.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
                     </div>
@@ -249,7 +273,7 @@ export default function AdminReviewsPage() {
                         type="button"
                         disabled={isBusy}
                         onClick={() => moderateReview(row, "APPROVED")}
-                        className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/15 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Approve
                       </button>
@@ -260,7 +284,7 @@ export default function AdminReviewsPage() {
                           setRejectingId((prev) => (prev === row.id ? null : row.id));
                           setRejectReason("");
                         }}
-                        className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-300 transition hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Reject
                       </button>

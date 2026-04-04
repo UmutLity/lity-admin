@@ -78,6 +78,7 @@ const navGroups: NavGroup[] = [
       { href: "/admin/guides", label: "Guides", icon: BookOpen, roles: ["FOUNDER", "ADMIN", "EDITOR"] },
       { href: "/admin/blog", label: "Blog", icon: Newspaper, roles: ["FOUNDER", "ADMIN", "EDITOR"] },
       { href: "/admin/logs", label: "Logs", icon: ClipboardList, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/audit", label: "Audit Log", icon: Shield, roles: ["FOUNDER", "ADMIN"] },
       { href: "/admin/settings", label: "Settings", icon: Settings, roles: ["FOUNDER", "ADMIN"] },
     ],
   },
