@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Topbar } from "@/components/admin/topbar";
-import { Ticket, MessageSquare, Send } from "lucide-react";
+import { AlertCircle, ExternalLink, MessageSquare, Send, Ticket } from "lucide-react";
 
 type TicketStatus = "OPEN" | "IN_PROGRESS" | "WAITING_CUSTOMER" | "RESOLVED" | "CLOSED";
 type TicketPriority = "LOW" | "NORMAL" | "HIGH";
@@ -22,6 +23,9 @@ interface AdminTicket {
   message: string;
   status: TicketStatus;
   priority: TicketPriority;
+  product?: { name: string; slug: string | null } | null;
+  contactType?: string | null;
+  adminNotes?: string | null;
   email: string | null;
   discordUsername: string | null;
   createdAt: string;
@@ -74,14 +78,30 @@ export default function AdminTicketsPage() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | TicketStatus>("ALL");
+  const [priorityFilter, setPriorityFilter] = useState<"ALL" | TicketPriority>("ALL");
+  const [assignmentFilter, setAssignmentFilter] = useState<"ALL" | "ASSIGNED" | "UNASSIGNED">("ALL");
   const [selectedId, setSelectedId] = useState<string>("");
   const [replyMessage, setReplyMessage] = useState("");
+  const [adminNotesDraft, setAdminNotesDraft] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const filteredTickets = useMemo(() => {
+    return tickets.filter((ticket) => {
+      if (priorityFilter !== "ALL" && ticket.priority !== priorityFilter) return false;
+      if (assignmentFilter === "ASSIGNED" && !ticket.assignedTo) return false;
+      if (assignmentFilter === "UNASSIGNED" && !!ticket.assignedTo) return false;
+      return true;
+    });
+  }, [tickets, priorityFilter, assignmentFilter]);
+
   const selectedTicket = useMemo(
-    () => tickets.find((ticket) => ticket.id === selectedId) || null,
-    [tickets, selectedId]
+    () => filteredTickets.find((ticket) => ticket.id === selectedId) || filteredTickets[0] || null,
+    [filteredTickets, selectedId]
   );
+
+  useEffect(() => {
+    setAdminNotesDraft(selectedTicket?.adminNotes || "");
+  }, [selectedTicket?.id, selectedTicket?.adminNotes]);
 
   async function loadTickets() {
     setLoading(true);
@@ -109,7 +129,12 @@ export default function AdminTicketsPage() {
     return () => clearTimeout(timer);
   }, [query, statusFilter]);
 
-  async function patchTicket(payload: Partial<Pick<AdminTicket, "status" | "priority">> & { replyMessage?: string; assignAction?: "ASSIGN_SELF" | "UNASSIGN" }) {
+  async function patchTicket(
+    payload: Partial<Pick<AdminTicket, "status" | "priority" | "adminNotes">> & {
+      replyMessage?: string;
+      assignAction?: "ASSIGN_SELF" | "UNASSIGN";
+    }
+  ) {
     if (!selectedTicket) return;
     setSaving(true);
     try {
@@ -135,6 +160,15 @@ export default function AdminTicketsPage() {
     await patchTicket({ assignAction: action });
   }
 
+  const queueStats = useMemo(() => {
+    return {
+      total: filteredTickets.length,
+      waitingCustomer: filteredTickets.filter((x) => x.status === "WAITING_CUSTOMER").length,
+      highPriority: filteredTickets.filter((x) => x.priority === "HIGH").length,
+      unassigned: filteredTickets.filter((x) => !x.assignedTo).length,
+    };
+  }, [filteredTickets]);
+
   return (
     <div>
       <Topbar title="Tickets" description="User support tickets and admin replies" />
@@ -142,25 +176,23 @@ export default function AdminTicketsPage() {
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="kpi-card py-4">
           <p className="text-xs text-zinc-500">Total</p>
-          <p className="mt-1 text-xl font-semibold text-white">{tickets.length}</p>
+          <p className="mt-1 text-xl font-semibold text-white">{queueStats.total}</p>
         </div>
         <div className="kpi-card py-4">
-          <p className="text-xs text-zinc-500">Open</p>
-          <p className="mt-1 text-xl font-semibold text-sky-300">{tickets.filter((x) => x.status === "OPEN").length}</p>
+          <p className="text-xs text-zinc-500">Waiting Customer</p>
+          <p className="mt-1 text-xl font-semibold text-amber-300">{queueStats.waitingCustomer}</p>
         </div>
         <div className="kpi-card py-4">
-          <p className="text-xs text-zinc-500">In Progress</p>
-          <p className="mt-1 text-xl font-semibold text-amber-300">{tickets.filter((x) => x.status === "IN_PROGRESS").length}</p>
+          <p className="text-xs text-zinc-500">High Priority</p>
+          <p className="mt-1 text-xl font-semibold text-rose-300">{queueStats.highPriority}</p>
         </div>
         <div className="kpi-card py-4">
-          <p className="text-xs text-zinc-500">Resolved/Closed</p>
-          <p className="mt-1 text-xl font-semibold text-emerald-300">
-            {tickets.filter((x) => x.status === "RESOLVED" || x.status === "CLOSED").length}
-          </p>
+          <p className="text-xs text-zinc-500">Unassigned</p>
+          <p className="mt-1 text-xl font-semibold text-violet-300">{queueStats.unassigned}</p>
         </div>
       </div>
 
-      <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-[1fr_220px]">
+      <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-[1fr_220px_180px_180px]">
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -179,6 +211,27 @@ export default function AdminTicketsPage() {
             </option>
           ))}
         </select>
+        <select
+          value={priorityFilter}
+          onChange={(event) => setPriorityFilter(event.target.value as "ALL" | TicketPriority)}
+          className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-200 outline-none"
+        >
+          <option value="ALL">All Priority</option>
+          {priorityOptions.map((priority) => (
+            <option key={priority} value={priority}>
+              {priority}
+            </option>
+          ))}
+        </select>
+        <select
+          value={assignmentFilter}
+          onChange={(event) => setAssignmentFilter(event.target.value as "ALL" | "ASSIGNED" | "UNASSIGNED")}
+          className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-200 outline-none"
+        >
+          <option value="ALL">All Queue</option>
+          <option value="ASSIGNED">Assigned</option>
+          <option value="UNASSIGNED">Unassigned</option>
+        </select>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[360px_1fr]">
@@ -190,10 +243,10 @@ export default function AdminTicketsPage() {
           <div className="max-h-[640px] space-y-2 overflow-y-auto pr-1">
             {loading ? (
               <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 text-sm text-zinc-500">Loading tickets...</div>
-            ) : tickets.length === 0 ? (
+            ) : filteredTickets.length === 0 ? (
               <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 text-sm text-zinc-500">No tickets found.</div>
             ) : (
-              tickets.map((ticket) => (
+              filteredTickets.map((ticket) => (
                 <button
                   key={ticket.id}
                   onClick={() => setSelectedId(ticket.id)}
@@ -209,7 +262,8 @@ export default function AdminTicketsPage() {
                       {formatStatus(ticket.status)}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-zinc-500">{ticket.email || ticket.discordUsername || "Customer"}</p>
+                  <p className="mt-1 text-xs text-zinc-500">{ticket.email || ticket.discordUsername || "Customer"} · {ticket.priority}</p>
+                  {ticket.assignedTo?.name ? <p className="mt-1 text-[11px] text-violet-300">Assigned to {ticket.assignedTo.name}</p> : null}
                   <p className="mt-1 line-clamp-2 text-xs text-zinc-400">{ticket.message}</p>
                 </button>
               ))
@@ -231,6 +285,7 @@ export default function AdminTicketsPage() {
                       {selectedTicket.assignedTo?.name ? `Assigned to ${selectedTicket.assignedTo.name}` : "Unassigned"}
                     </span>
                     {selectedTicket.assignedAt ? <span>Updated {new Date(selectedTicket.assignedAt).toLocaleString()}</span> : null}
+                    {selectedTicket.product?.name ? <span>Product: {selectedTicket.product.name}</span> : null}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -266,6 +321,51 @@ export default function AdminTicketsPage() {
                   >
                     {selectedTicket.assignedTo ? "Unassign" : "Assign to Me"}
                   </button>
+                </div>
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+                  <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-200">
+                    <AlertCircle className="h-4 w-4 text-[#c7bdd8]" />
+                    Ticket Context
+                  </div>
+                  <div className="space-y-2 text-sm text-zinc-400">
+                    <div><span className="text-zinc-500">Contact:</span> {selectedTicket.contactType || "Unknown"}</div>
+                    <div><span className="text-zinc-500">Priority:</span> {selectedTicket.priority}</div>
+                    <div><span className="text-zinc-500">Opened:</span> {new Date(selectedTicket.createdAt).toLocaleString()}</div>
+                    <div><span className="text-zinc-500">Updated:</span> {new Date(selectedTicket.updatedAt).toLocaleString()}</div>
+                    {selectedTicket.product?.slug ? (
+                      <div className="pt-1">
+                        <Link
+                          href={`/products/${selectedTicket.product.slug}`}
+                          className="inline-flex items-center gap-1 text-violet-300 hover:text-violet-200"
+                        >
+                          Open product <ExternalLink className="h-3.5 w-3.5" />
+                        </Link>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <div className="text-sm font-semibold text-zinc-200">Internal Notes</div>
+                    <button
+                      type="button"
+                      onClick={() => patchTicket({ adminNotes: adminNotesDraft })}
+                      disabled={saving}
+                      className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-zinc-200"
+                    >
+                      Save Notes
+                    </button>
+                  </div>
+                  <textarea
+                    value={adminNotesDraft}
+                    onChange={(event) => setAdminNotesDraft(event.target.value)}
+                    placeholder="Private admin notes for this ticket..."
+                    className="min-h-[120px] w-full rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 text-sm text-zinc-200 outline-none transition focus:border-[#b9accf]/40"
+                  />
                 </div>
               </div>
 
@@ -313,6 +413,18 @@ export default function AdminTicketsPage() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-zinc-300">Reply as admin</label>
+                <div className="flex flex-wrap gap-2">
+                  {(["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER", "RESOLVED"] as TicketStatus[]).map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => patchTicket({ status })}
+                      className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-zinc-300 transition hover:border-[#b9accf]/35 hover:bg-[#a996c4]/12 hover:text-white"
+                    >
+                      Mark {formatStatus(status)}
+                    </button>
+                  ))}
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {quickReplies.map((item) => (
                     <button
