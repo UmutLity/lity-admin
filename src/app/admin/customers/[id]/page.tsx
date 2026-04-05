@@ -316,6 +316,29 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
                 Open Tickets
               </Link>
             </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-4">
+              <Link href={`/admin/licenses?search=${encodeURIComponent(data.email)}`} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3 transition hover:border-white/[0.12] hover:bg-white/[0.04]">
+                <p className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">Licenses</p>
+                <p className="mt-2 text-sm font-semibold text-white">Open customer keys</p>
+              </Link>
+              <Link href={`/admin/reviews?search=${encodeURIComponent(data.username)}`} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3 transition hover:border-white/[0.12] hover:bg-white/[0.04]">
+                <p className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">Reviews</p>
+                <p className="mt-2 text-sm font-semibold text-white">Check submitted reviews</p>
+              </Link>
+              <Link href={`/admin/orders?search=${encodeURIComponent(data.username)}`} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3 transition hover:border-white/[0.12] hover:bg-white/[0.04]">
+                <p className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">Revenue</p>
+                <p className="mt-2 text-sm font-semibold text-white">Inspect payment history</p>
+              </Link>
+              <button
+                type="button"
+                onClick={() => copyValue(data.id, "Customer ID")}
+                className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3 text-left transition hover:border-white/[0.12] hover:bg-white/[0.04]"
+              >
+                <p className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">Copy ID</p>
+                <p className="mt-2 text-sm font-semibold text-white">Use in notes or moderation</p>
+              </button>
+            </div>
           </section>
 
           <div className="grid gap-4 xl:grid-cols-[1.4fr_0.8fr]">

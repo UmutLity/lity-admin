@@ -85,6 +85,11 @@ function avatarLabel(ticket: AdminTicket) {
   return source.charAt(0).toUpperCase();
 }
 
+function ageHours(value: string) {
+  const diff = Date.now() - new Date(value).getTime();
+  return Math.max(0, Math.floor(diff / (1000 * 60 * 60)));
+}
+
 export default function AdminTicketsPage() {
   const [tickets, setTickets] = useState<AdminTicket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,6 +112,8 @@ export default function AdminTicketsPage() {
       waitingCustomer: filteredTickets.filter((ticket) => ticket.status === "WAITING_CUSTOMER").length,
       highPriority: filteredTickets.filter((ticket) => ticket.priority === "HIGH").length,
       unassigned: filteredTickets.filter((ticket) => !ticket.assignedTo).length,
+      staleOpen: filteredTickets.filter((ticket) => ["OPEN", "IN_PROGRESS"].includes(ticket.status) && ageHours(ticket.updatedAt) >= 24).length,
+      oldestHours: filteredTickets.length ? Math.max(...filteredTickets.map((ticket) => ageHours(ticket.updatedAt))) : 0,
     };
   }, [filteredTickets]);
 
@@ -215,6 +222,29 @@ export default function AdminTicketsPage() {
               {value === "ALL" ? "All" : compactStatusLabel(value as TicketStatus)}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div className="mb-4 grid gap-3 md:grid-cols-4">
+        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Open Queue</p>
+          <p className="mt-2 text-2xl font-semibold text-white">{filteredTickets.filter((ticket) => ticket.status === "OPEN").length}</p>
+          <p className="mt-1 text-xs text-zinc-500">New tickets waiting for first response.</p>
+        </div>
+        <div className="rounded-2xl border border-violet-400/15 bg-violet-500/5 p-4">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Awaiting Customer</p>
+          <p className="mt-2 text-2xl font-semibold text-violet-200">{queueStats.waitingCustomer}</p>
+          <p className="mt-1 text-xs text-zinc-500">Threads blocked by missing customer reply.</p>
+        </div>
+        <div className="rounded-2xl border border-amber-400/15 bg-amber-500/5 p-4">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Stale 24h+</p>
+          <p className="mt-2 text-2xl font-semibold text-amber-300">{queueStats.staleOpen}</p>
+          <p className="mt-1 text-xs text-zinc-500">Open or active tickets untouched for a day.</p>
+        </div>
+        <div className="rounded-2xl border border-rose-400/15 bg-rose-500/5 p-4">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Oldest Ticket Age</p>
+          <p className="mt-2 text-2xl font-semibold text-rose-300">{queueStats.oldestHours}h</p>
+          <p className="mt-1 text-xs text-zinc-500">Longest waiting ticket in the current queue.</p>
         </div>
       </div>
 

@@ -228,9 +228,29 @@ export default function PendingDeliveriesPage() {
     return names.sort((a, b) => a.localeCompare(b));
   }, [rows]);
 
+  const queueBoard = useMemo(() => {
+    const countBy = (status: string) => rows.filter((row) => String(row.status || "").toUpperCase() === status).length;
+    return [
+      { key: "PENDING", label: "Pending", value: countBy("PENDING"), note: "Waiting for first delivery action.", tone: "border-sky-400/15 bg-sky-500/5 text-sky-300" },
+      { key: "PROCESSING", label: "Processing", value: countBy("PROCESSING"), note: "Handled by staff, not delivered yet.", tone: "border-amber-400/15 bg-amber-500/5 text-amber-300" },
+      { key: "DELIVERED", label: "Delivered", value: countBy("DELIVERED"), note: "Completed and customer notified.", tone: "border-emerald-400/15 bg-emerald-500/5 text-emerald-300" },
+      { key: "ALL", label: "Visible", value: filteredRows.length, note: "Current result set after all filters.", tone: "border-violet-400/15 bg-violet-500/5 text-violet-200" },
+    ];
+  }, [filteredRows.length, rows]);
+
   return (
     <div className="space-y-4">
       <Topbar title="Pending Deliveries" description="Manual delivery queue for paid orders" />
+
+      <div className="grid gap-3 md:grid-cols-4">
+        {queueBoard.map((item) => (
+          <div key={item.key} className={`rounded-2xl border p-4 ${item.tone}`}>
+            <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">{item.label}</p>
+            <p className="mt-2 text-2xl font-semibold text-white">{item.value}</p>
+            <p className="mt-1 text-xs text-zinc-500">{item.note}</p>
+          </div>
+        ))}
+      </div>
       <div className="flex flex-wrap gap-2">
         <Button size="sm" variant={filter === "PENDING" ? "default" : "outline"} onClick={() => setFilter("PENDING")}>Pending</Button>
         <Button size="sm" variant={filter === "PROCESSING" ? "default" : "outline"} onClick={() => setFilter("PROCESSING")}>Processing</Button>
