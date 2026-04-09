@@ -339,6 +339,32 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
                 <p className="mt-2 text-sm font-semibold text-white">Use in notes or moderation</p>
               </button>
             </div>
+
+            <div className="mt-4 grid gap-3 lg:grid-cols-4">
+              <div className="rounded-2xl border border-violet-400/18 bg-violet-500/[0.06] p-3">
+                <p className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">Quick Actions</p>
+                <p className="mt-2 text-sm font-semibold text-white">High-signal shortcuts for daily moderation.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => copyValue(data.email, "Email")}
+                className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3 text-left transition hover:border-white/[0.12] hover:bg-white/[0.04]"
+              >
+                <p className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">Identity</p>
+                <p className="mt-2 text-sm font-semibold text-white">Copy contact details fast</p>
+                <p className="mt-1 text-xs text-zinc-500">Email, username, and customer ID in one place.</p>
+              </button>
+              <Link href={`/admin/orders?search=${encodeURIComponent(data.email)}`} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3 transition hover:border-white/[0.12] hover:bg-white/[0.04]">
+                <p className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">Payments</p>
+                <p className="mt-2 text-sm font-semibold text-white">Jump into order and revenue history</p>
+                <p className="mt-1 text-xs text-zinc-500">Useful for disputes, delivery checks, and coupon review.</p>
+              </Link>
+              <Link href={`/admin/tickets?search=${encodeURIComponent(data.email)}`} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3 transition hover:border-white/[0.12] hover:bg-white/[0.04]">
+                <p className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">Support</p>
+                <p className="mt-2 text-sm font-semibold text-white">Open active ticket queue</p>
+                <p className="mt-1 text-xs text-zinc-500">Use when the customer reports delays, refunds, or access issues.</p>
+              </Link>
+            </div>
           </section>
 
           <div className="grid gap-4 xl:grid-cols-[1.4fr_0.8fr]">

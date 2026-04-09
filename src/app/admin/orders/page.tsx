@@ -184,6 +184,34 @@ export default function OrdersPage() {
     return data.orders.filter((order) => String(order.status || "").toUpperCase() === statusFilter);
   }, [data.orders, statusFilter]);
 
+  const operationsBoard = useMemo(() => {
+    const queue = data.orders || [];
+    return [
+      {
+        title: "Needs Action",
+        hint: "Pending and paid orders still waiting for fulfillment.",
+        tone: "border-amber-400/18 bg-amber-500/[0.06]",
+        items: queue.filter((order) => ["PENDING", "PAID", "PROCESSING"].includes(String(order.status || "").toUpperCase())),
+      },
+      {
+        title: "Delivered Flow",
+        hint: "Orders that were already pushed to the customer.",
+        tone: "border-emerald-400/18 bg-emerald-500/[0.06]",
+        items: queue.filter((order) => ["DELIVERED", "COMPLETED"].includes(String(order.status || "").toUpperCase())),
+      },
+      {
+        title: "Exceptions",
+        hint: "Refunded or canceled payments worth checking.",
+        tone: "border-rose-400/18 bg-rose-500/[0.06]",
+        items: queue.filter((order) => ["REFUNDED", "CANCELED"].includes(String(order.status || "").toUpperCase())),
+      },
+    ].map((group) => ({
+      ...group,
+      total: group.items.length,
+      preview: group.items.slice(0, 4),
+    }));
+  }, [data.orders]);
+
   return (
     <div className="space-y-4">
       <Topbar title="Order Management" description="Track and manage all orders" />
@@ -234,6 +262,50 @@ export default function OrdersPage() {
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="grid gap-3 xl:grid-cols-3">
+        {operationsBoard.map((group) => (
+          <div key={group.title} className={`rounded-2xl border p-4 shadow-[0_10px_24px_rgba(0,0,0,0.16)] ${group.tone}`}>
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-white">{group.title}</p>
+                <p className="mt-1 text-xs text-zinc-400">{group.hint}</p>
+              </div>
+              <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-xs font-semibold text-zinc-200">
+                {group.total}
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {group.preview.length ? (
+                group.preview.map((order) => (
+                  <button
+                    key={order.id}
+                    type="button"
+                    onClick={() => setOpenRows((current) => ({ ...current, [order.id]: true }))}
+                    className="flex w-full items-center justify-between rounded-xl border border-white/[0.07] bg-white/[0.03] px-3 py-2 text-left transition hover:border-white/[0.12] hover:bg-white/[0.05]"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-white">
+                        {order.customer?.username || "Guest"} · {order.items[0]?.productName || "Order Item"}
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-zinc-500">{formatDateTime(order.createdAt)}</p>
+                    </div>
+                    <div className="ml-3 text-right">
+                      <p className="text-sm font-semibold text-white">{formatMoney(order.totalAmount)}</p>
+                      <p className="text-[11px] text-zinc-500">{order.status}</p>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="rounded-xl border border-dashed border-white/[0.08] px-3 py-4 text-sm text-zinc-500">
+                  Queue is clear here.
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="premium-card overflow-hidden">

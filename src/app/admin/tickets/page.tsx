@@ -225,26 +225,21 @@ export default function AdminTicketsPage() {
         </div>
       </div>
 
-      <div className="mb-4 grid gap-3 md:grid-cols-4">
-        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
+      <div className="mb-4 grid gap-3 md:grid-cols-3">
+        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3.5">
           <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Open Queue</p>
-          <p className="mt-2 text-2xl font-semibold text-white">{filteredTickets.filter((ticket) => ticket.status === "OPEN").length}</p>
-          <p className="mt-1 text-xs text-zinc-500">New tickets waiting for first response.</p>
+          <p className="mt-2 text-xl font-semibold text-white">{filteredTickets.filter((ticket) => ticket.status === "OPEN").length}</p>
+          <p className="mt-1 text-xs text-zinc-500">Tickets still waiting for a first staff touch.</p>
         </div>
-        <div className="rounded-2xl border border-violet-400/15 bg-violet-500/5 p-4">
+        <div className="rounded-2xl border border-violet-400/15 bg-violet-500/5 p-3.5">
           <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Awaiting Customer</p>
-          <p className="mt-2 text-2xl font-semibold text-violet-200">{queueStats.waitingCustomer}</p>
-          <p className="mt-1 text-xs text-zinc-500">Threads blocked by missing customer reply.</p>
+          <p className="mt-2 text-xl font-semibold text-violet-200">{queueStats.waitingCustomer}</p>
+          <p className="mt-1 text-xs text-zinc-500">Replies paused until the customer sends more info.</p>
         </div>
-        <div className="rounded-2xl border border-amber-400/15 bg-amber-500/5 p-4">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Stale 24h+</p>
-          <p className="mt-2 text-2xl font-semibold text-amber-300">{queueStats.staleOpen}</p>
-          <p className="mt-1 text-xs text-zinc-500">Open or active tickets untouched for a day.</p>
-        </div>
-        <div className="rounded-2xl border border-rose-400/15 bg-rose-500/5 p-4">
+        <div className="rounded-2xl border border-rose-400/15 bg-rose-500/5 p-3.5">
           <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Oldest Ticket Age</p>
-          <p className="mt-2 text-2xl font-semibold text-rose-300">{queueStats.oldestHours}h</p>
-          <p className="mt-1 text-xs text-zinc-500">Longest waiting ticket in the current queue.</p>
+          <p className="mt-2 text-xl font-semibold text-rose-300">{queueStats.oldestHours}h</p>
+          <p className="mt-1 text-xs text-zinc-500">Longest untouched thread still sitting in the queue.</p>
         </div>
       </div>
 
@@ -284,7 +279,7 @@ export default function AdminTicketsPage() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-sm font-semibold text-zinc-300">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-xs font-semibold text-zinc-300">
                       {avatarLabel(ticket)}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -304,11 +299,11 @@ export default function AdminTicketsPage() {
 
                       <div className="mt-1.5 flex items-center justify-between gap-4">
                         <div className="min-w-0">
-                          <p className="truncate text-[1.05rem] font-semibold leading-tight text-white">{ticket.subject}</p>
+                          <p className="truncate text-base font-semibold leading-tight text-white">{ticket.subject}</p>
                           <p className="mt-0.5 truncate text-sm text-zinc-500">
                             {ticket.email || ticket.discordUsername || "Customer"}
                           </p>
-                          <p className="mt-0.5 line-clamp-1 text-sm text-zinc-400">{ticket.message}</p>
+                          <p className="mt-0.5 line-clamp-1 text-[13px] text-zinc-400">{ticket.message}</p>
                         </div>
 
                         <div className="flex shrink-0 items-center gap-3 text-zinc-500">
