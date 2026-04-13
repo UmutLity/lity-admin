@@ -23,6 +23,14 @@ const typeOptions = [
   { value: "WARNING", label: "Warning" },
 ];
 
+function toLocalInputDateTime(value?: string | null) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function ChangelogForm({ initialData, isEditing }: ChangelogFormProps) {
   const router = useRouter();
   const { addToast } = useToast();
@@ -34,6 +42,7 @@ export function ChangelogForm({ initialData, isEditing }: ChangelogFormProps) {
     body: initialData?.body || "",
     type: initialData?.type || "UPDATE",
     isDraft: initialData?.isDraft ?? true,
+    publishedAt: toLocalInputDateTime(initialData?.publishedAt),
     productIds: initialData?.products?.map((p: any) => p.productId || p.product?.id) || [],
   });
 
@@ -68,9 +77,13 @@ export function ChangelogForm({ initialData, isEditing }: ChangelogFormProps) {
     setErrors({});
 
     try {
+      const publishAtIso = form.isDraft
+        ? null
+        : (form.publishedAt ? new Date(form.publishedAt).toISOString() : new Date().toISOString());
+
       const body = {
         ...form,
-        publishedAt: form.isDraft ? null : new Date().toISOString(),
+        publishedAt: publishAtIso,
       };
 
       const url = isEditing
@@ -87,19 +100,19 @@ export function ChangelogForm({ initialData, isEditing }: ChangelogFormProps) {
 
       if (!res.ok) {
         if (data.errors) setErrors(data.errors);
-        addToast({ type: "error", title: "Hata", description: data.error || "İşlem başarısız" });
+        addToast({ type: "error", title: "Error", description: data.error || "Request failed" });
         return;
       }
 
       addToast({
         type: "success",
-        title: isEditing ? "Güncellendi" : "Oluşturuldu",
-        description: `Changelog ${isEditing ? "güncellendi" : "oluşturuldu"}`,
+        title: isEditing ? "Updated" : "Created",
+        description: isEditing ? "Changelog updated" : "Changelog created",
       });
       router.push("/admin/changelog");
       router.refresh();
     } catch (error) {
-      addToast({ type: "error", title: "Hata", description: "Bir hata oluştu" });
+      addToast({ type: "error", title: "Error", description: "An unexpected error occurred" });
     } finally {
       setLoading(false);
     }
@@ -107,18 +120,18 @@ export function ChangelogForm({ initialData, isEditing }: ChangelogFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
           <Card>
-            <CardHeader><CardTitle>Changelog İçeriği</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Changelog Content</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Başlık *</Label>
+                <Label htmlFor="title">Title *</Label>
                 <Input id="title" value={form.title} onChange={(e) => updateField("title", e.target.value)} placeholder="v2.4.0 - New Features" />
                 {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="body">İçerik (Markdown) *</Label>
+                <Label htmlFor="body">Body (Markdown) *</Label>
                 <Textarea id="body" value={form.body} onChange={(e) => updateField("body", e.target.value)} placeholder="## Changes&#10;- Added new feature...&#10;- Fixed bug..." rows={12} className="font-mono text-sm" />
                 {errors.body && <p className="text-sm text-destructive">{errors.body}</p>}
               </div>
@@ -128,31 +141,42 @@ export function ChangelogForm({ initialData, isEditing }: ChangelogFormProps) {
 
         <div className="space-y-6">
           <Card>
-            <CardHeader><CardTitle>Ayarlar</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Settings</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Tür</Label>
+                <Label>Type</Label>
                 <Select options={typeOptions} value={form.type} onChange={(e) => updateField("type", e.target.value)} />
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="isDraft">Taslak</Label>
+                <Label htmlFor="isDraft">Draft</Label>
                 <Switch id="isDraft" checked={form.isDraft} onCheckedChange={(v) => updateField("isDraft", v)} />
               </div>
               {!form.isDraft && (
-                <p className="text-xs text-muted-foreground">Kaydedildiğinde hemen yayınlanacak.</p>
+                <div className="space-y-2">
+                  <Label htmlFor="publishedAt">Publish At (optional)</Label>
+                  <Input
+                    id="publishedAt"
+                    type="datetime-local"
+                    value={form.publishedAt}
+                    onChange={(e) => updateField("publishedAt", e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Leave empty to publish immediately. Choose a future date to schedule.
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>İlgili Ürünler</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Related Products</CardTitle></CardHeader>
             <CardContent>
               {products.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Yükleniyor...</p>
+                <p className="text-sm text-muted-foreground">Loading...</p>
               ) : (
                 <div className="space-y-2">
                   {products.map((product) => (
-                    <label key={product.id} className="flex items-center gap-2 cursor-pointer rounded-md p-2 hover:bg-muted transition-colors">
+                    <label key={product.id} className="flex cursor-pointer items-center gap-2 rounded-md p-2 transition-colors hover:bg-muted">
                       <input
                         type="checkbox"
                         checked={form.productIds.includes(product.id)}
@@ -169,10 +193,10 @@ export function ChangelogForm({ initialData, isEditing }: ChangelogFormProps) {
 
           <div className="flex gap-2">
             <Button type="submit" className="flex-1" loading={loading}>
-              {isEditing ? "Güncelle" : "Oluştur"}
+              {isEditing ? "Update" : "Create"}
             </Button>
             <Button type="button" variant="outline" onClick={() => router.back()}>
-              İptal
+              Cancel
             </Button>
           </div>
         </div>
@@ -180,3 +204,4 @@ export function ChangelogForm({ initialData, isEditing }: ChangelogFormProps) {
     </form>
   );
 }
+

@@ -25,6 +25,14 @@ interface SecurityData {
   locks: any[];
   attempts: any[];
   alerts: any[];
+  suspiciousIps: Array<{
+    ip: string;
+    failedCount: number;
+    uniqueEmails: number;
+    lastAttemptAt: string;
+    lastSuccessAt: string | null;
+    risk: "LOW" | "MEDIUM" | "HIGH";
+  }>;
 }
 
 interface WhitelistData {
@@ -213,6 +221,35 @@ export default function SecurityPage() {
                           <CheckCircle className="h-4 w-4" /> Resolve
                         </Button>
                       )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="mt-4">
+            <CardHeader><CardTitle>Risk / Abuse IP Monitor (24h)</CardTitle></CardHeader>
+            <CardContent>
+              {!data?.suspiciousIps?.length ? (
+                <p className="text-muted-foreground text-center py-6">No suspicious IP behavior in the last 24 hours.</p>
+              ) : (
+                <div className="space-y-3">
+                  {data.suspiciousIps.map((row) => (
+                    <div key={row.ip} className="flex items-start justify-between rounded-lg border p-4">
+                      <div>
+                        <p className="font-mono text-sm">{row.ip}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {row.failedCount} failed logins • {row.uniqueEmails} unique emails
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Last attempt: {new Date(row.lastAttemptAt).toLocaleString("en-US")}
+                          {row.lastSuccessAt ? ` • Last success: ${new Date(row.lastSuccessAt).toLocaleString("en-US")}` : ""}
+                        </p>
+                      </div>
+                      <Badge variant={row.risk === "HIGH" ? "destructive" : row.risk === "MEDIUM" ? "warning" : "secondary"}>
+                        {row.risk}
+                      </Badge>
                     </div>
                   ))}
                 </div>

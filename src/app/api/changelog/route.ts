@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     const type = (searchParams.get("type") || "").trim();
     const product = (searchParams.get("product") || "").trim();
 
-    const where: any = { isDraft: false, publishedAt: { not: null } };
+    const where: any = { isDraft: false, publishedAt: { not: null, lte: new Date() } };
     if (type) where.type = type.toUpperCase();
     if (q) {
       where.OR = [

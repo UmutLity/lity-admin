@@ -168,6 +168,45 @@ export default function RevenuePage() {
     return Array.from(map.values()).sort((a, b) => b.spent - a.spent).slice(0, 5);
   }, [orders]);
 
+  const cohortRows = useMemo(() => {
+    const customerOrders = new Map<string, Array<{ createdAt: string; totalAmount: number }>>();
+    for (const order of orders) {
+      if (order.status === "CANCELED" || !order.customer?.id) continue;
+      const key = order.customer.id;
+      const list = customerOrders.get(key) || [];
+      list.push({ createdAt: order.createdAt, totalAmount: Number(order.totalAmount || 0) });
+      customerOrders.set(key, list);
+    }
+
+    const cohorts = new Map<string, { customers: number; returning: number; revenue30d: number }>();
+    for (const list of customerOrders.values()) {
+      const sorted = [...list].sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt));
+      const first = sorted[0];
+      if (!first) continue;
+      const firstDate = new Date(first.createdAt);
+      const firstTs = firstDate.getTime();
+      const monthKey = `${firstDate.getFullYear()}-${String(firstDate.getMonth() + 1).padStart(2, "0")}`;
+      const cohort = cohorts.get(monthKey) || { customers: 0, returning: 0, revenue30d: 0 };
+      cohort.customers += 1;
+
+      const within30d = sorted.filter((row) => new Date(row.createdAt).getTime() <= firstTs + 30 * 24 * 60 * 60 * 1000);
+      cohort.revenue30d += within30d.reduce((sum, row) => sum + Number(row.totalAmount || 0), 0);
+      if (within30d.length > 1) cohort.returning += 1;
+      cohorts.set(monthKey, cohort);
+    }
+
+    return Array.from(cohorts.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([month, row]) => ({
+        month,
+        customers: row.customers,
+        returning: row.returning,
+        returnRate: row.customers ? (row.returning / row.customers) * 100 : 0,
+        revenue30d: row.revenue30d,
+      }))
+      .slice(0, 8);
+  }, [orders]);
+
   return (
     <div className="space-y-6">
       <Topbar title="Revenue & Sales" description="Live revenue analytics, top customers, and sales performance." />
@@ -293,6 +332,40 @@ export default function RevenuePage() {
           </div>
         </section>
       </div>
+
+      <section className="rounded-2xl border border-white/[0.08] bg-[#0f1119] p-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Cohort Snapshot</h2>
+            <p className="text-sm text-zinc-500">Repeat customer behavior by first-purchase month (30-day window).</p>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/[0.08] text-left text-zinc-500">
+                <th className="py-2 font-medium">Cohort</th>
+                <th className="py-2 font-medium">Customers</th>
+                <th className="py-2 font-medium">Returning</th>
+                <th className="py-2 font-medium">Return Rate</th>
+                <th className="py-2 font-medium">30d Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cohortRows.map((row) => (
+                <tr key={row.month} className="border-b border-white/[0.05]">
+                  <td className="py-2 text-zinc-200">{row.month}</td>
+                  <td className="py-2 text-zinc-200">{row.customers}</td>
+                  <td className="py-2 text-zinc-200">{row.returning}</td>
+                  <td className="py-2 text-zinc-200">{row.returnRate.toFixed(1)}%</td>
+                  <td className="py-2 text-emerald-300">{formatCurrency(row.revenue30d)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!cohortRows.length ? <div className="py-6 text-sm text-zinc-500">Not enough order history for cohort analysis yet.</div> : null}
+        </div>
+      </section>
     </div>
   );
 }

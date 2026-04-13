@@ -49,15 +49,20 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const { productIds, ...data } = validation.data;
-    const wasPublished = !existing.isDraft;
-    const isNowPublished = !data.isDraft;
-    const justPublished = !wasPublished && isNowPublished;
+    const now = Date.now();
+    const publishAt = data.isDraft
+      ? null
+      : (data.publishedAt ? new Date(data.publishedAt) : (existing.publishedAt || new Date()));
+    const wasLive = !existing.isDraft && !!existing.publishedAt && new Date(existing.publishedAt).getTime() <= now;
+    const isLiveNow = !!publishAt && publishAt.getTime() <= now;
+    const justPublishedNow = !wasLive && isLiveNow;
+    const isScheduled = !!publishAt && publishAt.getTime() > now;
 
     const changelog = await prisma.changelog.update({
       where: { id: params.id },
       data: {
         ...data,
-        publishedAt: data.isDraft ? null : (existing.publishedAt || new Date()),
+        publishedAt: publishAt,
         products: {
           deleteMany: {},
           create: productIds?.map((id) => ({ productId: id })) || [],
@@ -67,7 +72,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     });
 
     // Update Last Update for related products
-    if (isNowPublished && productIds && productIds.length > 0) {
+    if (isLiveNow && productIds && productIds.length > 0) {
       const publishedAt = changelog.publishedAt || new Date();
       await prisma.product.updateMany({
         where: { id: { in: productIds } },
@@ -80,17 +85,17 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     await createAuditLog({
       userId,
-      action: justPublished ? "PUBLISH" : "UPDATE",
+      action: justPublishedNow ? "PUBLISH" : "UPDATE",
       entity: "Changelog",
       entityId: changelog.id,
       before: { title: existing.title, isDraft: existing.isDraft },
-      after: { title: changelog.title, isDraft: changelog.isDraft },
+      after: { title: changelog.title, isDraft: changelog.isDraft, isScheduled },
       ip,
       userAgent: req.headers.get("user-agent") || undefined,
     });
 
     // Send to Discord if just published
-    if (justPublished) {
+    if (justPublishedNow) {
       console.log("[Discord] Changelog published, sending webhook for:", changelog.id);
       sendChangelogToDiscord(changelog.id)
         .then((result) => {

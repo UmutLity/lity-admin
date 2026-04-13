@@ -96,9 +96,11 @@ export default function ChangelogPage() {
                   <TableCell>
                     {log.isDraft ? (
                       <Badge variant="outline">Draft</Badge>
+                    ) : (log.publishedAt && new Date(log.publishedAt).getTime() > now ? (
+                      <Badge variant="warning">Scheduled</Badge>
                     ) : (
                       <Badge variant="success">Published</Badge>
-                    )}
+                    ))}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
@@ -152,3 +154,4 @@ export default function ChangelogPage() {
     </div>
   );
 }
+  const now = Date.now();

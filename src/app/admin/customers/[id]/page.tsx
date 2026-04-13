@@ -120,6 +120,8 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
   const [savingNotes, setSavingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState("");
   const [noteMessage, setNoteMessage] = useState("");
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState("");
 
   async function load() {
     setLoading(true);
@@ -209,6 +211,38 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
       setNoteMessage(error.message || "Could not save notes.");
     } finally {
       setSavingNotes(false);
+    }
+  }
+
+  async function runQuickAction(action: "credit5" | "forcePasswordChange" | "toggleActive" | "toggleVip") {
+    if (!data) return;
+    setActionLoading(action);
+    setActionMessage("");
+    try {
+      const payload =
+        action === "credit5"
+          ? { balanceAdjustment: 5, balanceReason: "One-click goodwill credit" }
+          : action === "forcePasswordChange"
+            ? { mustChangePassword: true }
+            : action === "toggleActive"
+              ? { isActive: !data.isActive }
+              : { role: data.role === "VIP" ? "MEMBER" : "VIP" };
+
+      const res = await fetch(`/api/admin/customers/${data.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+      const payloadResult = await res.json();
+      if (!res.ok || !payloadResult?.success) throw new Error(payloadResult?.error || "Action failed");
+
+      setActionMessage("Action completed.");
+      await load();
+    } catch (error: any) {
+      setActionMessage(error?.message || "Action failed.");
+    } finally {
+      setActionLoading(null);
     }
   }
 
@@ -344,6 +378,7 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
               <div className="rounded-2xl border border-violet-400/18 bg-violet-500/[0.06] p-3">
                 <p className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">Quick Actions</p>
                 <p className="mt-2 text-sm font-semibold text-white">High-signal shortcuts for daily moderation.</p>
+                <p className="mt-2 text-xs text-zinc-500">{actionMessage || "One-click actions apply immediately."}</p>
               </div>
               <button
                 type="button"
@@ -364,6 +399,41 @@ export default function CustomerProfilePage({ params }: { params: { id: string }
                 <p className="mt-2 text-sm font-semibold text-white">Open active ticket queue</p>
                 <p className="mt-1 text-xs text-zinc-500">Use when the customer reports delays, refunds, or access issues.</p>
               </Link>
+            </div>
+
+            <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <button
+                type="button"
+                disabled={!!actionLoading}
+                onClick={() => runQuickAction("credit5")}
+                className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-200 disabled:opacity-60"
+              >
+                {actionLoading === "credit5" ? "Applying..." : "One-click +$5 Credit"}
+              </button>
+              <button
+                type="button"
+                disabled={!!actionLoading}
+                onClick={() => runQuickAction("forcePasswordChange")}
+                className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-200 disabled:opacity-60"
+              >
+                {actionLoading === "forcePasswordChange" ? "Applying..." : "Force Password Change"}
+              </button>
+              <button
+                type="button"
+                disabled={!!actionLoading}
+                onClick={() => runQuickAction("toggleActive")}
+                className="rounded-xl border border-sky-500/20 bg-sky-500/10 px-4 py-2 text-sm font-semibold text-sky-200 disabled:opacity-60"
+              >
+                {actionLoading === "toggleActive" ? "Applying..." : data.isActive ? "Disable Account" : "Enable Account"}
+              </button>
+              <button
+                type="button"
+                disabled={!!actionLoading}
+                onClick={() => runQuickAction("toggleVip")}
+                className="rounded-xl border border-violet-500/25 bg-violet-500/12 px-4 py-2 text-sm font-semibold text-violet-200 disabled:opacity-60"
+              >
+                {actionLoading === "toggleVip" ? "Applying..." : data.role === "VIP" ? "Set MEMBER Role" : "Set VIP Role"}
+              </button>
             </div>
           </section>
 

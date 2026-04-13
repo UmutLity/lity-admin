@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
       unresolvedAlerts,
       recentAttempts,
       recentAlerts,
+      suspiciousIpGroups,
     ] = await Promise.all([
       prisma.loginAttempt.count({ where: { createdAt: { gte: last24h } } }),
       prisma.loginAttempt.count({ where: { createdAt: { gte: last24h }, success: false } }),
@@ -47,7 +48,49 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: "desc" },
         take: 20,
       }),
+      prisma.loginAttempt.groupBy({
+        by: ["ip"],
+        where: { createdAt: { gte: last24h }, success: false },
+        _count: { _all: true },
+        _max: { createdAt: true },
+        orderBy: { _count: { ip: "desc" } },
+        take: 50,
+      }),
     ]);
+
+    const suspiciousBase = suspiciousIpGroups.filter((row) => row._count._all >= 3);
+    const suspiciousIps = suspiciousBase.map((row) => row.ip);
+    const suspiciousAttempts = suspiciousIps.length
+      ? await prisma.loginAttempt.findMany({
+          where: { createdAt: { gte: last24h }, ip: { in: suspiciousIps } },
+          select: { ip: true, email: true, success: true, createdAt: true },
+          orderBy: { createdAt: "desc" },
+          take: 300,
+        })
+      : [];
+
+    const attemptsByIp = new Map<string, Array<{ email: string; success: boolean; createdAt: Date }>>();
+    for (const row of suspiciousAttempts) {
+      const list = attemptsByIp.get(row.ip) || [];
+      list.push({ email: row.email, success: row.success, createdAt: row.createdAt });
+      attemptsByIp.set(row.ip, list);
+    }
+
+    const suspiciousSummary = suspiciousBase.map((row) => {
+      const list = attemptsByIp.get(row.ip) || [];
+      const uniqueEmails = new Set(list.map((x) => x.email.toLowerCase())).size;
+      const lastSuccess = list.find((x) => x.success);
+      const failures = row._count._all;
+      const risk = failures >= 12 || uniqueEmails >= 6 ? "HIGH" : failures >= 6 ? "MEDIUM" : "LOW";
+      return {
+        ip: row.ip,
+        failedCount: failures,
+        uniqueEmails,
+        lastAttemptAt: row._max.createdAt,
+        lastSuccessAt: lastSuccess?.createdAt || null,
+        risk,
+      };
+    });
 
     return NextResponse.json({
       success: true,
@@ -62,6 +105,7 @@ export async function GET(req: NextRequest) {
         locks: activeLocks,
         attempts: recentAttempts,
         alerts: recentAlerts,
+        suspiciousIps: suspiciousSummary,
       },
     });
   } catch (error: any) {

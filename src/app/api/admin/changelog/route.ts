@@ -47,12 +47,16 @@ export async function POST(req: NextRequest) {
     }
 
     const { productIds, ...data } = validation.data;
-    const isPublished = !data.isDraft;
+    const publishAt = data.isDraft
+      ? null
+      : (data.publishedAt ? new Date(data.publishedAt) : new Date());
+    const isPublishedNow = !!publishAt && publishAt.getTime() <= Date.now();
+    const isScheduled = !!publishAt && publishAt.getTime() > Date.now();
 
     const changelog = await prisma.changelog.create({
       data: {
         ...data,
-        publishedAt: data.isDraft ? null : new Date(),
+        publishedAt: publishAt,
         products: productIds?.length
           ? { create: productIds.map((id) => ({ productId: id })) }
           : undefined,
@@ -61,7 +65,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Update Last Update for related products if published
-    if (isPublished && productIds && productIds.length > 0) {
+    if (isPublishedNow && productIds && productIds.length > 0) {
       const publishedAt = changelog.publishedAt || new Date();
       await prisma.product.updateMany({
         where: { id: { in: productIds } },
@@ -74,16 +78,16 @@ export async function POST(req: NextRequest) {
 
     await createAuditLog({
       userId,
-      action: isPublished ? "PUBLISH" : "CREATE",
+      action: isPublishedNow ? "PUBLISH" : "CREATE",
       entity: "Changelog",
       entityId: changelog.id,
-      after: { title: changelog.title, type: changelog.type, isDraft: changelog.isDraft },
+      after: { title: changelog.title, type: changelog.type, isDraft: changelog.isDraft, isScheduled },
       ip,
       userAgent: req.headers.get("user-agent") || undefined,
     });
 
     // Send to Discord if published
-    if (isPublished) {
+    if (isPublishedNow) {
       sendChangelogToDiscord(changelog.id).catch((err) => {
         console.error("Discord webhook error:", err);
       });
