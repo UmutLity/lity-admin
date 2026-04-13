@@ -42,6 +42,17 @@ export async function POST(req: NextRequest) {
     // Find customer — use same error for not found & wrong password (prevent enumeration)
     const customer = await prisma.customer.findUnique({
       where: { email: email.toLowerCase() },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        password: true,
+        avatar: true,
+        role: true,
+        isActive: true,
+        mustChangePassword: true,
+        createdAt: true,
+      },
     });
 
     if (!customer) {
@@ -67,11 +78,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: GENERIC_ERROR }, { status: 401 });
     }
 
-    // Update last login
-    await prisma.customer.update({
-      where: { id: customer.id },
-      data: { lastLoginAt: new Date() },
-    });
+    // Login should not fail if this metadata update fails.
+    await prisma.customer
+      .update({
+        where: { id: customer.id },
+        data: { lastLoginAt: new Date() },
+      })
+      .catch((error) => {
+        console.warn("Customer lastLoginAt update failed:", error);
+      });
+
+    let balance = 0;
+    let totalSpent = 0;
+    const financial = await prisma.customer
+      .findUnique({
+        where: { id: customer.id },
+        select: { balance: true, totalSpent: true },
+      })
+      .catch((error) => {
+        console.warn("Customer financial fields unavailable during login:", error);
+        return null;
+      });
+    if (financial) {
+      balance = Number(financial.balance || 0);
+      totalSpent = Number(financial.totalSpent || 0);
+    }
 
     // Generate token
     const token = createCustomerToken({
@@ -91,8 +122,8 @@ export async function POST(req: NextRequest) {
           username: customer.username,
           avatar: customer.avatar,
           role: customer.role,
-          balance: customer.balance,
-          totalSpent: customer.totalSpent,
+          balance,
+          totalSpent,
           createdAt: customer.createdAt,
         },
       },

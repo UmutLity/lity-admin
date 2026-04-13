@@ -25,8 +25,6 @@ export async function GET(req: NextRequest) {
         avatar: true,
         role: true,
         isActive: true,
-        balance: true,
-        totalSpent: true,
         lastLoginAt: true,
         twoFactorEnabled: true,
         mustChangePassword: true,
@@ -45,6 +43,22 @@ export async function GET(req: NextRequest) {
 
     if (!customer.isActive) {
       return NextResponse.json({ success: false, error: "Your account has been deactivated" }, { status: 403 });
+    }
+
+    let balance = 0;
+    let totalSpent = 0;
+    const financial = await prisma.customer
+      .findUnique({
+        where: { id: customer.id },
+        select: { balance: true, totalSpent: true },
+      })
+      .catch((error) => {
+        console.warn("Customer financial fields unavailable in /me:", error);
+        return null;
+      });
+    if (financial) {
+      balance = Number(financial.balance || 0);
+      totalSpent = Number(financial.totalSpent || 0);
     }
 
     const ownedRoles = await prisma.license.findMany({
@@ -90,6 +104,8 @@ export async function GET(req: NextRequest) {
       success: true,
       data: {
         ...customer,
+        balance,
+        totalSpent,
         security: {
           twoFactorEnabled: customer.twoFactorEnabled,
           lastLoginAt: customer.lastLoginAt,
