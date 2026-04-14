@@ -38,6 +38,19 @@ function deliveryState(status: string) {
   return { label: "Pending", className: "bg-sky-500/10 text-sky-300 border-sky-500/20" };
 }
 
+function ageMinutes(createdAt: string) {
+  return Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000));
+}
+
+function slaLevel(row: DeliveryRow): { level: "OK" | "WARN" | "BREACH"; label: string; tone: string } {
+  const status = String(row.status || "").toUpperCase();
+  if (status === "DELIVERED") return { level: "OK", label: "Closed", tone: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300" };
+  const minutes = ageMinutes(row.createdAt);
+  if (minutes >= 60) return { level: "BREACH", label: `Breach ${minutes}m`, tone: "border-red-500/20 bg-red-500/10 text-red-300" };
+  if (minutes >= 20) return { level: "WARN", label: `Warn ${minutes}m`, tone: "border-amber-500/20 bg-amber-500/10 text-amber-300" };
+  return { level: "OK", label: `On time ${minutes}m`, tone: "border-sky-500/20 bg-sky-500/10 text-sky-300" };
+}
+
 export default function PendingDeliveriesPage() {
   const { addToast } = useToast();
   const [rows, setRows] = useState<DeliveryRow[]>([]);
@@ -220,7 +233,14 @@ export default function PendingDeliveriesPage() {
         row.items.some((item) => item.productName.toLowerCase().includes(q))
       );
     }
-    return next;
+    return next.sort((a, b) => {
+      const aSla = slaLevel(a).level;
+      const bSla = slaLevel(b).level;
+      const score = (v: string) => (v === "BREACH" ? 3 : v === "WARN" ? 2 : 1);
+      const diff = score(bSla) - score(aSla);
+      if (diff !== 0) return diff;
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
   }, [filter, gameFilter, query, rows]);
 
   const gameOptions = useMemo(() => {
@@ -238,6 +258,18 @@ export default function PendingDeliveriesPage() {
     ];
   }, [filteredRows.length, rows]);
 
+  const slaBoard = useMemo(() => {
+    const live = rows.filter((row) => String(row.status || "").toUpperCase() !== "DELIVERED");
+    const breach = live.filter((row) => slaLevel(row).level === "BREACH").length;
+    const warn = live.filter((row) => slaLevel(row).level === "WARN").length;
+    const ontime = live.filter((row) => slaLevel(row).level === "OK").length;
+    return [
+      { label: "SLA On Time", value: ontime, tone: "border-sky-400/15 bg-sky-500/5 text-sky-300", note: "Under 20 minutes" },
+      { label: "SLA Warning", value: warn, tone: "border-amber-400/15 bg-amber-500/5 text-amber-300", note: "20 to 59 minutes" },
+      { label: "SLA Breach", value: breach, tone: "border-red-400/15 bg-red-500/5 text-red-300", note: "60+ minutes without delivery" },
+    ];
+  }, [rows]);
+
   return (
     <div className="space-y-4">
       <Topbar title="Pending Deliveries" description="Manual delivery queue for paid orders" />
@@ -245,6 +277,15 @@ export default function PendingDeliveriesPage() {
       <div className="grid gap-3 md:grid-cols-4">
         {queueBoard.map((item) => (
           <div key={item.key} className={`rounded-2xl border p-4 ${item.tone}`}>
+            <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">{item.label}</p>
+            <p className="mt-2 text-2xl font-semibold text-white">{item.value}</p>
+            <p className="mt-1 text-xs text-zinc-500">{item.note}</p>
+          </div>
+        ))}
+      </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        {slaBoard.map((item) => (
+          <div key={item.label} className={`rounded-2xl border p-4 ${item.tone}`}>
             <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">{item.label}</p>
             <p className="mt-2 text-2xl font-semibold text-white">{item.value}</p>
             <p className="mt-1 text-xs text-zinc-500">{item.note}</p>
@@ -308,6 +349,7 @@ export default function PendingDeliveriesPage() {
           <div className="divide-y divide-white/[0.06]">
             {filteredRows.map((row) => {
               const state = deliveryState(row.status);
+              const sla = slaLevel(row);
               return (
                 <div key={row.id} className="p-4">
                   <div className="flex flex-wrap items-start justify-between gap-4">
@@ -317,6 +359,7 @@ export default function PendingDeliveriesPage() {
                           {row.customer?.username || "Unknown customer"} <span className="text-zinc-500">#{row.id.slice(-8)}</span>
                         </p>
                         <Badge variant="outline" className={state.className}>{state.label}</Badge>
+                        <Badge variant="outline" className={sla.tone}>{sla.label}</Badge>
                         {(internalNotes[row.id] || "").trim() ? (
                           <Badge variant="outline" className="border-violet-500/20 bg-violet-500/10 text-violet-200">Internal Note</Badge>
                         ) : null}

@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
 import {
   Save, Globe, Palette, Layout, Share2, MessageSquare, AlertTriangle,
-  Send, CheckCircle, XCircle, Shield, ShoppingCart, Wifi, WifiOff, Landmark, Megaphone,
+  Send, CheckCircle, XCircle, Shield, ShoppingCart, Wifi, WifiOff, Landmark, Megaphone, GitBranch,
 } from "lucide-react";
 
 interface Setting {
@@ -186,6 +186,7 @@ const handleTestWebhook = async () => {
           <TabsTrigger value="announcement" className="gap-2"><Megaphone className="h-4 w-4" /> Announcement</TabsTrigger>
           <TabsTrigger value="payments" className="gap-2"><Landmark className="h-4 w-4" /> Payments</TabsTrigger>
           <TabsTrigger value="discord" className="gap-2"><MessageSquare className="h-4 w-4" /> Discord</TabsTrigger>
+          <TabsTrigger value="abtest" className="gap-2"><GitBranch className="h-4 w-4" /> A/B Testing</TabsTrigger>
           <TabsTrigger value="emergency" className="gap-2"><AlertTriangle className="h-4 w-4" /> Emergency Controls</TabsTrigger>
         </TabsList>
 
@@ -393,6 +394,66 @@ const handleTestWebhook = async () => {
                   checked={values.status_changes_affect_last_update === "true"}
                   onCheckedChange={(checked) => setBoolValue("status_changes_affect_last_update", checked)}
                 />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* A/B Testing */}
+        <TabsContent value="abtest">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><GitBranch className="h-5 w-5" /> Hero A/B Content Testing</CardTitle>
+              <CardDescription>Test alternative hero copy on live traffic with sticky variant assignment.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between p-4 rounded-lg border">
+                <div>
+                  <p className="font-medium">Enable A/B Test</p>
+                  <p className="text-sm text-muted-foreground">When enabled, visitors are split between Variant A (default) and Variant B.</p>
+                </div>
+                <Switch
+                  checked={values.ab_test_enabled === "true"}
+                  onCheckedChange={(checked) => setBoolValue("ab_test_enabled", checked)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Variant B Traffic Percentage</Label>
+                <Input
+                  value={values.ab_test_split_b || "50"}
+                  onChange={(e) => updateValue("ab_test_split_b", e.target.value)}
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="50"
+                />
+                <p className="text-xs text-muted-foreground">Example: 35 means 35% B / 65% A.</p>
+              </div>
+
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label>Hero Title Variant B</Label>
+                  <Textarea value={values.hero_title_b || ""} onChange={(e) => updateValue("hero_title_b", e.target.value)} rows={3} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Hero Description Variant B</Label>
+                  <Textarea value={values.hero_description_b || ""} onChange={(e) => updateValue("hero_description_b", e.target.value)} rows={4} />
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Hero Browse CTA Variant B</Label>
+                    <Input value={values.hero_cta_browse_b || ""} onChange={(e) => updateValue("hero_cta_browse_b", e.target.value)} placeholder="Explore Products" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Hero Reviews CTA Variant B</Label>
+                    <Input value={values.hero_cta_reviews_b || ""} onChange={(e) => updateValue("hero_cta_reviews_b", e.target.value)} placeholder="Read Real Reviews" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border p-4 bg-muted/20 text-sm text-muted-foreground">
+                Sticky assignment is handled on the public site via local storage, and tracked as an analytics event.
               </div>
             </CardContent>
           </Card>
