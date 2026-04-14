@@ -55,6 +55,17 @@ export async function POST(req: NextRequest) {
       userAgent: req.headers.get("user-agent") || undefined,
     });
 
+    if (!result.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: result.responseBody || `Discord webhook failed (${result.responseCode || 0})`,
+          data: result,
+        },
+        { status: 502 }
+      );
+    }
+
     return NextResponse.json({ success: true, data: result });
   } catch (error: any) {
     console.error("Discord test error:", error);

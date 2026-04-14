@@ -107,19 +107,11 @@ export default function SettingsPage() {
 const handleTestWebhook = async () => {
   setTestingWebhook(true);
   try {
-    // Liste içinden ilgili ayarları bulalım
-    const getSetting = (key: string) => settings?.find((s: any) => s.key === key)?.value || "";
-
     const res = await fetch("/api/admin/discord/test", { 
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        webhookUrl: getSetting("discordWebhookUrl"), 
-        username: getSetting("discordUsername"),
-        avatarUrl: getSetting("discordAvatarUrl"),
-      }),
     });
     
     const data = await res.json();
@@ -130,7 +122,21 @@ const handleTestWebhook = async () => {
         title: "Test successful!",
         description: "Discord message sent",
       });
+      if (data?.data) {
+        setLastTestResult({
+          success: true,
+          responseCode: data.data.responseCode,
+          date: new Date().toISOString(),
+        });
+      }
     } else {
+      if (data?.data) {
+        setLastTestResult({
+          success: false,
+          responseCode: data.data.responseCode || 0,
+          date: new Date().toISOString(),
+        });
+      }
       addToast({ 
         type: "error", 
         title: "Test failed", 
