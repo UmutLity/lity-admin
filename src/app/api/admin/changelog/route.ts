@@ -5,8 +5,90 @@ import { changelogSchema } from "@/lib/validations/changelog";
 import { createAuditLog } from "@/lib/audit";
 import { sendChangelogToDiscord } from "@/lib/discord";
 import { getClientIp } from "@/lib/ip-utils";
+import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
+
+function asKnownRequestError(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError ? error : null;
+}
+
+function isSchemaMismatchError(error: unknown) {
+  const known = asKnownRequestError(error);
+  return known?.code === "P2021" || known?.code === "P2022";
+}
+
+function normalizeProductIds(productIds?: string[]) {
+  if (!Array.isArray(productIds)) return [];
+  return Array.from(
+    new Set(
+      productIds
+        .filter((id): id is string => typeof id === "string")
+        .map((id) => id.trim())
+        .filter(Boolean)
+    )
+  );
+}
+
+async function resolveExistingProductIds(productIds: string[]) {
+  if (!productIds.length) return [];
+  try {
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true },
+    });
+    return products.map((p) => p.id);
+  } catch (error) {
+    if (isSchemaMismatchError(error)) {
+      console.warn("resolveExistingProductIds schema mismatch, skipping related products attach");
+      return [];
+    }
+    throw error;
+  }
+}
+
+async function attachRelatedProducts(changelogId: string, productIds: string[]) {
+  const normalizedIds = normalizeProductIds(productIds);
+  if (!normalizedIds.length) {
+    return { attachedIds: [] as string[], relationUnavailable: false };
+  }
+
+  const existingIds = await resolveExistingProductIds(normalizedIds);
+  if (!existingIds.length) {
+    return { attachedIds: [] as string[], relationUnavailable: false };
+  }
+
+  try {
+    await prisma.changelogProduct.createMany({
+      data: existingIds.map((productId) => ({ changelogId, productId })),
+      skipDuplicates: true,
+    });
+    return { attachedIds: existingIds, relationUnavailable: false };
+  } catch (error) {
+    const known = asKnownRequestError(error);
+    if (isSchemaMismatchError(error) || known?.code === "P2003") {
+      console.warn("attachRelatedProducts failed, skipping relation attach", {
+        code: known?.code,
+        meta: known?.meta,
+      });
+      return { attachedIds: [] as string[], relationUnavailable: true };
+    }
+    throw error;
+  }
+}
+
+async function loadChangelogWithProducts(changelogId: string) {
+  try {
+    return await prisma.changelog.findUnique({
+      where: { id: changelogId },
+      include: { products: { include: { product: true } } },
+    });
+  } catch (error) {
+    if (!isSchemaMismatchError(error)) throw error;
+    const fallback = await prisma.changelog.findUnique({ where: { id: changelogId } });
+    return fallback ? { ...fallback, products: [] } : null;
+  }
+}
 
 // GET /api/admin/changelog
 export async function GET(req: NextRequest) {
@@ -57,23 +139,33 @@ export async function POST(req: NextRequest) {
       data: {
         ...data,
         publishedAt: publishAt,
-        products: productIds?.length
-          ? { create: productIds.map((id) => ({ productId: id })) }
-          : undefined,
       },
-      include: { products: { include: { product: true } } },
     });
 
+    const relationResult = await attachRelatedProducts(changelog.id, productIds || []);
+    const created = await loadChangelogWithProducts(changelog.id);
+    if (!created) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     // Update Last Update for related products if published
-    if (isPublishedNow && productIds && productIds.length > 0) {
+    if (isPublishedNow && relationResult.attachedIds.length > 0) {
       const publishedAt = changelog.publishedAt || new Date();
-      await prisma.product.updateMany({
-        where: { id: { in: productIds } },
-        data: {
-          lastUpdateAt: publishedAt,
-          lastUpdateChangelogId: changelog.id,
-        },
-      });
+      try {
+        await prisma.product.updateMany({
+          where: { id: { in: relationResult.attachedIds } },
+          data: {
+            lastUpdateAt: publishedAt,
+            lastUpdateChangelogId: changelog.id,
+          },
+        });
+      } catch (error) {
+        if (isSchemaMismatchError(error)) {
+          console.warn("POST /api/admin/changelog product last-update fields unavailable, skipping updateMany");
+        } else {
+          throw error;
+        }
+      }
     }
 
     await createAuditLog({
@@ -81,7 +173,14 @@ export async function POST(req: NextRequest) {
       action: isPublishedNow ? "PUBLISH" : "CREATE",
       entity: "Changelog",
       entityId: changelog.id,
-      after: { title: changelog.title, type: changelog.type, isDraft: changelog.isDraft, isScheduled },
+      after: {
+        title: changelog.title,
+        type: changelog.type,
+        isDraft: changelog.isDraft,
+        isScheduled,
+        relatedProductsAttached: relationResult.attachedIds.length,
+        relatedProductsUnavailable: relationResult.relationUnavailable,
+      },
       ip,
       userAgent: req.headers.get("user-agent") || undefined,
     });
@@ -93,7 +192,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ success: true, data: changelog }, { status: 201 });
+    return NextResponse.json({ success: true, data: created }, { status: 201 });
   } catch (error: any) {
     if (error.message === "Unauthorized") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     console.error("POST /api/admin/changelog error:", error);
