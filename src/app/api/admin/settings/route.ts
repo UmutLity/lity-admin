@@ -37,42 +37,6 @@ const SETTING_DEFAULTS: Record<string, { value: string; type: string; group: str
     group: "discord",
     label: "Top-up Webhook Enabled",
   },
-  ab_test_enabled: {
-    value: "false",
-    type: "boolean",
-    group: "abtest",
-    label: "A/B Test Enabled",
-  },
-  ab_test_split_b: {
-    value: "50",
-    type: "number",
-    group: "abtest",
-    label: "Variant B Traffic %",
-  },
-  hero_title_b: {
-    value: "",
-    type: "string",
-    group: "abtest",
-    label: "Hero Title Variant B",
-  },
-  hero_description_b: {
-    value: "",
-    type: "string",
-    group: "abtest",
-    label: "Hero Description Variant B",
-  },
-  hero_cta_browse_b: {
-    value: "",
-    type: "string",
-    group: "abtest",
-    label: "Hero Browse CTA Variant B",
-  },
-  hero_cta_reviews_b: {
-    value: "",
-    type: "string",
-    group: "abtest",
-    label: "Hero Reviews CTA Variant B",
-  },
 };
 
 // GET /api/admin/settings
