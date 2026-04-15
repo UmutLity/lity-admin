@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       }),
       prisma.product.findUnique({
         where: { id: productId },
-        select: { id: true, name: true, slug: true, isActive: true, status: true, currency: true, defaultLoaderUrl: true },
+        select: { id: true, name: true, slug: true, isActive: true, status: true, currency: true, defaultLoaderUrl: true, deliveryType: true },
       }),
     ]);
 
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     const selectedPlan = priceRow.plan;
 
     const baseAmount = Number(priceRow.price || 0);
-    const manualDelivery = true;
+    const manualDelivery = String(product.deliveryType || "MANUAL").toUpperCase() !== "INSTANT";
     if (baseAmount <= 0) return NextResponse.json({ success: false, error: "Invalid product price." }, { status: 400 });
 
     let coupon: null | {
@@ -249,49 +249,92 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      await tx.orderItem.create({
-        data: {
-          orderId: order.id,
-          productId: product.id,
-          plan: selectedPlan,
-          amount,
-        },
-      });
+      try {
+        await tx.orderItem.create({
+          data: {
+            orderId: order.id,
+            productId: product.id,
+            plan: selectedPlan,
+            amount,
+          },
+        });
+      } catch (error) {
+        if (!isSchemaMismatch(error)) throw error;
+        await tx.orderItem.create({
+          data: {
+            orderId: order.id,
+            productId: product.id,
+            plan: selectedPlan,
+          } as any,
+        });
+      }
 
-      const license = await tx.license.create({
-        data: {
-          customerId: customer.id,
-          productId: product.id,
-          plan: selectedPlan,
-          key: licenseKey,
-          status: manualDelivery ? "PENDING" : "ACTIVE",
-          downloadUrl: manualDelivery ? null : (product.defaultLoaderUrl || null),
-          note: manualDelivery ? "Manual delivery pending. Our team will contact you after review." : "Purchased with wallet balance",
-          expiresAt,
-        },
-      });
+      let license: { id: string; key: string; status: string };
+      try {
+        license = await tx.license.create({
+          data: {
+            customerId: customer.id,
+            productId: product.id,
+            plan: selectedPlan,
+            key: licenseKey,
+            status: manualDelivery ? "PENDING" : "ACTIVE",
+            downloadUrl: manualDelivery ? null : (product.defaultLoaderUrl || null),
+            note: manualDelivery ? "Manual delivery pending. Our team will contact you after review." : "Purchased with wallet balance",
+            expiresAt,
+          },
+          select: { id: true, key: true, status: true },
+        });
+      } catch (error) {
+        if (!isSchemaMismatch(error)) throw error;
+        license = await tx.license.create({
+          data: {
+            customerId: customer.id,
+            productId: product.id,
+            plan: selectedPlan,
+            key: licenseKey,
+            status: manualDelivery ? "PENDING" : "ACTIVE",
+          } as any,
+          select: { id: true, key: true, status: true },
+        });
+      }
 
-      await tx.balanceTransaction.create({
-        data: {
-          customerId: customer.id,
-          type: "DEBIT",
-          amount,
-          balanceBefore: before,
-          balanceAfter: after,
-          reason: `Purchase: ${product.name} (${selectedPlan})`,
-          orderId: order.id,
-        },
-      });
+      try {
+        await tx.balanceTransaction.create({
+          data: {
+            customerId: customer.id,
+            type: "DEBIT",
+            amount,
+            balanceBefore: before,
+            balanceAfter: after,
+            reason: `Purchase: ${product.name} (${selectedPlan})`,
+            orderId: order.id,
+          },
+        });
+      } catch (error) {
+        if (!isSchemaMismatch(error)) throw error;
+        await tx.balanceTransaction.create({
+          data: {
+            customerId: customer.id,
+            type: "DEBIT",
+            amount,
+            reason: `Purchase: ${product.name} (${selectedPlan})`,
+          } as any,
+        });
+      }
 
-      await tx.cartItem.deleteMany({
-        where: { customerId: customer.id, productId: product.id, plan: selectedPlan },
-      });
+      await tx.cartItem
+        .deleteMany({
+          where: { customerId: customer.id, productId: product.id, plan: selectedPlan },
+        })
+        .catch(() => {});
 
       if (coupon) {
-        await tx.coupon.update({
-          where: { id: coupon.id },
-          data: { usedCount: { increment: 1 } },
-        });
+        await tx.coupon
+          .update({
+            where: { id: coupon.id },
+            data: { usedCount: { increment: 1 } },
+          })
+          .catch(() => {});
       }
 
       return { updatedCustomer, order, license };
