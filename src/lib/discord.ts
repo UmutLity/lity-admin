@@ -256,7 +256,7 @@ export async function sendOrderNotificationToDiscord(order: OrderDiscordPayload)
   const webhookEnabledSetting = await prisma.siteSetting.findUnique({
     where: { key: "discord_webhook_enabled" },
   });
-  if (!webhookEnabledSetting || webhookEnabledSetting.value !== "true") return null;
+  if (webhookEnabledSetting && webhookEnabledSetting.value !== "true") return null;
 
   const webhookUrlSetting = await prisma.siteSetting.findUnique({
     where: { key: "discord_webhook_url" },
@@ -317,7 +317,7 @@ export async function sendOrderNotificationToDiscord(order: OrderDiscordPayload)
 
 async function getDiscordWebhookIdentity() {
   const webhookEnabledSetting = await prisma.siteSetting.findUnique({ where: { key: "discord_webhook_enabled" } });
-  if (!webhookEnabledSetting || webhookEnabledSetting.value !== "true") return null;
+  if (webhookEnabledSetting && webhookEnabledSetting.value !== "true") return null;
 
   const webhookUrlSetting = await prisma.siteSetting.findUnique({ where: { key: "discord_webhook_url" } });
   if (!webhookUrlSetting?.value) return null;
@@ -447,7 +447,7 @@ export async function sendChangelogToDiscord(changelogId: string): Promise<Webho
   const webhookEnabledSetting = await prisma.siteSetting.findUnique({
     where: { key: "discord_webhook_enabled" },
   });
-  if (!webhookEnabledSetting || webhookEnabledSetting.value !== "true") return null;
+  if (webhookEnabledSetting && webhookEnabledSetting.value !== "true") return null;
 
   const webhookUrlSetting = await prisma.siteSetting.findUnique({
     where: { key: "discord_webhook_url" },
