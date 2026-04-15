@@ -198,7 +198,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (isLiveNow) {
       console.log("[Discord] Changelog live update, sending webhook for:", changelog.id);
       try {
-        const webhookResult = await sendChangelogToDiscord(changelog.id);
+        const webhookResult = await sendChangelogToDiscord(changelog.id, { force: true });
         if (webhookResult) {
           console.log("[Discord] Webhook result:", webhookResult.success ? "SUCCESS" : "FAILED", webhookResult);
         } else {

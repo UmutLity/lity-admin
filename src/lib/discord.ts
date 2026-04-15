@@ -443,11 +443,15 @@ export async function sendProductStatusNotificationToDiscord(input: ProductStatu
   return sendDiscordWebhook(webhook.webhookUrl, payload);
 }
 
-export async function sendChangelogToDiscord(changelogId: string): Promise<WebhookResult | null> {
+export async function sendChangelogToDiscord(
+  changelogId: string,
+  options?: { force?: boolean }
+): Promise<WebhookResult | null> {
   const webhookEnabledSetting = await prisma.siteSetting.findUnique({
     where: { key: "discord_webhook_enabled" },
   });
-  if (webhookEnabledSetting && webhookEnabledSetting.value !== "true") return null;
+  const force = options?.force === true;
+  if (!force && webhookEnabledSetting && webhookEnabledSetting.value !== "true") return null;
 
   const webhookUrlSetting = await prisma.siteSetting.findUnique({
     where: { key: "discord_webhook_url" },

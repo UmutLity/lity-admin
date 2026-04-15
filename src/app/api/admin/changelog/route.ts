@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
     // Send to Discord if published (await for reliability on serverless)
     if (isPublishedNow) {
       try {
-        const webhookResult = await sendChangelogToDiscord(changelog.id);
+        const webhookResult = await sendChangelogToDiscord(changelog.id, { force: true });
         console.log("[Discord] POST changelog webhook result:", webhookResult);
       } catch (err) {
         console.error("Discord webhook error:", err);
