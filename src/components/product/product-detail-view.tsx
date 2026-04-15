@@ -84,6 +84,39 @@ function formatPlanDisplay(plan: string) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function SmartImage({
+  src,
+  alt,
+  className,
+  fallbackClassName,
+}: {
+  src: string | null | undefined;
+  alt: string;
+  className?: string;
+  fallbackClassName?: string;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
+  const safeSrc = !src || errored ? "/litysoftware.png" : src;
+
+  return (
+    <div className={cn("ui-media-frame", className)}>
+      {!loaded ? <div className="ui-media-skeleton" /> : null}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={safeSrc}
+        alt={alt}
+        className={cn("ui-media-img transition duration-300", loaded ? "opacity-100" : "opacity-0", fallbackClassName)}
+        onLoad={() => setLoaded(true)}
+        onError={() => {
+          setErrored(true);
+          setLoaded(true);
+        }}
+      />
+    </div>
+  );
+}
+
 export function ProductDetailView({ product, relatedProducts }: { product: ProductDetailData; relatedProducts: RelatedProductData[] }) {
   const hasRealGallery = product.gallery.length > 0;
   const gallery = hasRealGallery
@@ -104,10 +137,10 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
   const relatedItems = relatedProducts.slice(0, 3);
 
   return (
-    <main className="page-enter relative mx-auto w-full max-w-[1480px] space-y-6 overflow-hidden p-5 lg:p-8">
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.18),transparent_38%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.015),transparent)]" />
+    <main className="page-enter relative mx-auto w-full max-w-[1480px] space-y-5 overflow-hidden p-3 sm:p-4 lg:space-y-6 lg:p-8">
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(circle_at_top_left,rgba(148,163,184,0.18),transparent_38%),radial-gradient(circle_at_top_right,rgba(99,115,139,0.15),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.012),transparent)]" />
       <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-        <Card className="premium-card overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))]">
+        <Card className="premium-card ui-hover-lift overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))]">
           <CardHeader className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={statusVariant(product.status)}>{product.status}</Badge>
@@ -170,9 +203,9 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
               </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(116,83,211,0.22),rgba(255,255,255,0.03))] p-5">
-              <div className="pointer-events-none absolute -left-10 top-0 h-32 w-32 rounded-full bg-primary/20 blur-3xl" />
-              <div className="pointer-events-none absolute bottom-0 right-0 h-28 w-28 rounded-full bg-sky-400/10 blur-3xl" />
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(95,116,146,0.24),rgba(255,255,255,0.02))] p-4 sm:p-5">
+              <div className="pointer-events-none absolute -left-10 top-0 h-32 w-32 rounded-full bg-primary/18 blur-3xl" />
+              <div className="pointer-events-none absolute bottom-0 right-0 h-28 w-28 rounded-full bg-slate-400/10 blur-3xl" />
               <div className="relative grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
                 <div className="space-y-3">
                   <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs uppercase tracking-[0.16em] text-zinc-300">
@@ -204,7 +237,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
               <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/85">
                 Buy {selectedPrice ? planLabel(selectedPrice.plan) : "Now"}
                 <ArrowRight className="h-4 w-4" />
@@ -231,7 +264,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
           </CardContent>
         </Card>
 
-        <Card className="premium-card overflow-hidden border-white/10">
+        <Card className="premium-card ui-hover-lift overflow-hidden border-white/10">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">{hasRealGallery ? "Product Preview" : "Product Overview"}</CardTitle>
           </CardHeader>
@@ -239,8 +272,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
             {hasRealGallery ? (
               <>
                 <div className="overflow-hidden rounded-xl border border-white/10 bg-black/20">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={activeImage} alt={product.name} className="h-[260px] w-full object-cover" />
+                  <SmartImage src={activeImage} alt={product.name} className="aspect-[16/10] w-full" />
                 </div>
                 <div className="grid grid-cols-4 gap-2">
                   {gallery.slice(0, 4).map((image) => (
@@ -253,8 +285,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
                         activeImage === image.url ? "border-primary/70 ring-1 ring-primary/40" : "border-white/10 hover:border-primary/35"
                       )}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={image.url} alt={image.altText} className="h-16 w-full object-cover" />
+                      <SmartImage src={image.url} alt={image.altText} className="h-16 w-full rounded-none border-0" fallbackClassName="rounded-none" />
                     </button>
                   ))}
                 </div>
@@ -296,7 +327,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
           { label: "Support", value: "24/7", icon: Sparkles },
           { label: "Uptime", value: "99.95%", icon: CheckCircle2 },
         ].map((item) => (
-          <Card key={item.label} className="kpi-card border-white/8">
+          <Card key={item.label} className="kpi-card ui-hover-lift border-white/8">
             <CardContent className="flex items-center justify-between p-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.14em] text-zinc-500">{item.label}</p>
@@ -311,7 +342,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {product.features.length ? (
           product.features.map((feature) => (
-            <Card key={feature.id} className="premium-card border-white/8">
+            <Card key={feature.id} className="premium-card ui-hover-lift border-white/8">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">{feature.title}</CardTitle>
               </CardHeader>
@@ -329,7 +360,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
         )}
       </section>
 
-      <section className="premium-card rounded-2xl border border-white/8 p-4 md:p-6">
+      <section className="premium-card rounded-2xl border border-white/8 p-3 sm:p-4 md:p-6">
         <Tabs defaultValue="features" className="w-full">
             <TabsList className="w-full justify-start overflow-x-auto bg-muted/70">
             <TabsTrigger value="features">Features</TabsTrigger>
@@ -434,7 +465,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
             <Card
               key={item.id}
               className={cn(
-                "premium-card border-white/8",
+                "premium-card ui-hover-lift border-white/8",
                 selectedPrice?.id === item.id && "border-primary/45 shadow-[0_0_0_1px_rgba(169,150,196,0.2)]"
               )}
             >
@@ -464,16 +495,13 @@ export function ProductDetailView({ product, relatedProducts }: { product: Produ
           </div>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {relatedItems.map((item) => (
-              <Card key={item.id} className="premium-card border-white/8">
+              <Card key={item.id} className="premium-card ui-hover-lift border-white/8">
                 <CardContent className="space-y-3 p-4">
-                  <div className="overflow-hidden rounded-lg border border-white/10 bg-black/30">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={item.imageUrl || "/litysoftware.png"} alt={item.name} className="h-36 w-full object-cover" />
-                  </div>
+                  <SmartImage src={item.imageUrl || "/litysoftware.png"} alt={item.name} className="aspect-[16/9] w-full" />
                   <div className="space-y-1">
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-semibold">{item.name}</p>
-                      <Badge variant={statusVariant(item.status)}>{item.status}</Badge>
+                      <Badge variant={statusVariant(item.status)} className="ui-chip border-white/10 bg-white/[0.04]">{item.status}</Badge>
                     </div>
                     <p className="text-sm text-zinc-400">{item.shortDescription}</p>
                   </div>

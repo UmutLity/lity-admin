@@ -99,7 +99,7 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#0d0e12_0%,#101118_35%,#0d0e12_100%)]">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#0f141d_0%,#121924_35%,#0f141d_100%)]">
       <ProductDetailView product={data.product} relatedProducts={data.related} />
     </div>
   );

@@ -241,7 +241,7 @@ export function Sidebar() {
       </Button>
 
       {notifOpen ? (
-        <Card className="absolute bottom-[calc(100%+12px)] left-0 z-[90] w-[320px] border-white/[0.08] bg-[#11131a]/95 shadow-2xl shadow-black/40 backdrop-blur-xl">
+        <Card className="ui-fade-in absolute bottom-[calc(100%+12px)] left-0 z-[90] w-[320px] border-white/[0.08] bg-[#121925]/95 shadow-2xl shadow-black/40 backdrop-blur-xl">
           <CardContent className="p-0">
             <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
               <div className="flex items-center gap-2">
@@ -280,7 +280,7 @@ export function Sidebar() {
   );
 
   const userCard = session?.user ? (
-    <Card className="border-white/[0.06] bg-white/[0.03] shadow-none">
+    <Card className="border-white/[0.06] bg-white/[0.025] shadow-none">
       <CardContent className={cn("p-3", collapsed && "p-2.5")}>
         <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
           <button
@@ -288,7 +288,7 @@ export function Sidebar() {
             disabled={avatarBusy}
             onClick={updateAvatarUrl}
             title="Set profile photo URL"
-            className="relative h-10 w-10 overflow-hidden rounded-2xl border border-white/[0.08] bg-[radial-gradient(circle_at_top,rgba(169,150,196,0.3),rgba(25,23,33,0.92))] text-sm font-bold text-white disabled:cursor-wait"
+            className="relative h-10 w-10 overflow-hidden rounded-2xl border border-white/[0.08] bg-[radial-gradient(circle_at_top,rgba(146,163,190,0.3),rgba(17,22,32,0.92))] text-sm font-bold text-white disabled:cursor-wait"
           >
             <span className="absolute inset-0 flex items-center justify-center">{(session.user.name || "A").charAt(0).toUpperCase()}</span>
             {imageUrl ? (
@@ -367,7 +367,7 @@ export function Sidebar() {
 
       <div className="flex-1 overflow-y-auto px-2.5 py-3">
         {!collapsed ? (
-          <Card className="mb-3 border-white/[0.06] bg-white/[0.03] shadow-none">
+          <Card className="mb-3 border-white/[0.06] bg-white/[0.025] shadow-none">
             <CardContent className="p-2.5">
               <div className="flex items-center gap-2 text-[13px] text-zinc-400">
                 <Search className="h-4 w-4 text-zinc-500" />
@@ -407,7 +407,7 @@ export function Sidebar() {
 
       <aside
         className={cn(
-          "fixed left-0 top-0 z-[70] flex h-full flex-col border-r border-white/[0.06] bg-[#0d1016]/95 backdrop-blur-2xl transition-all duration-300",
+          "fixed left-0 top-0 z-[70] flex h-full flex-col border-r border-white/[0.06] bg-[#101722]/95 backdrop-blur-2xl transition-all duration-300",
           collapsed ? "w-[80px]" : "w-[258px]",
           mobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full",
           "max-lg:w-[258px] max-lg:shadow-2xl max-lg:shadow-black/50"

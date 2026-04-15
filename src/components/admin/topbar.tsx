@@ -29,9 +29,9 @@ export function Topbar({ title, description, children }: TopbarProps) {
   const role = (session?.user as any)?.role;
 
   return (
-    <div className="mb-6">
-      <Card className="border-white/[0.07] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] shadow-[0_18px_50px_rgba(5,6,10,0.35)]">
-        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mb-6 ui-fade-up">
+      <Card className="ui-surface">
+        <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight text-white">{title}</h1>
@@ -55,7 +55,7 @@ export function Topbar({ title, description, children }: TopbarProps) {
             {description ? <p className="mt-1 text-sm text-zinc-400">{description}</p> : null}
           </div>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-200">
+            <span className="ui-chip inline-flex items-center gap-1 border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-200">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
               Live
             </span>
@@ -129,9 +129,9 @@ export function AdminHeader() {
     : [];
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#0d1016]/95 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 w-full max-w-[1680px] items-center justify-between gap-4 px-4 pl-16 lg:px-6">
-        <div className="relative min-w-0 flex-1 max-w-2xl">
+    <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#0f141d]/95 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 w-full max-w-[1680px] items-center justify-between gap-3 px-3 pl-14 sm:px-4 sm:pl-16 lg:px-6">
+        <div className="relative min-w-0 max-w-2xl flex-1">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
             <Input
@@ -143,7 +143,7 @@ export function AdminHeader() {
               onFocus={() => setSearchOpen(true)}
               onBlur={() => setTimeout(() => setSearchOpen(false), 200)}
               placeholder="Search pages, tools, and admin sections..."
-              className="h-11 rounded-2xl border-white/[0.08] bg-white/[0.04] pl-10 pr-14 text-sm text-zinc-200 placeholder:text-zinc-500 focus-visible:ring-0"
+              className="h-10 rounded-2xl border-white/[0.08] bg-white/[0.03] pl-10 pr-10 text-sm text-zinc-200 placeholder:text-zinc-500 focus-visible:ring-0 sm:h-11 sm:pr-14"
             />
             <div className="absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2 py-1 text-[10px] text-zinc-500 sm:flex">
               <Command className="h-3 w-3" />
@@ -152,7 +152,7 @@ export function AdminHeader() {
           </div>
 
           {searchOpen && filteredRoutes.length ? (
-            <Card className="absolute left-0 right-0 top-full mt-2 border-white/[0.08] bg-[#11131a]/95 shadow-2xl shadow-black/30">
+            <Card className="ui-fade-in absolute left-0 right-0 top-full mt-2 border-white/[0.08] bg-[#121925]/95 shadow-2xl shadow-black/30">
               <CardContent className="p-2">
                 {filteredRoutes.map((route) => (
                   <Button
@@ -173,12 +173,12 @@ export function AdminHeader() {
           ) : null}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <div ref={notifRef} className="relative">
             <Button
               variant="ghost"
               size="icon"
-              className="relative h-10 w-10 rounded-xl text-zinc-400 hover:bg-white/[0.05] hover:text-white"
+              className="relative h-9 w-9 rounded-xl text-zinc-400 hover:bg-white/[0.05] hover:text-white sm:h-10 sm:w-10"
               onClick={() => setNotifOpen((prev) => !prev)}
             >
               <Bell className="h-4.5 w-4.5" />
@@ -186,7 +186,7 @@ export function AdminHeader() {
             </Button>
 
             {notifOpen ? (
-              <Card className="absolute right-0 top-full mt-2 w-80 border-white/[0.08] bg-[#11131a]/95 shadow-2xl shadow-black/35">
+              <Card className="ui-fade-in absolute right-0 top-full mt-2 w-[88vw] max-w-80 border-white/[0.08] bg-[#121925]/95 shadow-2xl shadow-black/35">
                 <CardContent className="p-3">
                   <div className="mb-3 flex items-center justify-between">
                     <p className="text-sm font-semibold text-white">Notifications</p>
@@ -216,7 +216,7 @@ export function AdminHeader() {
           </div>
 
           <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex h-10 items-center gap-2 rounded-xl px-2 text-zinc-300 transition-colors hover:bg-white/[0.05] hover:text-white focus:outline-none">
+            <DropdownMenuTrigger className="inline-flex h-10 items-center gap-2 rounded-xl px-1.5 text-zinc-300 transition-colors hover:bg-white/[0.05] hover:text-white focus:outline-none sm:px-2">
                 <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl border border-white/[0.08] bg-[linear-gradient(135deg,#8f7ab0,#6e6381)] text-[11px] font-bold text-white">
                   <span className="absolute inset-0 flex items-center justify-center">
                     {(session?.user?.name || "A").charAt(0).toUpperCase()}
@@ -237,7 +237,7 @@ export function AdminHeader() {
                 </div>
                 <ChevronDown className="h-4 w-4 text-zinc-500" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 border-white/[0.08] bg-[#11131a]/95 text-zinc-200 backdrop-blur-xl">
+            <DropdownMenuContent align="end" className="ui-fade-in w-56 border-white/[0.08] bg-[#121925]/95 text-zinc-200 backdrop-blur-xl">
               <div className="border-b border-white/[0.06] px-3 py-2.5">
                 <p className="truncate text-sm font-semibold text-white">{session?.user?.name}</p>
                 <p className="truncate text-xs text-zinc-500">{session?.user?.email}</p>
