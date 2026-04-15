@@ -35,21 +35,41 @@ async function getAuthedCustomer(req: NextRequest) {
   return { customer };
 }
 
-async function getOwnedRoleProducts(customerId: string) {
-  const rows = await prisma.license.findMany({
-    where: {
-      customerId,
-      status: "ACTIVE",
-      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-      product: { accessRoleKey: { not: null } },
-    },
-    select: {
-      productId: true,
-      product: { select: { id: true, name: true, slug: true, accessRoleKey: true } },
-    },
+async function getPurchasedProducts(customerId: string) {
+  const grouped = await prisma.orderItem
+    .groupBy({
+      by: ["productId"],
+      where: {
+        order: {
+          customerId,
+          status: { not: "CANCELED" },
+        },
+      },
+      _count: { _all: true },
+    })
+    .catch(() => []);
+
+  if (grouped.length > 0) {
+    const products = await prisma.product.findMany({
+      where: { id: { in: grouped.map((row) => row.productId) } },
+      select: { id: true, name: true, slug: true },
+    });
+    const productMap = new Map(products.map((product) => [product.id, product]));
+    return grouped
+      .map((row) => {
+        const product = productMap.get(row.productId);
+        return product ? { productId: row.productId, product } : null;
+      })
+      .filter((row): row is { productId: string; product: { id: string; name: string; slug: string } } => !!row);
+  }
+
+  // Fallback for legacy data where order items may be incomplete
+  const licenses = await prisma.license.findMany({
+    where: { customerId },
+    select: { productId: true, product: { select: { id: true, name: true, slug: true } } },
     distinct: ["productId"],
   });
-  return rows;
+  return licenses;
 }
 
 export async function GET(req: NextRequest) {
@@ -60,18 +80,17 @@ export async function GET(req: NextRequest) {
     const reviews = await prisma.review.findMany({
       where: { customerId: auth.customer.id },
       include: {
-        product: { select: { id: true, name: true, slug: true, accessRoleKey: true } },
+        product: { select: { id: true, name: true, slug: true } },
       },
       orderBy: { createdAt: "desc" },
       take: 100,
     });
 
-    const owned = await getOwnedRoleProducts(auth.customer.id);
+    const owned = await getPurchasedProducts(auth.customer.id);
     const ownedProducts = owned.map((x) => ({
       id: x.product.id,
       name: x.product.name,
       slug: x.product.slug,
-      roleKey: x.product.accessRoleKey,
     }));
 
     return NextResponse.json({
@@ -120,10 +139,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Rating must be between 1 and 5." }, { status: 400 });
     }
 
-    const owned = await getOwnedRoleProducts(auth.customer.id);
+    const owned = await getPurchasedProducts(auth.customer.id);
     const ownedProduct = owned.find((x) => x.productId === productId);
     if (!ownedProduct) {
-      return NextResponse.json({ success: false, error: "You can only review products you own with active role access." }, { status: 403 });
+      return NextResponse.json({ success: false, error: "You can only review products you purchased." }, { status: 403 });
     }
 
     const source = "CUSTOMER_PORTAL";
@@ -150,7 +169,7 @@ export async function POST(req: NextRequest) {
             authorName: auth.customer.username,
             meta: JSON.stringify({ moderationStatus: "PENDING" }),
           },
-          include: { product: { select: { id: true, name: true, slug: true, accessRoleKey: true } } },
+          include: { product: { select: { id: true, name: true, slug: true } } },
         })
       : await prisma.review.create({
           data: {
@@ -165,7 +184,7 @@ export async function POST(req: NextRequest) {
             isVerifiedPurchase: true,
             meta: JSON.stringify({ moderationStatus: "PENDING" }),
           },
-          include: { product: { select: { id: true, name: true, slug: true, accessRoleKey: true } } },
+          include: { product: { select: { id: true, name: true, slug: true } } },
         });
 
     return NextResponse.json({
