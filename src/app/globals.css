@@ -123,15 +123,6 @@ select:focus-visible {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-2px); }
 }
-@keyframes aurora-shift {
-  0% { transform: translate3d(-2%, 0, 0) scale(1); }
-  50% { transform: translate3d(2%, -1%, 0) scale(1.03); }
-  100% { transform: translate3d(-1%, 1%, 0) scale(1); }
-}
-@keyframes orb-float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-}
 
 /* ━━━ Page Transition ━━━ */
 .page-enter {
@@ -148,70 +139,23 @@ select:focus-visible {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: -2;
-  background:
-    radial-gradient(1200px 620px at 12% -8%, rgba(255, 110, 90, 0.12), transparent 58%),
-    radial-gradient(860px 540px at 86% 6%, rgba(72, 163, 255, 0.12), transparent 62%),
-    radial-gradient(760px 460px at 52% 102%, rgba(228, 179, 76, 0.08), transparent 68%),
-    linear-gradient(180deg, rgba(12, 14, 18, 0.98), rgba(15, 17, 23, 0.97));
-  animation: aurora-shift 20s ease-in-out infinite;
+  z-index: -1;
+  background: #0d1016;
 }
 
 .admin-shell::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(148, 163, 184, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.02) 1px, transparent 1px);
-  background-size: 38px 38px;
-  mask-image: radial-gradient(circle at center, black 35%, transparent 85%);
-  opacity: 0.24;
-}
-
-.admin-shell main::before,
-.admin-shell main::after {
-  content: "";
-  position: fixed;
-  z-index: -1;
-  pointer-events: none;
-  filter: blur(55px);
-  opacity: 0.24;
-  animation: orb-float 10s ease-in-out infinite;
-}
-
-.admin-shell main::before {
-  right: 5%;
-  bottom: 10%;
-  width: 240px;
-  height: 240px;
-  border-radius: 9999px;
-  background: radial-gradient(circle, rgba(255, 134, 95, 0.35), transparent 68%);
-}
-
-.admin-shell main::after {
-  left: 10%;
-  top: 24%;
-  width: 220px;
-  height: 220px;
-  border-radius: 9999px;
-  background: radial-gradient(circle, rgba(74, 147, 255, 0.28), transparent 68%);
-  animation-delay: 1.4s;
+  display: none;
 }
 
 .admin-surface {
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 1.25rem;
-  background: linear-gradient(180deg, rgba(13, 16, 22, 0.82), rgba(10, 12, 16, 0.78));
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+  background: rgba(13, 16, 22, 0.92);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.24);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .admin-shell::before,
-  .admin-shell main::before,
-  .admin-shell main::after,
   .page-enter {
     animation: none !important;
   }

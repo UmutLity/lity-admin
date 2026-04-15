@@ -129,9 +129,9 @@ export function AdminHeader() {
     : [];
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#0d1016]/85 backdrop-blur-2xl">
-      <div className="mx-auto flex h-16 w-full max-w-[1680px] items-center justify-between gap-4 px-4 pl-16 lg:px-8">
-        <div className="relative flex-1 max-w-xl">
+    <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#0d1016]/95 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 w-full max-w-[1680px] items-center justify-between gap-4 px-4 pl-16 lg:px-6">
+        <div className="relative min-w-0 flex-1 max-w-2xl">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
             <Input
