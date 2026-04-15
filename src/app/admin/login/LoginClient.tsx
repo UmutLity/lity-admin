@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Shield, AlertCircle, ArrowRight, Clock, LockKeyhole } from "lucide-react";
+import Link from "next/link";
 
 export default function LoginClient() {
   const router = useRouter();
@@ -43,11 +44,15 @@ export default function LoginClient() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.16),transparent_24%),radial-gradient(circle_at_85%_20%,rgba(113,113,122,0.14),transparent_16%),linear-gradient(180deg,#0b0b11,#13131a)]">
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:44px_44px] opacity-40" />
+    <div className="relative min-h-screen overflow-hidden bg-[#0d1016]">
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:44px_44px] opacity-40" />
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-6xl items-center justify-center px-4 py-10 lg:px-8">
-        <section className="flex w-full items-center justify-center">
+        <section className="flex w-full flex-col items-center justify-center gap-5">
+          <div className="w-full max-w-[430px] rounded-2xl border border-white/[0.07] bg-white/[0.02] px-4 py-3 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Control Center</p>
+            <p className="mt-1 text-sm text-zinc-300">Manage products, orders, tickets and release updates from one panel.</p>
+          </div>
           <div className="w-full max-w-[430px] rounded-[32px] border border-white/[0.07] bg-[linear-gradient(180deg,rgba(23,23,31,0.96),rgba(15,15,22,0.96))] p-7 shadow-[0_34px_90px_rgba(0,0,0,0.34)] backdrop-blur-xl sm:p-8">
             <div className="mb-6 flex items-start justify-between gap-4">
               <div>
@@ -122,6 +127,13 @@ export default function LoginClient() {
                   {loading ? "Signing in..." : "Sign In"}
                   {!loading && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}
                 </button>
+
+                <Link
+                  href="/"
+                  className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-white/[0.1] bg-white/[0.03] text-sm font-medium text-zinc-300 transition-all hover:bg-white/[0.06] hover:text-white"
+                >
+                  Go to Website
+                </Link>
             </form>
           </div>
         </section>

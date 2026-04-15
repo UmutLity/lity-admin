@@ -77,7 +77,7 @@ function ToastContainer({ toasts, onRemove }: { toasts: Toast[]; onRemove: (id: 
         <div
           key={toast.id}
           className={cn(
-            "flex items-start gap-3 rounded-lg border bg-background p-4 shadow-lg animate-fade-in",
+            "flex items-start gap-3 rounded-xl border bg-[linear-gradient(180deg,rgba(20,23,30,0.95),rgba(16,18,25,0.95))] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.28)] animate-fade-in",
             bgMap[toast.type]
           )}
         >

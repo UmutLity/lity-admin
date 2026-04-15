@@ -184,7 +184,7 @@ function StatCard({
   const card = (
     <Card
       className={cn(
-        "border-white/[0.06] bg-white/[0.03] shadow-none transition-colors",
+        "border-white/[0.06] bg-white/[0.03] shadow-[0_14px_36px_rgba(3,6,12,0.2)] transition-all duration-200",
         href ? "cursor-pointer hover:border-white/[0.14] hover:bg-[#121520]" : ""
       )}
     >
@@ -220,7 +220,7 @@ function SummaryCard({
   valueClass?: string;
 }) {
   return (
-    <Card className="border-white/[0.06] bg-white/[0.03] shadow-none">
+    <Card className="border-white/[0.06] bg-white/[0.03] shadow-[0_14px_36px_rgba(3,6,12,0.2)]">
       <CardContent className="p-4">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-sm font-medium text-zinc-300">{title}</h3>
@@ -253,7 +253,7 @@ function PeriodCard({
   const formatMoney = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
-    <Card className="border-white/[0.06] bg-white/[0.03] shadow-none">
+    <Card className="border-white/[0.06] bg-white/[0.03] shadow-[0_14px_36px_rgba(3,6,12,0.2)]">
       <CardContent className="px-4 py-4">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-[18px] font-semibold leading-none text-zinc-100 sm:text-[20px]">{title}</h3>
@@ -583,7 +583,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.3fr_0.9fr]">
-          <Card className="border-white/[0.06] bg-white/[0.03] shadow-none">
+          <Card className="border-white/[0.06] bg-white/[0.03] shadow-[0_14px_36px_rgba(3,6,12,0.2)]">
             <CardHeader className="pb-4">
               <div className="mb-1 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-[#c7bdd8]" />
@@ -631,7 +631,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-white/[0.06] bg-white/[0.03] shadow-none">
+          <Card className="border-white/[0.06] bg-white/[0.03] shadow-[0_14px_36px_rgba(3,6,12,0.2)]">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
