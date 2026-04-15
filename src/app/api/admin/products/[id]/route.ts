@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 import { productSchema, type ProductFormData } from "@/lib/validations/product";
-import { createAuditLog, diffObjects } from "@/lib/audit";
+import { diffObjects } from "@/lib/audit";
+import { trackAdminEvent } from "@/lib/admin-events";
 import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -442,13 +443,27 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       { name: product.name, slug: product.slug, status: product.status }
     );
 
-    await createAuditLog({
+    await trackAdminEvent({
       userId: (session.user as any).id,
       action: statusChanged ? "STATUS_CHANGE" : "UPDATE",
       entity: "Product",
       entityId: product.id,
       before: diff.before,
       after: diff.after,
+      alert: {
+        type: statusChanged ? "STATUS" : "SYSTEM",
+        severity: statusChanged ? "WARNING" : "INFO",
+        title: statusChanged ? `Product status changed: ${product.name}` : `Product updated: ${product.name}`,
+        message: statusChanged
+          ? `${existing.status} -> ${product.status}`
+          : `${product.name} details and pricing were updated.`,
+        meta: {
+          productId: product.id,
+          productSlug: product.slug,
+          statusChanged,
+          hasPrices: Array.isArray(prices) && prices.length > 0,
+        },
+      },
     });
 
     return NextResponse.json({ success: true, data: product });
@@ -471,13 +486,27 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
     const result = await deleteProductWithFallbacks(params.id);
 
-    await createAuditLog({
+    await trackAdminEvent({
       userId: (session.user as any).id,
       action: result.mode === "deleted" ? "DELETE" : "UPDATE",
       entity: "Product",
       entityId: params.id,
       before: { name: product.name, slug: product.slug, isActive: product.isActive, status: product.status },
       after: result.mode === "archived" ? { isActive: false, status: "DISCONTINUED" } : null,
+      alert: {
+        type: "SYSTEM",
+        severity: result.mode === "deleted" ? "WARNING" : "CRITICAL",
+        title: result.mode === "deleted" ? `Product deleted: ${product.name}` : `Product archived: ${product.name}`,
+        message:
+          result.mode === "deleted"
+            ? `${product.name} was permanently removed.`
+            : `${product.name} had linked data and was archived as DISCONTINUED.`,
+        meta: {
+          productId: params.id,
+          mode: result.mode,
+          previousStatus: product.status,
+        },
+      },
     });
 
     return NextResponse.json({

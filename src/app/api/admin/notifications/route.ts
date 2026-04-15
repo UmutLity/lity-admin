@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const unreadOnly = url.searchParams.get("unread") === "true";
     const type = url.searchParams.get("type");
+    const severity = url.searchParams.get("severity");
     const limit = parseInt(url.searchParams.get("limit") || "50");
 
     const where: any = {
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
     };
     if (unreadOnly) where.isRead = false;
     if (type) where.type = type;
+    if (severity) where.severity = severity;
 
     const [notifications, unreadCount] = await Promise.all([
       prisma.adminNotification.findMany({

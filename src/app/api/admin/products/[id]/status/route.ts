@@ -2,13 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 import { productStatusSchema } from "@/lib/validations/product";
-import { createAuditLog } from "@/lib/audit";
+import { trackAdminEvent } from "@/lib/admin-events";
 import { detectRapidStatusChanges } from "@/lib/security";
 import { getClientIp } from "@/lib/ip-utils";
 import { sendProductStatusNotificationToDiscord } from "@/lib/discord";
 import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
+
+function resolveStatusSeverity(status: string): "INFO" | "WARNING" | "CRITICAL" {
+  const normalized = String(status || "").toUpperCase();
+  if (["UNDETECTED", "DOWN", "OUTAGE", "BROKEN", "DISCONTINUED"].includes(normalized)) return "CRITICAL";
+  if (["UPDATING", "MAINTENANCE", "DEGRADED", "LIMITED"].includes(normalized)) return "WARNING";
+  return "INFO";
+}
 
 function isSchemaMismatchError(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && (error.code === "P2021" || error.code === "P2022");
@@ -110,7 +117,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     );
 
     try {
-      await createAuditLog({
+      await trackAdminEvent({
         userId,
         action: "STATUS_CHANGE",
         entity: "Product",
@@ -119,6 +126,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         after: { status: product.status, statusNote: product.statusNote },
         ip,
         userAgent: req.headers.get("user-agent") || undefined,
+        alert: {
+          type: "STATUS",
+          severity: resolveStatusSeverity(product.status),
+          title: `Product status changed: ${product.name}`,
+          message: `${existing.status} -> ${product.status}`,
+          meta: {
+            productId: product.id,
+            productSlug: product.slug || null,
+            fromStatus: existing.status,
+            toStatus: product.status,
+            statusNote: product.statusNote || null,
+          },
+        },
       });
     } catch (auditError) {
       console.warn("Product status audit log skipped:", auditError);

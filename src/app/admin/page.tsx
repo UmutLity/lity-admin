@@ -61,6 +61,14 @@ interface DashboardData {
     rank: string;
     profileHref: string | null;
   }>;
+  criticalUnreadCount: number;
+  criticalAlerts: Array<{
+    id: string;
+    title: string;
+    message: string;
+    createdAt: string;
+    type: string;
+  }>;
 }
 
 const EMPTY: DashboardData = {
@@ -90,6 +98,8 @@ const EMPTY: DashboardData = {
   monthBoxOpens: 0,
   activities: [],
   leaderboard: [],
+  criticalUnreadCount: 0,
+  criticalAlerts: [],
 };
 
 const RANK_TIERS = [
@@ -301,17 +311,26 @@ export default function DashboardPage() {
 
     async function load() {
       setLoading(true);
-      const [productsRes, customersRes, ticketsRes, paymentsRes] = await Promise.all([
+      const [productsRes, customersRes, ticketsRes, paymentsRes, criticalRes] = await Promise.all([
         safeFetch("/api/admin/products"),
         safeFetch("/api/admin/customers"),
         safeFetch("/api/admin/tickets?status=ALL"),
         safeFetch("/api/admin/logs?type=payment&page=1&pageSize=300"),
+        safeFetch("/api/admin/notifications?severity=CRITICAL&unread=true&limit=6"),
       ]);
 
       const products = safeArray(productsRes?.data);
       const customers = safeArray(customersRes?.data);
       const tickets = safeArray(ticketsRes?.data);
       const payments = safeArray(paymentsRes?.data);
+      const criticalAlerts = safeArray(criticalRes?.data).map((item: any, idx: number) => ({
+        id: String(item.id || `critical-${idx}-${Date.now()}`),
+        title: String(item.title || "Critical alert"),
+        message: String(item.message || ""),
+        createdAt: String(item.createdAt || new Date().toISOString()),
+        type: String(item.type || "SYSTEM"),
+      }));
+      const criticalUnreadCount = Number(criticalRes?.unreadCount || criticalAlerts.length || 0);
 
       const debitPayments = payments.filter((p) => String(p.type || "").toUpperCase() === "DEBIT");
       const creditPayments = payments.filter((p) => String(p.type || "").toUpperCase() === "CREDIT");
@@ -456,6 +475,8 @@ export default function DashboardPage() {
           monthBoxOpens: mysteryMonth,
           activities,
           leaderboard,
+          criticalUnreadCount,
+          criticalAlerts,
         });
         setLoading(false);
       }
@@ -527,6 +548,46 @@ export default function DashboardPage() {
           <StatCard title="Active Products" value={data.activeProducts} icon={Boxes} iconClass="bg-violet-500/15 text-violet-300" href="/admin/products" />
           <StatCard title="Open Tickets" value={data.openTickets} icon={AlertTriangle} iconClass="bg-rose-500/15 text-rose-300" href="/admin/tickets" />
         </div>
+
+        <Card className="border-white/[0.06] bg-white/[0.03] shadow-[0_14px_36px_rgba(3,6,12,0.2)]">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-[20px] font-semibold text-white">Critical Alerts</CardTitle>
+                <CardDescription>High-risk changes and incidents that need attention.</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge className="border-red-500/30 bg-red-500/10 text-red-200">{data.criticalUnreadCount} unread</Badge>
+                <Link
+                  href="/admin/notifications?filter=critical"
+                  className="inline-flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-1.5 text-[11px] font-medium text-zinc-200 transition hover:bg-white/[0.05] hover:text-white"
+                >
+                  Open Alerts
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-2">
+              {data.criticalAlerts.length === 0 ? (
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-5 text-zinc-500">
+                  No unread critical alerts.
+                </div>
+              ) : (
+                data.criticalAlerts.map((alert) => (
+                  <div key={alert.id} className="rounded-xl border border-red-500/20 bg-red-500/[0.06] px-3.5 py-3">
+                    <p className="text-sm font-semibold text-red-100">{alert.title}</p>
+                    <p className="mt-1 text-xs text-red-200/80">{alert.message}</p>
+                    <p className="mt-2 text-[11px] uppercase tracking-[0.12em] text-red-200/60">
+                      {alert.type} • {timeAgo(alert.createdAt)}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
           <SummaryCard

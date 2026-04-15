@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
-import { createAuditLog } from "@/lib/audit";
+import { trackAdminEvent } from "@/lib/admin-events";
 import { hash } from "bcryptjs";
 import { z } from "zod";
 
@@ -39,13 +39,34 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       select: { id: true, email: true, name: true, role: true, isActive: true },
     });
 
-    await createAuditLog({
+    const roleChanged = existing.role !== user.role;
+    const activeChanged = existing.isActive !== user.isActive;
+
+    await trackAdminEvent({
       userId: (session.user as any).id,
-      action: "UPDATE",
+      action: roleChanged ? "ROLE_CHANGE" : "UPDATE",
       entity: "User",
       entityId: user.id,
       before: { name: existing.name, role: existing.role, isActive: existing.isActive },
       after: { name: user.name, role: user.role, isActive: user.isActive },
+      alert: roleChanged || activeChanged
+        ? {
+            type: "SECURITY",
+            severity: !user.isActive ? "CRITICAL" : "WARNING",
+            title: roleChanged ? `User role changed: ${user.email}` : `User status changed: ${user.email}`,
+            message: roleChanged
+              ? `${existing.role} -> ${user.role}`
+              : `Active state: ${existing.isActive ? "active" : "inactive"} -> ${user.isActive ? "active" : "inactive"}`,
+            meta: {
+              targetUserId: user.id,
+              targetEmail: user.email,
+              fromRole: existing.role,
+              toRole: user.role,
+              fromActive: existing.isActive,
+              toActive: user.isActive,
+            },
+          }
+        : undefined,
     });
 
     return NextResponse.json({ success: true, data: user });
