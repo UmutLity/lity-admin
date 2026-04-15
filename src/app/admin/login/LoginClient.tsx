@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Shield, AlertCircle, ArrowRight, Clock, LockKeyhole } from "lucide-react";
+import { AlertCircle, ArrowRight, Clock, LockKeyhole } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function LoginClient() {
   const router = useRouter();
@@ -57,7 +58,13 @@ export default function LoginClient() {
             <div className="mb-6 flex items-start justify-between gap-4">
               <div>
                 <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] shadow-[0_16px_34px_rgba(109,40,217,0.28)]">
-                  <Shield className="h-5 w-5 text-white" />
+                  <Image
+                    src="/litysoftware.png"
+                    alt="Lity Software Logo"
+                    width={26}
+                    height={26}
+                    className="h-6 w-6 object-contain"
+                  />
                 </div>
                 <h2 className="mt-5 text-2xl font-semibold tracking-tight text-white">Admin Sign In</h2>
                 <p className="mt-1 text-sm text-zinc-400">
