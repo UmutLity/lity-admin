@@ -176,6 +176,15 @@ type TicketDiscordPayload = {
   customerUsername?: string | null;
 };
 
+type ProductStatusDiscordPayload = {
+  productId: string;
+  productName: string;
+  productSlug: string;
+  fromStatus?: string | null;
+  toStatus: string;
+  statusNote?: string | null;
+};
+
 export async function sendDiscordWebhook(
   webhookUrl: string,
   payload: object,
@@ -387,6 +396,36 @@ export async function sendSupportTicketNotificationToDiscord(input: TicketDiscor
             { name: "Product", value: input.productName || "General Support", inline: true },
           ],
           footer: { text: "Lity Software - Support Ticket" },
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    },
+    webhook.username,
+    webhook.avatarUrl,
+    false
+  );
+
+  return sendDiscordWebhook(webhook.webhookUrl, payload);
+}
+
+export async function sendProductStatusNotificationToDiscord(input: ProductStatusDiscordPayload): Promise<WebhookResult | null> {
+  const webhook = await getDiscordWebhookIdentity();
+  if (!webhook) return null;
+
+  const payload = buildWebhookPayload(
+    {
+      embeds: [
+        {
+          title: "Product Status Updated",
+          description: `**${input.productName}** (\`/${input.productSlug}\`) status changed.`,
+          color: 0xf59e0b,
+          fields: [
+            { name: "From", value: input.fromStatus || "UNKNOWN", inline: true },
+            { name: "To", value: input.toStatus, inline: true },
+            { name: "Product ID", value: input.productId, inline: false },
+            { name: "Note", value: truncate(input.statusNote || "No status note.", 500), inline: false },
+          ],
+          footer: { text: "Lity Software - Product Status" },
           timestamp: new Date().toISOString(),
         },
       ],

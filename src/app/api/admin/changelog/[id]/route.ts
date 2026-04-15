@@ -194,9 +194,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       userAgent: req.headers.get("user-agent") || undefined,
     });
 
-    // Send to Discord if just published
-    if (justPublishedNow) {
-      console.log("[Discord] Changelog published, sending webhook for:", changelog.id);
+    // Send to Discord for live changelogs (newly published or updated while live)
+    if (isLiveNow) {
+      console.log("[Discord] Changelog live update, sending webhook for:", changelog.id);
       sendChangelogToDiscord(changelog.id)
         .then((result) => {
           if (result) {

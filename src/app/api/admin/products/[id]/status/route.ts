@@ -5,6 +5,7 @@ import { productStatusSchema } from "@/lib/validations/product";
 import { createAuditLog } from "@/lib/audit";
 import { detectRapidStatusChanges } from "@/lib/security";
 import { getClientIp } from "@/lib/ip-utils";
+import { sendProductStatusNotificationToDiscord } from "@/lib/discord";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +61,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     // Detect rapid status changes
     detectRapidStatusChanges().catch(() => {});
+
+    // Notify Discord webhook (if enabled)
+    sendProductStatusNotificationToDiscord({
+      productId: product.id,
+      productName: product.name,
+      productSlug: product.slug,
+      fromStatus: existing.status,
+      toStatus: product.status,
+      statusNote: product.statusNote,
+    }).catch((err) => {
+      console.error("Product status Discord webhook error:", err);
+    });
 
     return NextResponse.json({ success: true, data: product });
   } catch (error: any) {
