@@ -30,7 +30,7 @@ export function Topbar({ title, description, children }: TopbarProps) {
 
   return (
     <div className="mb-6">
-      <Card className="border-white/[0.06] bg-white/[0.03] shadow-none">
+      <Card className="border-white/[0.07] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] shadow-[0_18px_50px_rgba(5,6,10,0.35)]">
         <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -54,7 +54,13 @@ export function Topbar({ title, description, children }: TopbarProps) {
             </div>
             {description ? <p className="mt-1 text-sm text-zinc-400">{description}</p> : null}
           </div>
-          {children ? <div className="flex items-center gap-2">{children}</div> : null}
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-200">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+              Live
+            </span>
+            {children}
+          </div>
         </CardContent>
       </Card>
     </div>

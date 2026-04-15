@@ -343,15 +343,19 @@ export function Sidebar() {
     <div className="flex h-full flex-col">
       <div className={cn("flex h-16 items-center border-b border-white/[0.06] px-3", collapsed ? "justify-center" : "justify-between")}>
         <Link href="/admin" className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.04] shadow-[0_10px_24px_rgba(27,23,35,0.24)]">
-            <Image src="/litysoftware.png" alt="Lity Software Logo" width={30} height={30} className="h-7 w-7 rounded-md object-cover" />
-          </div>
-          {!collapsed ? (
-            <div>
-              <p className="text-sm font-semibold text-white">Lity Software</p>
-              <p className="text-[11px] uppercase tracking-[0.22em] text-zinc-500">Admin Console</p>
+          {collapsed ? (
+            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.04] shadow-[0_10px_24px_rgba(27,23,35,0.24)]">
+              <Image src="/litysoftware.png" alt="Lity Software Logo" width={30} height={30} className="h-7 w-7 rounded-md object-cover" />
             </div>
-          ) : null}
+          ) : (
+            <>
+              <Image src="/litysoftware.png" alt="Lity Software Logo" width={132} height={30} className="h-8 w-auto object-contain" />
+              <div>
+                <p className="text-sm font-semibold text-white">Lity Software</p>
+                <p className="text-[11px] uppercase tracking-[0.22em] text-zinc-500">Admin Console</p>
+              </div>
+            </>
+          )}
         </Link>
 
         {!collapsed ? (

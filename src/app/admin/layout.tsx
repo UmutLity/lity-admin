@@ -56,7 +56,9 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           <AdminHeader />
           <main className="flex-1">
             <div className="page-enter mx-auto w-full max-w-[1680px] p-4 lg:p-6">
+              <div className="admin-surface p-3 sm:p-4 lg:p-5">
               {children}
+              </div>
             </div>
           </main>
         </div>
