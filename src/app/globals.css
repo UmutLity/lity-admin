@@ -43,7 +43,7 @@
     --card-foreground: 240 10% 94%;
     --popover: 230 14% 10%;
     --popover-foreground: 240 10% 94%;
-    --primary: 224 18% 68%;
+    --primary: 262 24% 63%;
     --primary-foreground: 210 40% 98%;
     --secondary: 230 12% 15%;
     --secondary-foreground: 240 8% 91%;
@@ -64,14 +64,14 @@
     --sidebar-active-to: 248 12% 58%;
 
     --surface-0: #0d1016;
-    --surface-1: #121722;
-    --surface-2: #161c28;
-    --surface-3: #1b2432;
+    --surface-1: #12131b;
+    --surface-2: #161822;
+    --surface-3: #1c1f2b;
     --stroke-soft: rgba(255, 255, 255, 0.08);
     --stroke-strong: rgba(255, 255, 255, 0.14);
-    --text-dim: #9aa3b2;
-    --text-soft: #c8d0db;
-    --accent-soft: #98a7bf;
+    --text-dim: #9aa1b2;
+    --text-soft: #d6d0e3;
+    --accent-soft: #b3a6ca;
     --shadow-soft: 0 16px 38px rgba(1, 4, 10, 0.28);
   }
 }
@@ -202,14 +202,14 @@ select:focus-visible {
 .ui-surface {
   border: 1px solid var(--stroke-soft);
   border-radius: var(--radius-xl);
-  background: linear-gradient(180deg, rgba(21, 27, 38, 0.9), rgba(15, 20, 30, 0.94));
+  background: linear-gradient(180deg, rgba(19, 22, 31, 0.9), rgba(14, 16, 24, 0.95));
   box-shadow: var(--shadow-soft);
 }
 
 .ui-card {
   border: 1px solid var(--stroke-soft);
   border-radius: var(--radius-xl);
-  background: linear-gradient(180deg, rgba(22, 28, 40, 0.82), rgba(15, 20, 30, 0.92));
+  background: linear-gradient(180deg, rgba(21, 24, 34, 0.86), rgba(15, 17, 25, 0.94));
   box-shadow: var(--shadow-soft);
 }
 
@@ -235,7 +235,7 @@ select:focus-visible {
   overflow: hidden;
   border: 1px solid var(--stroke-soft);
   border-radius: var(--radius-lg);
-  background: linear-gradient(140deg, rgba(20, 24, 34, 0.95), rgba(16, 20, 28, 0.98));
+  background: linear-gradient(140deg, rgba(20, 22, 32, 0.95), rgba(15, 17, 24, 0.98));
 }
 
 .ui-media-skeleton {

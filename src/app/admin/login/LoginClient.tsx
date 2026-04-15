@@ -45,7 +45,7 @@ export default function LoginClient() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#101722]">
+    <div className="relative min-h-screen overflow-hidden bg-[#0d1016]">
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:44px_44px] opacity-40" />
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-6xl items-center justify-center px-4 py-10 lg:px-8">
@@ -54,10 +54,10 @@ export default function LoginClient() {
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Control Center</p>
             <p className="mt-1 text-sm text-zinc-300">Manage products, orders, tickets and release updates from one panel.</p>
           </div>
-          <div className="w-full max-w-[430px] rounded-[32px] border border-white/[0.07] bg-[linear-gradient(180deg,rgba(24,32,45,0.96),rgba(16,22,32,0.96))] p-6 shadow-[0_34px_90px_rgba(0,0,0,0.34)] backdrop-blur-xl sm:p-8">
+          <div className="w-full max-w-[430px] rounded-[32px] border border-white/[0.07] bg-[linear-gradient(180deg,rgba(23,23,31,0.96),rgba(15,15,22,0.96))] p-6 shadow-[0_34px_90px_rgba(0,0,0,0.34)] backdrop-blur-xl sm:p-8">
             <div className="mb-6 flex items-start justify-between gap-4">
               <div>
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#8b99b0,#70839f)] shadow-[0_16px_34px_rgba(72,88,112,0.3)]">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] shadow-[0_16px_34px_rgba(109,40,217,0.28)]">
                   <Image
                     src="/litysoftware.png"
                     alt="Lity Software Logo"
@@ -99,7 +99,7 @@ export default function LoginClient() {
                   <input
                     type="email"
                     placeholder="admin@company.com"
-                    className="h-12 w-full rounded-2xl border border-white/[0.07] bg-[#151d2a] px-4 text-sm text-white placeholder:text-zinc-500 outline-none transition-all focus:border-slate-300/35 focus:bg-[#1a2332]"
+                    className="h-12 w-full rounded-2xl border border-white/[0.07] bg-[#15151d] px-4 text-sm text-white placeholder:text-zinc-500 outline-none transition-all focus:border-violet-400/35 focus:bg-[#181821]"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -119,7 +119,7 @@ export default function LoginClient() {
                   <input
                     type="password"
                     placeholder="Your password"
-                    className="h-12 w-full rounded-2xl border border-white/[0.07] bg-[#151d2a] px-4 text-sm text-white placeholder:text-zinc-500 outline-none transition-all focus:border-slate-300/35 focus:bg-[#1a2332]"
+                    className="h-12 w-full rounded-2xl border border-white/[0.07] bg-[#15151d] px-4 text-sm text-white placeholder:text-zinc-500 outline-none transition-all focus:border-violet-400/35 focus:bg-[#181821]"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -129,7 +129,7 @@ export default function LoginClient() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#8b99b0,#728199)] px-4 text-sm font-semibold text-white shadow-[0_20px_40px_rgba(70,84,107,0.3)] transition-all hover:translate-y-[-1px] hover:shadow-[0_24px_46px_rgba(70,84,107,0.35)] disabled:cursor-not-allowed disabled:opacity-70"
+                  className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] px-4 text-sm font-semibold text-white shadow-[0_20px_40px_rgba(109,40,217,0.24)] transition-all hover:translate-y-[-1px] hover:shadow-[0_24px_46px_rgba(109,40,217,0.28)] disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {loading ? "Signing in..." : "Sign In"}
                   {!loading && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}

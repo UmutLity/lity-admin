@@ -129,7 +129,7 @@ export function AdminHeader() {
     : [];
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#0f141d]/95 backdrop-blur-xl">
+    <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#0d1016]/95 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-[1680px] items-center justify-between gap-3 px-3 pl-14 sm:px-4 sm:pl-16 lg:px-6">
         <div className="relative min-w-0 max-w-2xl flex-1">
           <div className="relative">
@@ -152,7 +152,7 @@ export function AdminHeader() {
           </div>
 
           {searchOpen && filteredRoutes.length ? (
-            <Card className="ui-fade-in absolute left-0 right-0 top-full mt-2 border-white/[0.08] bg-[#121925]/95 shadow-2xl shadow-black/30">
+            <Card className="ui-fade-in absolute left-0 right-0 top-full mt-2 border-white/[0.08] bg-[#11131a]/95 shadow-2xl shadow-black/30">
               <CardContent className="p-2">
                 {filteredRoutes.map((route) => (
                   <Button
@@ -186,7 +186,7 @@ export function AdminHeader() {
             </Button>
 
             {notifOpen ? (
-              <Card className="ui-fade-in absolute right-0 top-full mt-2 w-[88vw] max-w-80 border-white/[0.08] bg-[#121925]/95 shadow-2xl shadow-black/35">
+              <Card className="ui-fade-in absolute right-0 top-full mt-2 w-[88vw] max-w-80 border-white/[0.08] bg-[#11131a]/95 shadow-2xl shadow-black/35">
                 <CardContent className="p-3">
                   <div className="mb-3 flex items-center justify-between">
                     <p className="text-sm font-semibold text-white">Notifications</p>
@@ -237,7 +237,7 @@ export function AdminHeader() {
                 </div>
                 <ChevronDown className="h-4 w-4 text-zinc-500" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="ui-fade-in w-56 border-white/[0.08] bg-[#121925]/95 text-zinc-200 backdrop-blur-xl">
+            <DropdownMenuContent align="end" className="ui-fade-in w-56 border-white/[0.08] bg-[#11131a]/95 text-zinc-200 backdrop-blur-xl">
               <div className="border-b border-white/[0.06] px-3 py-2.5">
                 <p className="truncate text-sm font-semibold text-white">{session?.user?.name}</p>
                 <p className="truncate text-xs text-zinc-500">{session?.user?.email}</p>
