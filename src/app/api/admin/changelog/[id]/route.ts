@@ -197,17 +197,16 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     // Send to Discord for live changelogs (newly published or updated while live)
     if (isLiveNow) {
       console.log("[Discord] Changelog live update, sending webhook for:", changelog.id);
-      sendChangelogToDiscord(changelog.id)
-        .then((result) => {
-          if (result) {
-            console.log("[Discord] Webhook result:", result.success ? "SUCCESS" : "FAILED", result);
-          } else {
-            console.log("[Discord] Webhook skipped (disabled or no URL)");
-          }
-        })
-        .catch((err) => {
-          console.error("[Discord] Webhook error:", err);
-        });
+      try {
+        const webhookResult = await sendChangelogToDiscord(changelog.id);
+        if (webhookResult) {
+          console.log("[Discord] Webhook result:", webhookResult.success ? "SUCCESS" : "FAILED", webhookResult);
+        } else {
+          console.log("[Discord] Webhook skipped (disabled or no URL)");
+        }
+      } catch (err) {
+        console.error("[Discord] Webhook error:", err);
+      }
     }
 
     return NextResponse.json({ success: true, data: updated });

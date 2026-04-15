@@ -185,11 +185,14 @@ export async function POST(req: NextRequest) {
       userAgent: req.headers.get("user-agent") || undefined,
     });
 
-    // Send to Discord if published
+    // Send to Discord if published (await for reliability on serverless)
     if (isPublishedNow) {
-      sendChangelogToDiscord(changelog.id).catch((err) => {
+      try {
+        const webhookResult = await sendChangelogToDiscord(changelog.id);
+        console.log("[Discord] POST changelog webhook result:", webhookResult);
+      } catch (err) {
         console.error("Discord webhook error:", err);
-      });
+      }
     }
 
     return NextResponse.json({ success: true, data: created }, { status: 201 });
