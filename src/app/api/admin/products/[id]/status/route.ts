@@ -6,8 +6,77 @@ import { createAuditLog } from "@/lib/audit";
 import { detectRapidStatusChanges } from "@/lib/security";
 import { getClientIp } from "@/lib/ip-utils";
 import { sendProductStatusNotificationToDiscord } from "@/lib/discord";
+import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
+
+function isSchemaMismatchError(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && (error.code === "P2021" || error.code === "P2022");
+}
+
+async function findProductSafe(productId: string) {
+  try {
+    return await prisma.product.findUnique({
+      where: { id: productId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+        statusNote: true,
+      },
+    });
+  } catch (error) {
+    if (!isSchemaMismatchError(error)) throw error;
+    const fallback = await prisma.product.findUnique({
+      where: { id: productId },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+      },
+    });
+    return fallback ? { ...fallback, slug: "", statusNote: null } : null;
+  }
+}
+
+async function updateProductStatusSafe(productId: string, status: string, statusNote: string | null | undefined, affectLastUpdate: boolean) {
+  const nextData: Record<string, any> = {
+    status,
+    statusNote: statusNote ?? null,
+    lastStatusChangeAt: new Date(),
+  };
+
+  if (affectLastUpdate) {
+    nextData.lastUpdateAt = new Date();
+  }
+
+  try {
+    return await prisma.product.update({
+      where: { id: productId },
+      data: nextData,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+        statusNote: true,
+      },
+    });
+  } catch (error) {
+    if (!isSchemaMismatchError(error)) throw error;
+    const fallback = await prisma.product.update({
+      where: { id: productId },
+      data: { status },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+      },
+    });
+    return { ...fallback, slug: "", statusNote: null };
+  }
+}
 
 // PATCH /api/admin/products/[id]/status - Quick status change
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -22,7 +91,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ error: "Validation failed" }, { status: 400 });
     }
 
-    const existing = await prisma.product.findUnique({ where: { id: params.id } });
+    const existing = await findProductSafe(params.id);
     if (!existing) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
@@ -33,40 +102,38 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     });
     const statusAffectsUpdate = statusSetting?.value === "true";
 
-    const updateData: any = {
-      status: validation.data.status,
-      statusNote: validation.data.statusNote,
-      lastStatusChangeAt: new Date(),
-    };
+    const product = await updateProductStatusSafe(
+      params.id,
+      validation.data.status,
+      validation.data.statusNote,
+      statusAffectsUpdate
+    );
 
-    if (statusAffectsUpdate) {
-      updateData.lastUpdateAt = new Date();
+    try {
+      await createAuditLog({
+        userId,
+        action: "STATUS_CHANGE",
+        entity: "Product",
+        entityId: product.id,
+        before: { status: existing.status, statusNote: existing.statusNote },
+        after: { status: product.status, statusNote: product.statusNote },
+        ip,
+        userAgent: req.headers.get("user-agent") || undefined,
+      });
+    } catch (auditError) {
+      console.warn("Product status audit log skipped:", auditError);
     }
 
-    const product = await prisma.product.update({
-      where: { id: params.id },
-      data: updateData,
-    });
-
-    await createAuditLog({
-      userId,
-      action: "STATUS_CHANGE",
-      entity: "Product",
-      entityId: product.id,
-      before: { status: existing.status, statusNote: existing.statusNote },
-      after: { status: product.status, statusNote: product.statusNote },
-      ip,
-      userAgent: req.headers.get("user-agent") || undefined,
-    });
-
     // Detect rapid status changes
-    detectRapidStatusChanges().catch(() => {});
+    detectRapidStatusChanges().catch((err) => {
+      console.warn("detectRapidStatusChanges failed:", err);
+    });
 
     // Notify Discord webhook (if enabled)
     sendProductStatusNotificationToDiscord({
       productId: product.id,
       productName: product.name,
-      productSlug: product.slug,
+      productSlug: product.slug || "",
       fromStatus: existing.status,
       toStatus: product.status,
       statusNote: product.statusNote,
