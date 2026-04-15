@@ -161,6 +161,13 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, Permission[]> = {
     "ticket.view",
     "ticket.manage",
   ],
+  MEDIA: [
+    "media.view",
+    "media.upload",
+    "media.delete",
+    "analytics.view",
+    "notification.view",
+  ],
   VIEWER: [
     "product.view",
     "changelog.view",

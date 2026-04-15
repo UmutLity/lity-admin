@@ -46,11 +46,6 @@ export default function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [bulkAction, setBulkAction] = useState("");
-  const [bulkStatus, setBulkStatus] = useState("UNDETECTED");
-  const [bulkStatusNote, setBulkStatusNote] = useState("");
-  const [bulkLoading, setBulkLoading] = useState(false);
 
   // Quick status change
   const [quickStatusId, setQuickStatusId] = useState<string | null>(null);
@@ -70,7 +65,6 @@ export default function ProductsPage() {
       }
       const nextProducts: any[] = Array.isArray(data.data) ? data.data : [];
       setProducts(nextProducts);
-      setSelectedIds((prev) => prev.filter((id) => nextProducts.some((product: any) => product.id === id)));
     } catch (error) {
       console.error(error);
       setProducts([]);
@@ -137,44 +131,6 @@ export default function ProductsPage() {
     return formatCurrency(min, product.currency);
   };
 
-  const selectedCount = selectedIds.length;
-
-  const runBulkAction = async () => {
-    if (!selectedIds.length || !bulkAction) {
-      addToast({ type: "error", title: "Bulk tools", description: "Select products and an action first." });
-      return;
-    }
-
-    try {
-      setBulkLoading(true);
-      const res = await fetch("/api/admin/products/bulk", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ids: selectedIds,
-          action: bulkAction,
-          status: bulkAction === "SET_STATUS" ? bulkStatus : undefined,
-          statusNote: bulkStatusNote || null,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || data?.success === false) throw new Error(data?.error || "Bulk action failed");
-      addToast({
-        type: "success",
-        title: "Bulk update complete",
-        description: `${data.count || selectedIds.length} product(s) updated.`,
-      });
-      setSelectedIds([]);
-      setBulkAction("");
-      setBulkStatusNote("");
-      await loadProducts();
-    } catch (error: any) {
-      addToast({ type: "error", title: "Bulk tools", description: error.message || "Could not update selected products." });
-    } finally {
-      setBulkLoading(false);
-    }
-  };
-
   return (
     <div>
       <Topbar title="Products" description="Manage all products">
@@ -206,53 +162,6 @@ export default function ProductsPage() {
         </CardContent>
       </Card>
 
-      <Card className="mb-6">
-        <CardContent className="p-4">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-            <div className="flex flex-wrap items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => setSelectedIds(products.map((product) => product.id))}>
-                Select Visible
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => setSelectedIds([])}>
-                Clear
-              </Button>
-              <span className="text-sm text-muted-foreground">{selectedCount} selected</span>
-            </div>
-            <Select
-              options={[
-                { value: "", label: "Bulk Action" },
-                { value: "FEATURE", label: "Mark as Featured" },
-                { value: "UNFEATURE", label: "Remove Featured" },
-                { value: "ACTIVATE", label: "Activate" },
-                { value: "DEACTIVATE", label: "Deactivate" },
-                { value: "ARCHIVE", label: "Archive" },
-                { value: "SET_STATUS", label: "Set Status" },
-              ]}
-              value={bulkAction}
-              onChange={(e) => setBulkAction(e.target.value)}
-              className="w-full xl:w-52"
-            />
-            {bulkAction === "SET_STATUS" ? (
-              <Select
-                options={statusOptions.filter((item) => item.value)}
-                value={bulkStatus}
-                onChange={(e) => setBulkStatus(e.target.value)}
-                className="w-full xl:w-48"
-              />
-            ) : null}
-            <Input
-              placeholder="Bulk note (optional)"
-              value={bulkStatusNote}
-              onChange={(e) => setBulkStatusNote(e.target.value)}
-              className="xl:max-w-sm"
-            />
-            <Button onClick={runBulkAction} loading={bulkLoading} disabled={!selectedCount || !bulkAction}>
-              Run Bulk Tool
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Table */}
       {loading ? (
         <Card><CardContent className="p-8"><div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-12 bg-muted animate-pulse rounded" />)}</div></CardContent></Card>
@@ -267,14 +176,6 @@ export default function ProductsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[44px]">
-                  <input
-                    type="checkbox"
-                    checked={products.length > 0 && products.every((product) => selectedIds.includes(product.id))}
-                    onChange={(e) => setSelectedIds(e.target.checked ? products.map((product) => product.id) : [])}
-                    className="h-4 w-4"
-                  />
-                </TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Status</TableHead>
@@ -287,18 +188,6 @@ export default function ProductsPage() {
             <TableBody>
               {products.map((product) => (
                 <TableRow key={product.id}>
-                  <TableCell>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(product.id)}
-                      onChange={(e) =>
-                        setSelectedIds((prev) =>
-                          e.target.checked ? [...new Set([...prev, product.id])] : prev.filter((id) => id !== product.id)
-                        )
-                      }
-                      className="h-4 w-4"
-                    />
-                  </TableCell>
                   <TableCell>
                     <div>
                       <p className="font-medium">{product.name}</p>

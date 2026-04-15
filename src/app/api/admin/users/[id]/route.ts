@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
-  role: z.enum(["FOUNDER", "ADMIN", "EDITOR", "VIEWER", "MODERATOR", "SUPPORT", "ANALYST"]).optional(),
+  role: z.enum(["FOUNDER", "ADMIN", "EDITOR", "VIEWER", "MODERATOR", "SUPPORT", "ANALYST", "MEDIA"]).optional(),
   isActive: z.boolean().optional(),
   password: z.string().min(6).optional(),
 });

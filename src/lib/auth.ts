@@ -14,7 +14,7 @@ import { createAuditLog } from "@/lib/audit";
 const VERIFY_INTERVAL = 5 * 60 * 1000; // 5 minutes
 const MAX_SESSION_AGE = 8 * 60 * 60 * 1000; // 8 hours hard limit
 
-type Role = "FOUNDER" | "ADMIN" | "EDITOR" | "VIEWER" | "MODERATOR" | "SUPPORT" | "ANALYST";
+type Role = "FOUNDER" | "ADMIN" | "EDITOR" | "VIEWER" | "MODERATOR" | "SUPPORT" | "ANALYST" | "MEDIA";
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -282,7 +282,7 @@ export function canAccess(userRole: string, resource: string): boolean {
     changelog: ["FOUNDER", "ADMIN", "EDITOR"],
     settings: ["FOUNDER", "ADMIN"],
     users: ["FOUNDER", "ADMIN"],
-    media: ["FOUNDER", "ADMIN", "EDITOR"],
+    media: ["FOUNDER", "ADMIN", "EDITOR", "MEDIA"],
     audit: ["FOUNDER", "ADMIN"],
     security: ["FOUNDER", "ADMIN"],
     roles: ["FOUNDER", "ADMIN"],

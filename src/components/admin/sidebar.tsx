@@ -36,7 +36,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 
-type Role = "FOUNDER" | "ADMIN" | "EDITOR" | "VIEWER" | "MODERATOR" | "SUPPORT" | "ANALYST";
+type Role = "FOUNDER" | "ADMIN" | "EDITOR" | "VIEWER" | "MODERATOR" | "SUPPORT" | "ANALYST" | "MEDIA";
 
 interface NavGroup {
   title: string;
@@ -78,6 +78,7 @@ const navGroups: NavGroup[] = [
       { href: "/admin/changelog", label: "Changelogs", icon: FileText, roles: ["FOUNDER", "ADMIN", "EDITOR"] },
       { href: "/admin/guides", label: "Guides", icon: BookOpen, roles: ["FOUNDER", "ADMIN", "EDITOR"] },
       { href: "/admin/blog", label: "Blog", icon: Newspaper, roles: ["FOUNDER", "ADMIN", "EDITOR"] },
+      { href: "/admin/media", label: "Media", icon: MessageSquare, roles: ["FOUNDER", "ADMIN", "MEDIA"] },
       { href: "/admin/logs", label: "Logs", icon: ClipboardList, roles: ["FOUNDER", "ADMIN"] },
       { href: "/admin/audit", label: "Audit Log", icon: Shield, roles: ["FOUNDER", "ADMIN"] },
       { href: "/admin/settings", label: "Settings", icon: Settings, roles: ["FOUNDER", "ADMIN"] },
@@ -104,6 +105,7 @@ function getRoleTone(role?: string) {
   if (normalized === "FOUNDER") return "border-amber-400/30 bg-amber-500/10 text-amber-200";
   if (normalized === "MODERATOR") return "border-sky-400/25 bg-sky-500/10 text-sky-200";
   if (normalized === "SUPPORT") return "border-emerald-400/25 bg-emerald-500/10 text-emerald-200";
+  if (normalized === "MEDIA") return "border-fuchsia-400/30 bg-fuchsia-500/10 text-fuchsia-200";
   return "border-[#b9accf]/30 bg-[#a996c4]/12 text-[#e0d7ef]";
 }
 

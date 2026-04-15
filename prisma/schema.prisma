@@ -49,6 +49,7 @@ model User {
   reviewedTopUpRequests TopUpRequest[] @relation("TopUpReviewedBy")
   deliveredOrders Order[] @relation("OrderDeliveredBy")
   blogPosts      BlogPost[]
+  videos         Video[]   @relation("VideoOwner")
 }
 
 // ─── Customer (Public Site Users) ───────────────────────
@@ -511,6 +512,21 @@ model Media {
   createdAt DateTime @default(now())
 
   productImages ProductImage[]
+}
+
+model Video {
+  id         String   @id @default(cuid())
+  title      String
+  videoUrl   String
+  thumbnail  String?
+  ownerId    String
+  owner      User     @relation("VideoOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  viewCount  Int      @default(0)
+
+  @@index([ownerId, createdAt])
+  @@index([createdAt])
 }
 
 // ─── Audit Log ───────────────────────────────────────────

@@ -1,274 +1,352 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Topbar } from "@/components/admin/topbar";
-import { EmptyState } from "@/components/admin/empty-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
-import { Upload, Trash2, Image as ImageIcon, Copy, Link, Package, X } from "lucide-react";
+import { parseVideoUrl } from "@/lib/media-embed";
+import { Film, Pencil, Plus, Trash2, Tv2 } from "lucide-react";
 
-interface Product {
+type VideoItem = {
   id: string;
-  name: string;
-  slug: string;
-}
+  title: string;
+  videoUrl: string;
+  thumbnail: string | null;
+  createdAt: string;
+  viewCount: number;
+  owner: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
+};
 
-export default function MediaPage() {
+type FormState = {
+  title: string;
+  videoUrl: string;
+  thumbnail: string;
+};
+
+const defaultForm: FormState = {
+  title: "",
+  videoUrl: "",
+  thumbnail: "",
+};
+
+export default function AdminMediaPage() {
+  const { data: session } = useSession();
   const { addToast } = useToast();
-  const [media, setMedia] = useState<any[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const role = ((session?.user as any)?.role || "").toUpperCase();
+  const canManage = role === "ADMIN" || role === "FOUNDER" || role === "MEDIA";
+
+  const [items, setItems] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editing, setEditing] = useState<VideoItem | null>(null);
+  const [form, setForm] = useState<FormState>(defaultForm);
 
-  // Product assignment dialog
-  const [assignDialog, setAssignDialog] = useState(false);
-  const [pendingMedia, setPendingMedia] = useState<{ id: string; url: string; filename: string } | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState<string>("");
-  const [assigning, setAssigning] = useState(false);
-  const [isThumbnail, setIsThumbnail] = useState(false);
+  const preview = useMemo(() => parseVideoUrl(form.videoUrl), [form.videoUrl]);
 
-  const loadMedia = async () => {
+  async function loadItems() {
+    setLoading(true);
     try {
-      const res = await fetch("/api/admin/media");
+      const res = await fetch("/api/admin/videos", { credentials: "include" });
       const data = await res.json();
-      setMedia(data.data || []);
-    } catch (error) {
-      console.error(error);
+      if (!res.ok) throw new Error(data?.error || "Could not load videos");
+      setItems(Array.isArray(data?.data) ? data.data : []);
+    } catch (error: any) {
+      addToast({ type: "error", title: "Media load failed", description: error?.message || "Unknown error" });
     } finally {
       setLoading(false);
     }
-  };
-
-  const loadProducts = async () => {
-    try {
-      const res = await fetch("/api/admin/products", { credentials: "include" });
-      const data = await res.json();
-      setProducts(data.data || []);
-    } catch {}
-  };
+  }
 
   useEffect(() => {
-    loadMedia();
-    loadProducts();
-  }, []);
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/admin/media", { method: "POST", body: formData });
-      const data = await res.json();
-
-      if (res.ok) {
-        addToast({ type: "success", title: "Uploaded", description: file.name });
-        loadMedia();
-
-        // Open product assignment dialog
-        setPendingMedia({ id: data.data.id, url: data.data.url, filename: data.data.filename });
-        setSelectedProduct("");
-        setIsThumbnail(false);
-        setAssignDialog(true);
-      } else {
-        addToast({ type: "error", title: "Error", description: data.error });
-      }
-    } catch (error) {
-      addToast({ type: "error", title: "Upload failed" });
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+    if (!canManage) {
+      setLoading(false);
+      return;
     }
-  };
+    loadItems();
+  }, [canManage]);
 
-  const handleAssignToProduct = async () => {
-    if (!selectedProduct || !pendingMedia) return;
-    setAssigning(true);
+  function resetForm() {
+    setForm(defaultForm);
+    setEditing(null);
+  }
+
+  async function submitForm() {
+    const title = form.title.trim();
+    const videoUrl = form.videoUrl.trim();
+    if (!title || !videoUrl) {
+      addToast({ type: "error", title: "Title and URL are required" });
+      return;
+    }
+
+    const parsed = parseVideoUrl(videoUrl);
+    if (!parsed) {
+      addToast({ type: "error", title: "Only YouTube, Streamable, Vimeo links are supported." });
+      return;
+    }
+
+    setSaving(true);
     try {
-      const res = await fetch(`/api/admin/products/${selectedProduct}/gallery`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const payload = {
+        title,
+        videoUrl,
+        thumbnail: form.thumbnail.trim() || parsed.thumbnail || "",
+      };
+      const endpoint = editing ? `/api/admin/videos/${editing.id}` : "/api/admin/videos";
+      const method = editing ? "PATCH" : "POST";
+      const res = await fetch(endpoint, {
+        method,
         credentials: "include",
-        body: JSON.stringify({
-          url: pendingMedia.url,
-          altText: pendingMedia.filename,
-          isThumbnail,
-          order: 0,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (data.success) {
-        addToast({ type: "success", title: "Added to product gallery", description: `Image added to product gallery` });
-      } else {
-        addToast({ type: "error", title: "Error", description: data.error || "Failed to assign" });
-      }
-    } catch {
-      addToast({ type: "error", title: "Failed to assign image" });
+      if (!res.ok) throw new Error(data?.error || "Save failed");
+      addToast({
+        type: "success",
+        title: editing ? "Video updated" : "Video published",
+        description: editing ? "Changes saved." : "Video is now visible on public media page.",
+      });
+      resetForm();
+      await loadItems();
+    } catch (error: any) {
+      addToast({ type: "error", title: "Save failed", description: error?.message || "Unknown error" });
     } finally {
-      setAssigning(false);
-      setAssignDialog(false);
-      setPendingMedia(null);
+      setSaving(false);
     }
-  };
+  }
 
-  const handleAssignExisting = (item: any) => {
-    setPendingMedia({ id: item.id, url: item.url, filename: item.filename });
-    setSelectedProduct("");
-    setIsThumbnail(false);
-    setAssignDialog(true);
-  };
-
-  const handleDelete = async () => {
-    if (!deleteId) return;
-    setDeleting(true);
+  async function confirmDelete() {
+    if (!deletingId) return;
     try {
-      const res = await fetch(`/api/admin/media/${deleteId}`, { method: "DELETE" });
-      if (res.ok) {
-        addToast({ type: "success", title: "Deleted" });
-        loadMedia();
-      } else {
-        const data = await res.json();
-        addToast({ type: "error", title: "Error", description: data.error });
-      }
-    } catch (error) {
-      addToast({ type: "error", title: "Error" });
+      const res = await fetch(`/api/admin/videos/${deletingId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Delete failed");
+      addToast({ type: "success", title: "Video deleted" });
+      await loadItems();
+    } catch (error: any) {
+      addToast({ type: "error", title: "Delete failed", description: error?.message || "Unknown error" });
     } finally {
-      setDeleting(false);
-      setDeleteId(null);
+      setDeletingId(null);
+      setDeleteOpen(false);
     }
-  };
+  }
 
-  const copyUrl = (url: string) => {
-    navigator.clipboard.writeText(url);
-    addToast({ type: "info", title: "Copied", description: "URL copied to clipboard" });
-  };
-
-  const formatSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-  };
+  if (!canManage) {
+    return (
+      <Card className="border-white/10 bg-[#16161d]">
+        <CardContent className="p-10 text-center">
+          <p className="text-lg font-semibold text-white">Access restricted</p>
+          <p className="mt-2 text-sm text-zinc-400">Only MEDIA and ADMIN roles can manage videos.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <div>
-      <Topbar title="Media Library" description="Upload and manage images. Assign them to products.">
-        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
-        <Button onClick={() => fileInputRef.current?.click()} loading={uploading}>
-          <Upload className="h-4 w-4" /> Upload Image
-        </Button>
-      </Topbar>
+    <div className="space-y-5">
+      <Topbar title="Media System" description="Upload links from YouTube, Streamable, or Vimeo and manage showcase videos." />
 
-      {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {[1,2,3,4,5,6].map(i => <div key={i} className="aspect-square bg-muted animate-pulse rounded-lg" />)}
-        </div>
-      ) : media.length === 0 ? (
-        <Card>
-          <EmptyState icon={ImageIcon} title="No media yet" description="Upload images to get started">
-            <Button onClick={() => fileInputRef.current?.click()}><Upload className="h-4 w-4" /> Upload Image</Button>
-          </EmptyState>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {media.map((item) => (
-            <Card key={item.id} className="group overflow-hidden">
-              <div className="aspect-square bg-muted relative">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={item.url} alt={item.filename} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button size="icon" variant="secondary" onClick={() => handleAssignExisting(item)} title="Assign to Product">
-                    <Package className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="secondary" onClick={() => copyUrl(item.url)} title="Copy URL">
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="destructive" onClick={() => setDeleteId(item.id)} title="Delete">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <CardContent className="p-3">
-                <p className="text-xs font-medium truncate">{item.filename}</p>
-                <p className="text-xs text-muted-foreground">{formatSize(item.size)}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Delete Confirmation */}
-      <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Image</DialogTitle>
-            <DialogDescription>This image will be permanently deleted.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteId(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} loading={deleting}>Delete</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Assign to Product Dialog */}
-      <Dialog open={assignDialog} onOpenChange={(open) => { if (!open) { setAssignDialog(false); setPendingMedia(null); } }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Link className="h-5 w-5" /> Assign to Product</DialogTitle>
-            <DialogDescription>Choose which product this image belongs to. It will appear in the product&apos;s detail page gallery.</DialogDescription>
-          </DialogHeader>
-
-          {pendingMedia && (
-            <div className="flex gap-3 items-center p-3 rounded-lg bg-muted/50">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={pendingMedia.url} alt="" className="w-16 h-16 rounded-md object-cover" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{pendingMedia.filename}</p>
-                <p className="text-xs text-muted-foreground truncate">{pendingMedia.url}</p>
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Select Product</label>
-              <select
-                value={selectedProduct}
-                onChange={(e) => setSelectedProduct(e.target.value)}
-                className="w-full h-10 rounded-md border bg-background px-3 text-sm"
-              >
-                <option value="">-- Select a product --</option>
-                {products.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isThumbnail}
-                onChange={(e) => setIsThumbnail(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-600"
-              />
-              <span className="text-sm">Set as product thumbnail</span>
-            </label>
+      <Card className="overflow-hidden border-white/10 bg-[linear-gradient(180deg,#171720,#12121a)]">
+        <CardContent className="p-5 sm:p-6">
+          <div className="mb-5 flex items-center gap-2 text-white">
+            <Tv2 className="h-4 w-4 text-[#d2b8ff]" />
+            <h3 className="text-base font-semibold">{editing ? "Edit video" : "New video"}</h3>
           </div>
 
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setAssignDialog(false); setPendingMedia(null); }}>
-              Skip
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label className="text-zinc-300">Video title</Label>
+              <Input
+                value={form.title}
+                onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+                placeholder="Example: Valorant Setup Guide"
+                className="border-white/10 bg-[#0f0f15] text-white placeholder:text-zinc-500"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-zinc-300">Video URL</Label>
+              <Input
+                value={form.videoUrl}
+                onChange={(e) => setForm((prev) => ({ ...prev, videoUrl: e.target.value }))}
+                placeholder="https://youtube.com/watch?v=..."
+                className="border-white/10 bg-[#0f0f15] text-white placeholder:text-zinc-500"
+              />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label className="text-zinc-300">Custom thumbnail (optional)</Label>
+              <Input
+                value={form.thumbnail}
+                onChange={(e) => setForm((prev) => ({ ...prev, thumbnail: e.target.value }))}
+                placeholder="https://cdn.example.com/thumb.jpg"
+                className="border-white/10 bg-[#0f0f15] text-white placeholder:text-zinc-500"
+              />
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-4">
+            <p className="mb-2 text-xs uppercase tracking-[0.16em] text-zinc-500">Embed preview</p>
+            {preview ? (
+              <div className="space-y-2">
+                <p className="text-sm text-zinc-300">
+                  Provider: <span className="font-semibold text-white">{preview.provider}</span>
+                </p>
+                <div className="overflow-hidden rounded-lg border border-fuchsia-400/20 bg-[#0d0d14]">
+                  <iframe
+                    title="Video preview"
+                    src={preview.embedUrl}
+                    allow="autoplay; encrypted-media; picture-in-picture"
+                    allowFullScreen
+                    className="h-56 w-full"
+                  />
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-zinc-500">Paste a supported link to preview the embed player.</p>
+            )}
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Button onClick={submitForm} loading={saving} className="bg-[#a78bfa] text-black hover:bg-[#b89dff]">
+              <Plus className="mr-1 h-4 w-4" />
+              {editing ? "Save changes" : "Publish video"}
             </Button>
-            <Button onClick={handleAssignToProduct} disabled={!selectedProduct} loading={assigning}>
-              <Package className="h-4 w-4" /> Add to Gallery
+            {editing ? (
+              <Button
+                variant="outline"
+                onClick={resetForm}
+                className="border-white/15 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white"
+              >
+                Cancel edit
+              </Button>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-white/10 bg-[#14141b]">
+        <CardContent className="p-5 sm:p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-base font-semibold text-white">Published videos</h3>
+            <span className="rounded-full border border-fuchsia-400/30 bg-fuchsia-500/10 px-3 py-1 text-xs font-semibold text-fuchsia-200">
+              {items.length} total
+            </span>
+          </div>
+
+          {loading ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="h-56 animate-pulse rounded-xl border border-white/10 bg-[#0f0f15]" />
+              ))}
+            </div>
+          ) : items.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-white/15 bg-[#111118] p-10 text-center">
+              <Film className="mx-auto h-8 w-8 text-zinc-500" />
+              <p className="mt-3 text-sm text-zinc-400">No videos yet. Publish your first media post above.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {items.map((item) => {
+                const parsed = parseVideoUrl(item.videoUrl);
+                return (
+                  <div
+                    key={item.id}
+                    className="group overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(180deg,#181824,#111119)] shadow-[0_14px_40px_rgba(0,0,0,.35)] transition hover:border-fuchsia-400/35"
+                  >
+                    <div className="relative h-44 overflow-hidden border-b border-white/10 bg-[#0d0d13]">
+                      {item.thumbnail ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={item.thumbnail}
+                          alt={item.title}
+                          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-zinc-500">
+                          <Film className="h-8 w-8" />
+                        </div>
+                      )}
+                      <span className="absolute left-2 top-2 rounded-full border border-fuchsia-300/30 bg-black/60 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-fuchsia-100">
+                        {parsed?.provider || "video"}
+                      </span>
+                    </div>
+                    <div className="space-y-3 p-4">
+                      <div>
+                        <p className="line-clamp-1 text-sm font-semibold text-white">{item.title}</p>
+                        <p className="mt-1 text-xs text-zinc-400">by {item.owner?.name || "Unknown"}</p>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-zinc-500">
+                        <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                        <span>{item.viewCount} views</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 border-white/15 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white"
+                          onClick={() => {
+                            setEditing(item);
+                            setForm({
+                              title: item.title,
+                              videoUrl: item.videoUrl,
+                              thumbnail: item.thumbnail || "",
+                            });
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                        >
+                          <Pencil className="mr-1 h-3.5 w-3.5" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="flex-1 bg-red-500/20 text-red-200 hover:bg-red-500/30"
+                          onClick={() => {
+                            setDeletingId(item.id);
+                            setDeleteOpen(true);
+                          }}
+                        >
+                          <Trash2 className="mr-1 h-3.5 w-3.5" />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="border-white/10 bg-[#15151e] text-white">
+          <DialogHeader>
+            <DialogTitle>Delete video</DialogTitle>
+            <DialogDescription className="text-zinc-400">This action cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)} className="border-white/15 bg-transparent text-zinc-200">
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -276,3 +354,4 @@ export default function MediaPage() {
     </div>
   );
 }
+

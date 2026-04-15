@@ -43,7 +43,8 @@ export type AuditEntity =
   | "ProductEnvironment"
   | "AdminSession"
   | "SupportTicket"
-  | "TopUpRequest";
+  | "TopUpRequest"
+  | "Video";
 
 // ─── Enhanced Audit Log Input ───────────────────────────
 

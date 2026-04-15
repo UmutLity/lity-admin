@@ -115,6 +115,7 @@ export function AdminHeader() {
       { label: "Top-up Requests", path: "/admin/topups", keywords: "balance topup payments" },
       { label: "Coupons", path: "/admin/coupons", keywords: "discount promos" },
       { label: "Reviews", path: "/admin/reviews", keywords: "feedback ratings" },
+      { label: "Media", path: "/admin/media", keywords: "videos gallery creator uploads" },
       { label: "Blog", path: "/admin/blog", keywords: "articles content" },
       { label: "Settings", path: "/admin/settings", keywords: "configuration site settings" },
     ],
