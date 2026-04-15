@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { signOut, useSession } from "next-auth/react";
@@ -342,8 +343,8 @@ export function Sidebar() {
     <div className="flex h-full flex-col">
       <div className={cn("flex h-16 items-center border-b border-white/[0.06] px-3", collapsed ? "justify-center" : "justify-between")}>
         <Link href="/admin" className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.08] bg-[linear-gradient(135deg,#8f7ab0,#6e6381)] shadow-[0_10px_24px_rgba(27,23,35,0.24)]">
-            <Shield className="h-4 w-4 text-white" />
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.04] shadow-[0_10px_24px_rgba(27,23,35,0.24)]">
+            <Image src="/litysoftware.png" alt="Lity Software Logo" width={30} height={30} className="h-7 w-7 rounded-md object-cover" />
           </div>
           {!collapsed ? (
             <div>
