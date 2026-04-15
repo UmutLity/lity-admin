@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 const TYPE_COLORS: Record<string, number> = {
   UPDATE: 0x8470ff,
@@ -175,6 +176,10 @@ type TicketDiscordPayload = {
   customerEmail?: string | null;
   customerUsername?: string | null;
 };
+
+function isSchemaMismatchError(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && (error.code === "P2021" || error.code === "P2022");
+}
 
 type ProductStatusDiscordPayload = {
   productId: string;
@@ -456,14 +461,42 @@ export async function sendChangelogToDiscord(changelogId: string): Promise<Webho
     where: { key: "discord_webhook_avatar_url" },
   });
 
-  const changelog = await prisma.changelog.findUnique({
-    where: { id: changelogId },
-    include: {
-      products: {
-        include: { product: { select: { name: true, status: true } } },
+  let changelog: any = null;
+  let relatedProducts: Array<{ name: string; status: string }> = [];
+
+  try {
+    changelog = await prisma.changelog.findUnique({
+      where: { id: changelogId },
+      include: {
+        products: {
+          include: { product: { select: { name: true, status: true } } },
+        },
       },
-    },
-  });
+    });
+
+    relatedProducts = Array.isArray(changelog?.products)
+      ? changelog.products.map((cp: any) => ({
+          name: cp?.product?.name || "Unknown",
+          status: cp?.product?.status || "UNKNOWN",
+        }))
+      : [];
+  } catch (error) {
+    if (!isSchemaMismatchError(error)) throw error;
+
+    // Fallback for out-of-sync DB schemas: still send changelog without related products.
+    changelog = await prisma.changelog.findUnique({
+      where: { id: changelogId },
+      select: {
+        id: true,
+        title: true,
+        body: true,
+        type: true,
+        createdAt: true,
+        publishedAt: true,
+      },
+    });
+    relatedProducts = [];
+  }
 
   if (!changelog) return null;
 
@@ -472,32 +505,33 @@ export async function sendChangelogToDiscord(changelogId: string): Promise<Webho
     body: changelog.body,
     type: changelog.type,
     publishedAt: (changelog.publishedAt || changelog.createdAt).toISOString(),
-    products: changelog.products.map((cp) => ({
-      name: cp.product.name,
-      status: cp.product.status,
-    })),
+    products: relatedProducts,
   });
 
   const payload = buildWebhookPayload(
     embed,
     usernameSetting?.value || undefined,
     avatarSetting?.value || undefined,
-    true
+    false
   );
 
   const result = await sendDiscordWebhook(webhookUrlSetting.value, payload);
 
-  await prisma.webhookDelivery.create({
-    data: {
-      provider: "DISCORD",
-      event: "CHANGELOG_PUBLISHED",
-      entityId: changelogId,
-      success: result.success,
-      responseCode: result.responseCode,
-      responseBody: result.responseBody?.slice(0, 500),
-      attempts: result.attempts,
-    },
-  });
+  try {
+    await prisma.webhookDelivery.create({
+      data: {
+        provider: "DISCORD",
+        event: "CHANGELOG_PUBLISHED",
+        entityId: changelogId,
+        success: result.success,
+        responseCode: result.responseCode,
+        responseBody: result.responseBody?.slice(0, 500),
+        attempts: result.attempts,
+      },
+    });
+  } catch (error) {
+    console.warn("Webhook delivery log skipped:", error);
+  }
 
   return result;
 }
