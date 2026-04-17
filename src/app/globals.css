@@ -63,10 +63,10 @@
     --sidebar-active-from: 262 24% 63%;
     --sidebar-active-to: 248 12% 58%;
 
-    --surface-0: #0d1016;
-    --surface-1: #12131b;
-    --surface-2: #161822;
-    --surface-3: #1c1f2b;
+    --surface-0: #111214;
+    --surface-1: #17181b;
+    --surface-2: #1c1d21;
+    --surface-3: #24262b;
     --stroke-soft: rgba(255, 255, 255, 0.08);
     --stroke-strong: rgba(255, 255, 255, 0.14);
     --text-dim: #9aa1b2;
@@ -178,7 +178,7 @@ select:focus-visible {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: #0d1016;
+  background: #111214;
 }
 
 .admin-shell::after {
@@ -188,28 +188,28 @@ select:focus-visible {
 .admin-surface {
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 1.25rem;
-  background: rgba(13, 16, 22, 0.92);
+  background: rgba(17, 18, 20, 0.92);
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.24);
 }
 
 .admin-section {
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-xl);
-  background: linear-gradient(180deg, rgba(17, 20, 28, 0.82), rgba(12, 14, 20, 0.88));
+  background: linear-gradient(180deg, rgba(27, 28, 31, 0.84), rgba(18, 19, 21, 0.9));
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
 }
 
 .ui-surface {
   border: 1px solid var(--stroke-soft);
   border-radius: var(--radius-xl);
-  background: linear-gradient(180deg, rgba(19, 22, 31, 0.9), rgba(14, 16, 24, 0.95));
+  background: linear-gradient(180deg, rgba(28, 29, 33, 0.9), rgba(19, 20, 23, 0.95));
   box-shadow: var(--shadow-soft);
 }
 
 .ui-card {
   border: 1px solid var(--stroke-soft);
   border-radius: var(--radius-xl);
-  background: linear-gradient(180deg, rgba(21, 24, 34, 0.86), rgba(15, 17, 25, 0.94));
+  background: linear-gradient(180deg, rgba(30, 31, 36, 0.86), rgba(20, 21, 25, 0.94));
   box-shadow: var(--shadow-soft);
 }
 

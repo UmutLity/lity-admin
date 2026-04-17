@@ -409,7 +409,7 @@ export function Sidebar() {
 
       <aside
         className={cn(
-          "fixed left-0 top-0 z-[70] flex h-full flex-col border-r border-white/[0.06] bg-[#0d1016]/95 backdrop-blur-2xl transition-all duration-300",
+          "fixed left-0 top-0 z-[70] flex h-full flex-col border-r border-white/[0.06] bg-[#111214]/95 backdrop-blur-2xl transition-all duration-300",
           collapsed ? "w-[80px]" : "w-[258px]",
           mobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full",
           "max-lg:w-[258px] max-lg:shadow-2xl max-lg:shadow-black/50"
@@ -423,7 +423,7 @@ export function Sidebar() {
         size="icon"
         onClick={() => setMobileOpen(true)}
         className={cn(
-          "fixed left-4 top-[calc(env(safe-area-inset-top,0px)+0.9rem)] z-[80] h-10 w-10 rounded-xl border-white/[0.08] bg-[#121620] text-zinc-300 shadow-lg lg:hidden",
+          "fixed left-4 top-[calc(env(safe-area-inset-top,0px)+0.9rem)] z-[80] h-10 w-10 rounded-xl border-white/[0.08] bg-[#1a1b1f] text-zinc-300 shadow-lg lg:hidden",
           mobileOpen && "pointer-events-none opacity-0"
         )}
       >

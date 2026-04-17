@@ -130,7 +130,7 @@ export function AdminHeader() {
     : [];
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#0d1016]/95 backdrop-blur-xl">
+    <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#111214]/95 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-[1680px] items-center justify-between gap-3 px-3 pl-14 sm:px-4 sm:pl-16 lg:px-6">
         <div className="relative min-w-0 max-w-2xl flex-1">
           <div className="relative">
