@@ -15,6 +15,14 @@ type Coupon = {
   usedCount: number;
   isActive: boolean;
   expiresAt: string | null;
+  ruleConfig?: {
+    firstPurchaseOnly?: boolean;
+    allowedProductIds?: string[];
+    allowedCategories?: string[];
+    allowedPlans?: string[];
+    customerRoleAllowlist?: string[];
+    maxDiscountAmount?: number | null;
+  };
 };
 
 const INITIAL_FORM = {
@@ -25,7 +33,20 @@ const INITIAL_FORM = {
   minOrderAmount: "",
   usageLimit: "",
   expiresAt: "",
+  firstPurchaseOnly: false,
+  allowedProductIds: "",
+  allowedCategories: "",
+  allowedPlans: "",
+  customerRoleAllowlist: "",
+  maxDiscountAmount: "",
 };
+
+function splitCsv(input: string) {
+  return String(input || "")
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
 
 export default function CouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -43,11 +64,23 @@ export default function CouponsPage() {
   }
 
   async function createCoupon() {
+    const ruleConfig = {
+      firstPurchaseOnly: !!form.firstPurchaseOnly,
+      allowedProductIds: splitCsv(form.allowedProductIds),
+      allowedCategories: splitCsv(form.allowedCategories).map((v) => v.toUpperCase()),
+      allowedPlans: splitCsv(form.allowedPlans).map((v) => v.toUpperCase()),
+      customerRoleAllowlist: splitCsv(form.customerRoleAllowlist).map((v) => v.toUpperCase()),
+      maxDiscountAmount: form.maxDiscountAmount === "" ? null : Number(form.maxDiscountAmount),
+    };
+
     await fetch("/api/admin/coupons", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        ...form,
+        ruleConfig,
+      }),
     });
     setForm(INITIAL_FORM);
     await loadCoupons();
@@ -116,6 +149,44 @@ export default function CouponsPage() {
               <input className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-200" placeholder="Usage limit" value={form.usageLimit} onChange={(e) => setForm({ ...form, usageLimit: e.target.value })} />
             </div>
             <input className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-200" type="datetime-local" value={form.expiresAt} onChange={(e) => setForm({ ...form, expiresAt: e.target.value })} />
+            <label className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-3 text-sm text-zinc-200">
+              <span>First purchase only</span>
+              <input
+                type="checkbox"
+                checked={form.firstPurchaseOnly}
+                onChange={(e) => setForm({ ...form, firstPurchaseOnly: e.target.checked })}
+              />
+            </label>
+            <input
+              className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-200"
+              placeholder="Allowed product IDs (comma)"
+              value={form.allowedProductIds}
+              onChange={(e) => setForm({ ...form, allowedProductIds: e.target.value })}
+            />
+            <input
+              className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-200"
+              placeholder="Allowed categories (comma, e.g. VALORANT,APEX)"
+              value={form.allowedCategories}
+              onChange={(e) => setForm({ ...form, allowedCategories: e.target.value })}
+            />
+            <input
+              className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-200"
+              placeholder="Allowed plans (comma, DAILY,WEEKLY)"
+              value={form.allowedPlans}
+              onChange={(e) => setForm({ ...form, allowedPlans: e.target.value })}
+            />
+            <input
+              className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-200"
+              placeholder="Allowed customer roles (comma, MEMBER,VIP)"
+              value={form.customerRoleAllowlist}
+              onChange={(e) => setForm({ ...form, customerRoleAllowlist: e.target.value })}
+            />
+            <input
+              className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-200"
+              placeholder="Max discount cap ($)"
+              value={form.maxDiscountAmount}
+              onChange={(e) => setForm({ ...form, maxDiscountAmount: e.target.value })}
+            />
             <button className="w-full rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 py-3 text-sm font-semibold text-white" onClick={createCoupon}>
               Create Coupon
             </button>
@@ -140,6 +211,22 @@ export default function CouponsPage() {
                       : "No usage limit set"}
                     {coupon.expiresAt ? ` - Expires ${new Date(coupon.expiresAt).toLocaleDateString("tr-TR")}` : " - No expiry"}
                   </p>
+                  {(coupon.ruleConfig?.firstPurchaseOnly ||
+                    (coupon.ruleConfig?.allowedProductIds?.length || 0) > 0 ||
+                    (coupon.ruleConfig?.allowedCategories?.length || 0) > 0 ||
+                    (coupon.ruleConfig?.allowedPlans?.length || 0) > 0 ||
+                    (coupon.ruleConfig?.customerRoleAllowlist?.length || 0) > 0 ||
+                    (coupon.ruleConfig?.maxDiscountAmount || 0) > 0) ? (
+                    <p className="mt-2 text-xs text-violet-200">
+                      Rules:
+                      {coupon.ruleConfig?.firstPurchaseOnly ? " first-purchase-only;" : ""}
+                      {coupon.ruleConfig?.allowedCategories?.length ? ` categories(${coupon.ruleConfig.allowedCategories.join(", ")});` : ""}
+                      {coupon.ruleConfig?.allowedPlans?.length ? ` plans(${coupon.ruleConfig.allowedPlans.join(", ")});` : ""}
+                      {coupon.ruleConfig?.customerRoleAllowlist?.length ? ` roles(${coupon.ruleConfig.customerRoleAllowlist.join(", ")});` : ""}
+                      {coupon.ruleConfig?.allowedProductIds?.length ? ` productIds(${coupon.ruleConfig.allowedProductIds.length});` : ""}
+                      {coupon.ruleConfig?.maxDiscountAmount ? ` max-discount($${coupon.ruleConfig.maxDiscountAmount});` : ""}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex gap-2">
                   <button className="rounded-xl border border-white/[0.08] px-3 py-2 text-sm text-zinc-200" onClick={() => toggleCoupon(coupon)}>

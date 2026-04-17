@@ -3,9 +3,9 @@ import prisma from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 import { changelogSchema } from "@/lib/validations/changelog";
 import { createAuditLog } from "@/lib/audit";
-import { sendChangelogToDiscord } from "@/lib/discord";
 import { getClientIp } from "@/lib/ip-utils";
 import { Prisma } from "@prisma/client";
+import { dispatchChangelogReleaseAutomation } from "@/lib/release-automation";
 
 export const dynamic = "force-dynamic";
 
@@ -194,18 +194,14 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       userAgent: req.headers.get("user-agent") || undefined,
     });
 
-    // Send to Discord for live changelogs (newly published or updated while live)
+    // Run release automation for live changelogs (newly published or updated while live)
     if (isLiveNow) {
-      console.log("[Discord] Changelog live update, sending webhook for:", changelog.id);
+      console.log("[ReleaseAutomation] Changelog live update, dispatching:", changelog.id);
       try {
-        const webhookResult = await sendChangelogToDiscord(changelog.id, { force: true });
-        if (webhookResult) {
-          console.log("[Discord] Webhook result:", webhookResult.success ? "SUCCESS" : "FAILED", webhookResult);
-        } else {
-          console.log("[Discord] Webhook skipped (disabled or no URL)");
-        }
+        const automation = await dispatchChangelogReleaseAutomation(changelog.id);
+        console.log("[ReleaseAutomation] Result:", automation);
       } catch (err) {
-        console.error("[Discord] Webhook error:", err);
+        console.error("[ReleaseAutomation] Error:", err);
       }
     }
 

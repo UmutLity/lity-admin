@@ -37,6 +37,48 @@ const SETTING_DEFAULTS: Record<string, { value: string; type: string; group: str
     group: "discord",
     label: "Top-up Webhook Enabled",
   },
+  release_automation_enabled: {
+    value: "true",
+    type: "boolean",
+    group: "discord",
+    label: "Release Automation Enabled",
+  },
+  release_discord_enabled: {
+    value: "true",
+    type: "boolean",
+    group: "discord",
+    label: "Release Discord Dispatch Enabled",
+  },
+  release_notifications_enabled: {
+    value: "true",
+    type: "boolean",
+    group: "discord",
+    label: "Release Site Notification Enabled",
+  },
+  release_webhook_enabled: {
+    value: "false",
+    type: "boolean",
+    group: "discord",
+    label: "Release Webhook Enabled",
+  },
+  release_webhook_url: {
+    value: "",
+    type: "string",
+    group: "discord",
+    label: "Release Webhook URL",
+  },
+  release_email_hook_enabled: {
+    value: "false",
+    type: "boolean",
+    group: "discord",
+    label: "Release Email Hook Enabled",
+  },
+  release_email_hook_url: {
+    value: "",
+    type: "string",
+    group: "discord",
+    label: "Release Email Hook URL",
+  },
 };
 
 // GET /api/admin/settings

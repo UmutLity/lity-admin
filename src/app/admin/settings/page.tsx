@@ -374,6 +374,72 @@ const handleTestWebhook = async () => {
                 </div>
               </div>
 
+              <div className="rounded-lg border p-4 space-y-4">
+                <p className="text-sm font-semibold">Release Automation</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Enable release automation</p>
+                    <p className="text-sm text-muted-foreground">Auto dispatch after published changelog</p>
+                  </div>
+                  <Switch
+                    checked={values.release_automation_enabled !== "false"}
+                    onCheckedChange={(checked) => setBoolValue("release_automation_enabled", checked)}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Discord dispatch</p>
+                    <p className="text-sm text-muted-foreground">Send release embed to Discord webhook</p>
+                  </div>
+                  <Switch
+                    checked={values.release_discord_enabled !== "false"}
+                    onCheckedChange={(checked) => setBoolValue("release_discord_enabled", checked)}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Site notifications</p>
+                    <p className="text-sm text-muted-foreground">Push in-app notification to active customers</p>
+                  </div>
+                  <Switch
+                    checked={values.release_notifications_enabled !== "false"}
+                    onCheckedChange={(checked) => setBoolValue("release_notifications_enabled", checked)}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Release webhook</p>
+                    <p className="text-sm text-muted-foreground">Send JSON payload to your automation endpoint</p>
+                  </div>
+                  <Switch
+                    checked={values.release_webhook_enabled === "true"}
+                    onCheckedChange={(checked) => setBoolValue("release_webhook_enabled", checked)}
+                  />
+                </div>
+                <Input
+                  value={values.release_webhook_url || ""}
+                  onChange={(e) => updateValue("release_webhook_url", e.target.value)}
+                  placeholder="https://example.com/release-webhook"
+                  type="url"
+                />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Email hook</p>
+                    <p className="text-sm text-muted-foreground">Optional hook for your mail provider workflow</p>
+                  </div>
+                  <Switch
+                    checked={values.release_email_hook_enabled === "true"}
+                    onCheckedChange={(checked) => setBoolValue("release_email_hook_enabled", checked)}
+                  />
+                </div>
+                <Input
+                  value={values.release_email_hook_url || ""}
+                  onChange={(e) => updateValue("release_email_hook_url", e.target.value)}
+                  placeholder="https://example.com/email-release-hook"
+                  type="url"
+                />
+              </div>
+
               <div className="flex items-center gap-3">
                 <Button onClick={handleTestWebhook} loading={testingWebhook} variant="outline" disabled={!values.discord_webhook_url}>
                   <Send className="h-4 w-4" /> Send Test

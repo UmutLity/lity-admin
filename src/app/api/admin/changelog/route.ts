@@ -3,9 +3,9 @@ import prisma from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 import { changelogSchema } from "@/lib/validations/changelog";
 import { createAuditLog } from "@/lib/audit";
-import { sendChangelogToDiscord } from "@/lib/discord";
 import { getClientIp } from "@/lib/ip-utils";
 import { Prisma } from "@prisma/client";
+import { dispatchChangelogReleaseAutomation } from "@/lib/release-automation";
 
 export const dynamic = "force-dynamic";
 
@@ -185,13 +185,13 @@ export async function POST(req: NextRequest) {
       userAgent: req.headers.get("user-agent") || undefined,
     });
 
-    // Send to Discord if published (await for reliability on serverless)
+    // Run release automation if published (Discord + site notifications + optional hooks)
     if (isPublishedNow) {
       try {
-        const webhookResult = await sendChangelogToDiscord(changelog.id, { force: true });
-        console.log("[Discord] POST changelog webhook result:", webhookResult);
+        const automation = await dispatchChangelogReleaseAutomation(changelog.id);
+        console.log("[ReleaseAutomation] POST changelog result:", automation);
       } catch (err) {
-        console.error("Discord webhook error:", err);
+        console.error("Release automation error:", err);
       }
     }
 

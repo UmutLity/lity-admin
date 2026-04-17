@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { getCustomerTokenFromRequest, verifyCustomerToken } from "@/lib/customer-auth";
 import { appendOrderTimeline } from "@/lib/orders";
 import { sendOrderNotificationToDiscord } from "@/lib/discord";
+import { parseCouponDescription } from "@/lib/coupon-rules";
 
 export const dynamic = "force-dynamic";
 
@@ -68,7 +69,17 @@ export async function POST(req: NextRequest) {
       }),
       prisma.product.findUnique({
         where: { id: productId },
-        select: { id: true, name: true, slug: true, isActive: true, status: true, currency: true, defaultLoaderUrl: true, deliveryType: true },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          category: true,
+          isActive: true,
+          status: true,
+          currency: true,
+          defaultLoaderUrl: true,
+          deliveryType: true,
+        },
       }),
     ]);
 
@@ -105,6 +116,7 @@ export async function POST(req: NextRequest) {
       usedCount: number;
       expiresAt: Date | null;
       isActive: boolean;
+      description: string | null;
     } = null;
 
     if (couponCode) {
@@ -120,6 +132,7 @@ export async function POST(req: NextRequest) {
           usedCount: true,
           expiresAt: true,
           isActive: true,
+          description: true,
         },
       });
 
@@ -138,9 +151,50 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
+
+      const parsedCoupon = parseCouponDescription(coupon.description || null);
+      const rules = parsedCoupon.ruleConfig || {};
+
+      if (rules.firstPurchaseOnly) {
+        const hasPreviousOrder = await prisma.order.findFirst({
+          where: {
+            customerId: customer.id,
+            status: { not: "CANCELED" },
+          },
+          select: { id: true },
+        });
+        if (hasPreviousOrder || Number(customer.totalSpent || 0) > 0) {
+          return NextResponse.json({ success: false, error: "Coupon is only valid for first purchase." }, { status: 400 });
+        }
+      }
+
+      if (rules.allowedProductIds?.length && !rules.allowedProductIds.includes(product.id)) {
+        return NextResponse.json({ success: false, error: "Coupon is not valid for this product." }, { status: 400 });
+      }
+
+      if (rules.allowedCategories?.length) {
+        const productCategory = String(product.category || "").toUpperCase();
+        if (!rules.allowedCategories.includes(productCategory)) {
+          return NextResponse.json({ success: false, error: "Coupon is not valid for this product category." }, { status: 400 });
+        }
+      }
+
+      if (rules.allowedPlans?.length) {
+        const planKey = String(selectedPlan || "").toUpperCase();
+        if (!rules.allowedPlans.includes(planKey)) {
+          return NextResponse.json({ success: false, error: "Coupon is not valid for this billing plan." }, { status: 400 });
+        }
+      }
+
+      if (rules.customerRoleAllowlist?.length) {
+        const roleKey = String(customer.role || "").toUpperCase();
+        if (!rules.customerRoleAllowlist.includes(roleKey)) {
+          return NextResponse.json({ success: false, error: "Coupon is not allowed for your account role." }, { status: 400 });
+        }
+      }
     }
 
-    const discountAmount = coupon
+    let discountAmount = coupon
       ? Math.min(
           baseAmount,
           coupon.type === "FIXED"
@@ -148,6 +202,14 @@ export async function POST(req: NextRequest) {
             : (baseAmount * Number(coupon.value || 0)) / 100
         )
       : 0;
+
+    if (coupon) {
+      const parsedCoupon = parseCouponDescription(coupon.description || null);
+      const maxDiscountAmount = Number(parsedCoupon.ruleConfig?.maxDiscountAmount || 0);
+      if (Number.isFinite(maxDiscountAmount) && maxDiscountAmount > 0) {
+        discountAmount = Math.min(discountAmount, maxDiscountAmount);
+      }
+    }
     const amount = Math.max(0, Number((baseAmount - discountAmount).toFixed(2)));
 
     if (customer.balance < amount) {

@@ -1,15 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import { encodeCouponDescription, parseCouponDescription, sanitizeCouponRuleConfig } from "@/lib/coupon-rules";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
     await requireAdmin();
-    const coupons = await prisma.coupon.findMany({
+    const rawCoupons = await prisma.coupon.findMany({
       orderBy: { createdAt: "desc" },
     });
+
+    const coupons = rawCoupons.map((coupon) => {
+      const parsed = parseCouponDescription(coupon.description);
+      return {
+        ...coupon,
+        description: parsed.description,
+        ruleConfig: parsed.ruleConfig,
+      };
+    });
+
     return NextResponse.json({ success: true, data: coupons });
   } catch (error: any) {
     if (error?.message === "Unauthorized") return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
@@ -25,6 +36,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const code = String(body?.code || "").trim().toUpperCase();
     const description = String(body?.description || "").trim();
+    const ruleConfig = sanitizeCouponRuleConfig(body?.ruleConfig);
     const type = String(body?.type || "PERCENT").toUpperCase();
     const value = Number(body?.value || 0);
     const minOrderAmount = body?.minOrderAmount === "" || body?.minOrderAmount === undefined ? null : Number(body.minOrderAmount);
@@ -44,7 +56,7 @@ export async function POST(req: NextRequest) {
     const coupon = await prisma.coupon.create({
       data: {
         code,
-        description: description || null,
+        description: encodeCouponDescription(description || null, ruleConfig),
         type,
         value,
         minOrderAmount: Number.isFinite(minOrderAmount as number) ? minOrderAmount : null,
@@ -52,8 +64,11 @@ export async function POST(req: NextRequest) {
         expiresAt: expiresAt && !Number.isNaN(expiresAt.getTime()) ? expiresAt : null,
       },
     });
-
-    return NextResponse.json({ success: true, data: coupon });
+    const parsed = parseCouponDescription(coupon.description);
+    return NextResponse.json({
+      success: true,
+      data: { ...coupon, description: parsed.description, ruleConfig: parsed.ruleConfig },
+    });
   } catch (error: any) {
     if (error?.message === "Unauthorized") return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     if (String(error?.message || "").includes("Forbidden")) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
