@@ -183,6 +183,7 @@ function StatCard({
   iconClass,
   valueClass,
   href,
+  emphasize = false,
 }: {
   title: string;
   value: string | number;
@@ -190,22 +191,23 @@ function StatCard({
   iconClass: string;
   valueClass?: string;
   href?: string;
+  emphasize?: boolean;
 }) {
   const card = (
     <Card
       className={cn(
-        "border-white/[0.06] bg-white/[0.03] shadow-[0_14px_36px_rgba(3,6,12,0.2)] transition-all duration-200",
-        href ? "cursor-pointer hover:border-white/[0.14] hover:bg-[#121520]" : ""
+        "admin-card",
+        href ? "admin-card-interactive cursor-pointer" : ""
       )}
     >
-      <CardContent className="p-4">
+      <CardContent className={cn("p-4", emphasize && "p-5")}>
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-xs text-zinc-500">{title}</p>
-        <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.06]", iconClass)}>
+        <p className={cn("text-xs text-zinc-500", emphasize && "text-[11px] uppercase tracking-[0.14em]")}>{title}</p>
+        <div className={cn("flex items-center justify-center rounded-xl border border-white/[0.06]", emphasize ? "h-10 w-10" : "h-9 w-9", iconClass)}>
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <p className={cn("text-[18px] font-bold leading-none tracking-tight text-white sm:text-[19px]", valueClass)}>{value}</p>
+      <p className={cn(emphasize ? "text-[24px] font-bold leading-none tracking-tight text-white sm:text-[26px]" : "text-[18px] font-bold leading-none tracking-tight text-white sm:text-[19px]", valueClass)}>{value}</p>
       </CardContent>
     </Card>
   );
@@ -230,7 +232,7 @@ function SummaryCard({
   valueClass?: string;
 }) {
   return (
-    <Card className="border-white/[0.06] bg-white/[0.03] shadow-[0_14px_36px_rgba(3,6,12,0.2)]">
+    <Card className="admin-card">
       <CardContent className="p-4">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-sm font-medium text-zinc-300">{title}</h3>
@@ -263,7 +265,7 @@ function PeriodCard({
   const formatMoney = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
-    <Card className="border-white/[0.06] bg-white/[0.03] shadow-[0_14px_36px_rgba(3,6,12,0.2)]">
+    <Card className="admin-card">
       <CardContent className="px-4 py-4">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-[18px] font-semibold leading-none text-zinc-100 sm:text-[20px]">{title}</h3>
@@ -504,8 +506,13 @@ export default function DashboardPage() {
       <div>
         <Topbar title="Admin Dashboard" description="Overview of your platform" />
         <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
-            {Array.from({ length: 6 }).map((_, i) => (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-32 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
+            ))}
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-2">
+            {Array.from({ length: 2 }).map((_, i) => (
               <div key={i} className="h-32 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
             ))}
           </div>
@@ -540,16 +547,19 @@ export default function DashboardPage() {
       </Topbar>
 
       <div className="space-y-4">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <StatCard title="Total Users" value={data.totalUsers} icon={UserRound} iconClass="bg-blue-500/15 text-blue-300" />
-          <StatCard title="Total Orders" value={data.totalOrders} icon={ShoppingCart} iconClass="bg-emerald-500/15 text-emerald-300" />
-          <StatCard title="Total Revenue" value={`$${data.totalRevenue.toFixed(2)}`} icon={BadgeDollarSign} iconClass="bg-emerald-500/15 text-emerald-300" valueClass="text-emerald-400" />
-          <StatCard title="Pending Payments" value={data.pendingPayments} icon={CreditCard} iconClass="bg-amber-500/15 text-amber-300" href="/admin/topups" />
-          <StatCard title="Active Products" value={data.activeProducts} icon={Boxes} iconClass="bg-violet-500/15 text-violet-300" href="/admin/products" />
-          <StatCard title="Open Tickets" value={data.openTickets} icon={AlertTriangle} iconClass="bg-rose-500/15 text-rose-300" href="/admin/tickets" />
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard title="Total Revenue" value={`$${data.totalRevenue.toFixed(2)}`} icon={BadgeDollarSign} iconClass="bg-emerald-500/15 text-emerald-300" valueClass="text-emerald-400" emphasize />
+          <StatCard title="Total Orders" value={data.totalOrders} icon={ShoppingCart} iconClass="bg-emerald-500/15 text-emerald-300" emphasize />
+          <StatCard title="Open Tickets" value={data.openTickets} icon={AlertTriangle} iconClass="bg-rose-500/15 text-rose-300" href="/admin/tickets" emphasize />
+          <StatCard title="Pending Payments" value={data.pendingPayments} icon={CreditCard} iconClass="bg-amber-500/15 text-amber-300" href="/admin/topups" emphasize />
         </div>
 
-        <Card className="border-white/[0.06] bg-white/[0.03] shadow-[0_14px_36px_rgba(3,6,12,0.2)]">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-2">
+          <StatCard title="Total Users" value={data.totalUsers} icon={UserRound} iconClass="bg-blue-500/15 text-blue-300" />
+          <StatCard title="Active Products" value={data.activeProducts} icon={Boxes} iconClass="bg-violet-500/15 text-violet-300" href="/admin/products" />
+        </div>
+
+        <Card className="admin-card">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -644,7 +654,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.3fr_0.9fr]">
-          <Card className="border-white/[0.06] bg-white/[0.03] shadow-[0_14px_36px_rgba(3,6,12,0.2)]">
+          <Card className="admin-card">
             <CardHeader className="pb-4">
               <div className="mb-1 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-[#c7bdd8]" />
@@ -692,7 +702,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-white/[0.06] bg-white/[0.03] shadow-[0_14px_36px_rgba(3,6,12,0.2)]">
+          <Card className="admin-card">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between gap-3">
                 <div>

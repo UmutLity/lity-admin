@@ -34,7 +34,7 @@ export function MediaGallery({ videos }: { videos: PublicVideo[] }) {
   return (
     <>
       {videos.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-white/15 bg-[#12121a] p-12 text-center">
+        <div className="rounded-2xl border border-dashed border-white/15 bg-[#1a1b1f] p-12 text-center">
           <Film className="mx-auto h-9 w-9 text-zinc-500" />
           <p className="mt-3 text-sm text-zinc-400">No media videos yet.</p>
         </div>
@@ -47,9 +47,9 @@ export function MediaGallery({ videos }: { videos: PublicVideo[] }) {
                 key={video.id}
                 type="button"
                 onClick={() => onOpen(video)}
-                className="group overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(180deg,#161621,#101018)] text-left transition hover:-translate-y-0.5 hover:border-fuchsia-400/35 hover:shadow-[0_22px_46px_rgba(0,0,0,.45)]"
+                className="group overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(180deg,#25272d,#1a1b1f)] text-left transition hover:-translate-y-0.5 hover:border-violet-300/35 hover:shadow-[0_20px_42px_rgba(0,0,0,.36)]"
               >
-                <div className="relative h-48 overflow-hidden border-b border-white/10 bg-[#0f0f15]">
+                <div className="relative h-48 overflow-hidden border-b border-white/10 bg-[#15161a]">
                   {video.thumbnail ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={video.thumbnail} alt={video.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
@@ -59,11 +59,11 @@ export function MediaGallery({ videos }: { videos: PublicVideo[] }) {
                     </div>
                   )}
                   <div className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition group-hover:opacity-100">
-                    <span className="flex h-14 w-14 items-center justify-center rounded-full border border-fuchsia-300/40 bg-fuchsia-500/15 text-fuchsia-100">
+                    <span className="flex h-14 w-14 items-center justify-center rounded-full border border-violet-300/35 bg-violet-400/15 text-violet-100">
                       <Play className="ml-0.5 h-6 w-6" />
                     </span>
                   </div>
-                  <span className="absolute left-3 top-3 rounded-full border border-fuchsia-300/30 bg-black/60 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-fuchsia-100">
+                  <span className="absolute left-3 top-3 rounded-full border border-violet-300/30 bg-black/60 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-100">
                     {parsed?.provider || "video"}
                   </span>
                 </div>
@@ -84,14 +84,14 @@ export function MediaGallery({ videos }: { videos: PublicVideo[] }) {
       )}
 
       <Dialog open={!!active} onOpenChange={(open) => !open && setActive(null)}>
-        <DialogContent className="max-w-5xl border-white/10 bg-[#111119] text-white">
+        <DialogContent className="max-w-5xl border-white/10 bg-[#1a1b1f] text-white">
           <DialogHeader>
             <DialogTitle className="line-clamp-1">{active?.title || "Video"}</DialogTitle>
             <p className="text-sm text-zinc-400">Uploaded by {active?.owner?.name || "Media"}</p>
           </DialogHeader>
 
           {activeParsed ? (
-            <div className="overflow-hidden rounded-xl border border-fuchsia-400/25 bg-black">
+            <div className="overflow-hidden rounded-xl border border-violet-300/25 bg-black">
               <iframe
                 src={activeParsed.embedUrl}
                 title={active?.title || "Media video"}
@@ -110,4 +110,3 @@ export function MediaGallery({ videos }: { videos: PublicVideo[] }) {
     </>
   );
 }
-

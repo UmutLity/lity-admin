@@ -107,6 +107,13 @@ function statusChipClass(value: string, active: boolean) {
   return "border-sky-400/50 bg-sky-500/15 text-sky-300";
 }
 
+const labelClass = "admin-label";
+const fieldClass = "admin-input";
+const selectClass = "admin-select";
+const textareaClass = "admin-textarea";
+const primaryButtonClass = "admin-btn-primary px-4 py-2";
+const secondaryButtonClass = "admin-btn-secondary px-5 py-2.5";
+
 export function ProductForm({ initialData, isEditing }: ProductFormProps) {
   const router = useRouter();
   const { addToast } = useToast();
@@ -481,11 +488,11 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
           {activeTab === "general" && (
             <div className="space-y-5">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-300">Product Name *</label>
+                <label className={labelClass}>Product Name *</label>
                 <input
                   value={form.name}
                   onChange={(event) => updateField("name", event.target.value)}
-                  className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  className={fieldClass}
                   placeholder="Apex Legends Aimbot"
                 />
                 {errors.name && <p className="text-xs text-red-400">{errors.name}</p>}
@@ -493,11 +500,11 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-300">Game *</label>
+                  <label className={labelClass}>Game *</label>
                   <select
                     value={form.category}
                     onChange={(event) => updateField("category", event.target.value)}
-                    className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                    className={selectClass}
                   >
                     {categoryOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -507,14 +514,14 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-300">Base Price ({form.currency}) *</label>
+                  <label className={labelClass}>Base Price ({form.currency}) *</label>
                   <input
                     type="number"
                     step="0.01"
                     min="0"
                     value={basePrice}
                     onChange={(event) => setBasePrice(Number(event.target.value))}
-                    className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                    className={fieldClass}
                     placeholder="14.99"
                   />
                 </div>
@@ -522,22 +529,22 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-300">Slug *</label>
+                  <label className={labelClass}>Slug *</label>
                   <input
                     value={computedSlug}
                     onChange={(event) => {
                       setAutoSlug(false);
                       updateField("slug", event.target.value);
                     }}
-                    className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                    className={fieldClass}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-300">Currency</label>
+                  <label className={labelClass}>Currency</label>
                   <select
                     value={form.currency}
                     onChange={(event) => updateField("currency", event.target.value)}
-                    className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                    className={selectClass}
                   >
                     {currencyOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -554,11 +561,11 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-300">Stock Status</label>
+                  <label className={labelClass}>Stock Status</label>
                   <select
                     value={form.stockStatus}
                     onChange={(event) => updateField("stockStatus", event.target.value)}
-                    className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                    className={selectClass}
                   >
                     {stockStatusOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -568,11 +575,11 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-300">Delivery Type</label>
+                  <label className={labelClass}>Delivery Type</label>
                   <select
                     value={form.deliveryType}
                     onChange={(event) => updateField("deliveryType", event.target.value)}
-                    className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                    className={selectClass}
                   >
                     {deliveryTypeOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -582,28 +589,28 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-300">Estimated Delivery</label>
+                  <label className={labelClass}>Estimated Delivery</label>
                   <input
                     value={form.estimatedDelivery}
                     onChange={(event) => updateField("estimatedDelivery", event.target.value)}
-                    className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                    className={fieldClass}
                     placeholder="5-30 min / 1-6 hours / instant"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-300">Description</label>
+                <label className={labelClass}>Description</label>
                 <textarea
                   value={form.description}
                   onChange={(event) => updateField("description", event.target.value)}
-                  className="min-h-[110px] w-full rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  className={textareaClass}
                   placeholder="Product description..."
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-300">Status</label>
+                <label className={labelClass}>Status</label>
                 <div className="flex flex-wrap gap-2">
                   {statusOptions.map((option) => (
                     <button
@@ -623,26 +630,26 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
           {activeTab === "media" && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-300">Main Thumbnail / Cover Image</label>
+                <label className={labelClass}>Main Thumbnail / Cover Image</label>
                 <input
                   value={mainImageUrl}
                   onChange={(event) => setMainImageUrl(event.target.value)}
-                  className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  className={fieldClass}
                   placeholder="https://..."
                 />
                 <p className="text-xs text-zinc-500">This image is used as the thumbnail in product cards and as the main cover on the product page.</p>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-300">Gallery Images</label>
+                <label className={labelClass}>Gallery Images</label>
                 <div className="flex gap-2">
                   <input
                     value={galleryInput}
                     onChange={(event) => setGalleryInput(event.target.value)}
-                    className="h-11 flex-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                    className={`${fieldClass} flex-1`}
                     placeholder="https://..."
                   />
-                  <button type="button" onClick={addGalleryUrl} className="rounded-xl border border-[#c4b3de]/35 bg-[#b6a4d2]/15 px-4 text-sm font-medium text-[#ded4ec]">
+                  <button type="button" onClick={addGalleryUrl} className={primaryButtonClass}>
                     Add
                   </button>
                 </div>
@@ -659,15 +666,15 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-300">Videos (Youtube / Streamable)</label>
+                <label className={labelClass}>Videos (Youtube / Streamable)</label>
                 <div className="flex gap-2">
                   <input
                     value={videoInput}
                     onChange={(event) => setVideoInput(event.target.value)}
-                    className="h-11 flex-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                    className={`${fieldClass} flex-1`}
                     placeholder="https://youtube.com/watch?v=..."
                   />
-                  <button type="button" onClick={addVideoUrl} className="rounded-xl border border-[#c4b3de]/35 bg-[#b6a4d2]/15 px-4 text-sm font-medium text-[#ded4ec]">
+                  <button type="button" onClick={addVideoUrl} className={primaryButtonClass}>
                     Add
                   </button>
                 </div>
@@ -681,23 +688,23 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
           {activeTab === "tabs" && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-300">Feature Tabs</label>
+                <label className={labelClass}>Feature Tabs</label>
                 <p className="text-xs text-zinc-500">e.g. Visuals, Aimbot, Miscellaneous</p>
               </div>
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_1fr_auto]">
                 <input
                   value={tabTitle}
                   onChange={(event) => setTabTitle(event.target.value)}
-                  className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  className={fieldClass}
                   placeholder="Tab title"
                 />
                 <input
                   value={tabDescription}
                   onChange={(event) => setTabDescription(event.target.value)}
-                  className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  className={fieldClass}
                   placeholder="Tab description"
                 />
-                <button type="button" onClick={addFeatureTab} className="rounded-xl border border-[#c4b3de]/35 bg-[#b6a4d2]/15 px-4 text-sm font-medium text-[#ded4ec]">
+                <button type="button" onClick={addFeatureTab} className={primaryButtonClass}>
                   <Plus className="mr-1 inline h-4 w-4" />
                   Tab Add
                 </button>
@@ -712,12 +719,12 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                   <textarea
                     value={bulkFeatureInput}
                     onChange={(event) => setBulkFeatureInput(event.target.value)}
-                    className="min-h-[132px] w-full rounded-2xl border border-white/[0.08] bg-white/[0.03] px-3 py-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                    className={textareaClass}
                     placeholder={`Visuals | ESP settings, colors and visibility options\nAimbot | Smoothness, FOV and targeting behavior\nMisc | Triggerbot, radar and utility tools`}
                   />
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs text-zinc-500">Duplicate rows are ignored automatically.</p>
-                    <button type="button" onClick={addBulkFeatureTabs} className="rounded-xl border border-[#c4b3de]/35 bg-[#b6a4d2]/15 px-4 py-2 text-sm font-medium text-[#ded4ec]">
+                    <button type="button" onClick={addBulkFeatureTabs} className={primaryButtonClass}>
                       <Plus className="mr-1 inline h-4 w-4" />
                       Bulk Add
                     </button>
@@ -748,7 +755,7 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
           {activeTab === "pricing" && (
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-300">Pricing Plans</label>
+                <label className={labelClass}>Pricing Plans</label>
                 <p className="text-xs text-zinc-500">Standard options stay available. Choose Custom for game-based pricing.</p>
               </div>
 
@@ -756,7 +763,7 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                 <select
                   value={basePlan}
                   onChange={(event) => setBasePlan(event.target.value)}
-                  className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  className={selectClass}
                 >
                   {planOptions.map((plan) => (
                     <option key={plan.value} value={plan.value}>
@@ -771,7 +778,7 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                   min="0"
                   value={basePrice}
                   onChange={(event) => setBasePrice(Number(event.target.value))}
-                  className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  className={fieldClass}
                   placeholder="0.00"
                 />
               </div>
@@ -779,7 +786,7 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                 <input
                   value={baseCustomPlan}
                   onChange={(event) => setBaseCustomPlan(event.target.value)}
-                  className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  className={fieldClass}
                   placeholder="Game name, e.g. Escape From Tarkov"
                 />
               )}
@@ -792,7 +799,7 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                       onChange={(event) =>
                         setExtraPrices((prev) => prev.map((item, i) => (i === index ? { ...item, plan: event.target.value } : item)))
                       }
-                      className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none"
+                      className={selectClass}
                     >
                       {planOptions.map((plan) => (
                         <option key={plan.value} value={plan.value}>
@@ -807,7 +814,7 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                         onChange={(event) =>
                           setExtraPrices((prev) => prev.map((item, i) => (i === index ? { ...item, customLabel: event.target.value } : item)))
                         }
-                        className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none"
+                        className={fieldClass}
                         placeholder="Game name"
                       />
                     )}
@@ -819,7 +826,7 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                       onChange={(event) =>
                         setExtraPrices((prev) => prev.map((item, i) => (i === index ? { ...item, price: Number(event.target.value) } : item)))
                       }
-                      className="h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none"
+                      className={fieldClass}
                       placeholder="0.00"
                     />
                     <button
@@ -831,18 +838,18 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                     </button>
                   </div>
                 ))}
-                <button type="button" onClick={addExtraPrice} className="rounded-xl border border-[#c4b3de]/35 bg-[#b6a4d2]/15 px-4 py-2 text-sm font-medium text-[#ded4ec]">
+                <button type="button" onClick={addExtraPrice} className={primaryButtonClass}>
                   <Plus className="mr-1 inline h-4 w-4" />
                   Plan Add
                 </button>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-300">Loader Download URL</label>
+                <label className={labelClass}>Loader Download URL</label>
                 <input
                   value={form.defaultLoaderUrl}
                   onChange={(event) => updateField("defaultLoaderUrl", event.target.value)}
-                  className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus:border-[#c4b3de]/40"
+                  className={fieldClass}
                   placeholder="https://example.com/loader.exe"
                 />
                 {errors.defaultLoaderUrl && <p className="text-xs text-red-400">{errors.defaultLoaderUrl}</p>}
@@ -855,14 +862,14 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
           <button
             type="button"
             onClick={() => router.back()}
-            className="rounded-xl border border-white/[0.08] bg-white/[0.02] px-5 py-2.5 text-sm font-medium text-zinc-300 hover:text-white"
+            className={secondaryButtonClass}
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="rounded-xl border border-[#c4b3de]/40 bg-[#b6a4d2]/20 px-5 py-2.5 text-sm font-semibold text-[#ede7f8] hover:bg-[#b6a4d2]/28 disabled:opacity-60"
+            className="admin-btn-primary px-5 py-2.5 disabled:opacity-60"
           >
             {loading ? "Saving..." : isEditing ? "Update" : "Create"}
           </button>
