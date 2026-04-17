@@ -5,8 +5,8 @@
   "scripts": {
     "postinstall": "prisma generate",
     "dev": "next dev",
-    "build": "prisma generate && prisma migrate deploy && next build",
-    "vercel-build": "prisma generate && prisma migrate deploy && next build",
+    "build": "node scripts/build-with-migrate.mjs",
+    "vercel-build": "node scripts/build-with-migrate.mjs",
     "start": "next start",
     "lint": "next lint",
     "migrate:deploy": "prisma migrate deploy",
