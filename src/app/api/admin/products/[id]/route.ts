@@ -201,7 +201,7 @@ async function updateProductCoreWithFallbacks(
       data: {
         ...productData,
         buyUrl: productData.buyUrl || null,
-        accessRoleKey: productData.accessRoleKey || null,
+        accessRoleKey: null,
         defaultLoaderUrl: productData.defaultLoaderUrl || null,
         estimatedDelivery: productData.estimatedDelivery || null,
         ...(statusChanged ? { lastStatusChangeAt: new Date() } : {}),

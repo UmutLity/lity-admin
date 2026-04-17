@@ -15,7 +15,6 @@ export const productSchema = z.object({
   isActive: z.boolean().default(true),
   currency: z.string().min(1).max(3).default("USD"),
   buyUrl: z.string().url("Enter a valid URL").optional().nullable().or(z.literal("")),
-  accessRoleKey: z.string().max(80).regex(/^[A-Z0-9_:-]+$/, "Role key can only contain A-Z, 0-9, _, :, -").optional().nullable().or(z.literal("")),
   defaultLoaderUrl: z.string().url("Enter a valid URL").optional().nullable().or(z.literal("")).refine((value) => {
     if (!value) return true;
     try {

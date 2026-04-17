@@ -36,7 +36,7 @@ function buildProductCreateData(
   return {
     ...productData,
     buyUrl: productData.buyUrl || null,
-    accessRoleKey: productData.accessRoleKey || null,
+    accessRoleKey: null,
     defaultLoaderUrl: productData.defaultLoaderUrl || null,
     estimatedDelivery: productData.estimatedDelivery || null,
     prices: prices?.length
@@ -210,7 +210,6 @@ async function createProductWithFallbacks(
     stockStatus: _legacyStockStatus,
     deliveryType: _legacyDeliveryType,
     estimatedDelivery: _legacyEstimatedDelivery,
-    accessRoleKey: _legacyAccessRoleKey,
     defaultLoaderUrl: _legacyDefaultLoaderUrl,
     displayOrder: _legacyDisplayOrder,
     ...legacyProductFields
