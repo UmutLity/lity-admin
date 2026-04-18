@@ -29,16 +29,16 @@ export function Topbar({ title, description, children }: TopbarProps) {
   const role = (session?.user as any)?.role;
 
   return (
-    <div className="mb-6 ui-fade-up">
-      <Card className="ui-surface">
-        <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+    <div className="ui-fade-up">
+      <Card className="admin-card">
+        <CardContent className="flex min-h-[62px] items-center justify-between gap-3 p-4">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight text-white">{title}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base font-semibold text-zinc-100">{title}</h1>
               {role ? (
                 <Badge
                   className={cn(
-                    "rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]",
+                    "rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em]",
                     role === "FOUNDER"
                       ? "border-amber-400/30 bg-amber-500/10 text-amber-200"
                       : role === "MODERATOR"
@@ -52,14 +52,14 @@ export function Topbar({ title, description, children }: TopbarProps) {
                 </Badge>
               ) : null}
             </div>
-            {description ? <p className="mt-1 text-sm text-zinc-400">{description}</p> : null}
+            {description ? <p className="mt-1 text-xs text-zinc-500">{description}</p> : null}
           </div>
           <div className="flex items-center gap-2">
-            <span className="ui-chip inline-flex items-center gap-1 border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-200">
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-200">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
               Live
             </span>
-            {children}
+            <div className="shrink-0">{children}</div>
           </div>
         </CardContent>
       </Card>
@@ -131,7 +131,7 @@ export function AdminHeader() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#111214]/95 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 w-full max-w-[1680px] items-center justify-between gap-3 px-3 pl-14 sm:px-4 sm:pl-16 lg:px-6">
+      <div className="mx-auto flex h-14 w-full max-w-[1680px] items-center justify-between gap-3 px-3 pl-14 sm:px-4 sm:pl-16 lg:px-6">
         <div className="relative min-w-0 max-w-2xl flex-1">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />

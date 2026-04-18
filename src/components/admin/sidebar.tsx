@@ -8,6 +8,7 @@ import { signOut, useSession } from "next-auth/react";
 import {
   Bell,
   BookOpen,
+  ChevronDown,
   ClipboardList,
   Download,
   FileText,
@@ -35,6 +36,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type Role = "FOUNDER" | "ADMIN" | "EDITOR" | "VIEWER" | "MODERATOR" | "SUPPORT" | "ANALYST" | "MEDIA";
 
@@ -202,14 +204,14 @@ export function Sidebar() {
         href={item.href}
         title={collapsed ? item.label : undefined}
         className={cn(
-          "flex h-9 w-full items-center rounded-lg px-2.5 text-[13px] font-medium transition-all",
+          "flex h-8 w-full items-center rounded-lg px-2 text-xs font-medium transition-all",
           active
             ? "border border-white/[0.08] bg-white/[0.07] text-white shadow-none hover:bg-white/[0.08]"
             : "text-zinc-400 hover:bg-white/[0.04] hover:text-white",
           collapsed && "justify-center px-0"
         )}
       >
-        <item.icon className={cn("h-[15px] w-[15px] flex-shrink-0", !collapsed && "mr-2")} />
+        <item.icon className={cn("h-3.5 w-3.5 flex-shrink-0", !collapsed && "mr-2")} />
         {!collapsed ? <span className="truncate">{item.label}</span> : null}
       </Link>
     );
@@ -283,7 +285,7 @@ export function Sidebar() {
 
   const userCard = session?.user ? (
     <Card className="border-white/[0.06] bg-white/[0.025] shadow-none">
-      <CardContent className={cn("p-3", collapsed && "p-2.5")}>
+      <CardContent className={cn("p-2.5", collapsed && "p-2")}>
         <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
           <button
             type="button"
@@ -306,26 +308,35 @@ export function Sidebar() {
           </button>
 
           {!collapsed ? (
-            <>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-white">{session.user.name}</p>
-                <p className="truncate text-xs text-zinc-500">{session.user.email}</p>
-              </div>
-              <Badge className={cn("rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em]", getRoleTone(userRole))}>
-                {userRole || "ADMIN"}
-              </Badge>
-            </>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-white">{session.user.name}</p>
+              <p className="truncate text-[11px] text-zinc-500">{session.user.email}</p>
+            </div>
           ) : null}
         </div>
 
         {!collapsed ? (
-          <div className="mt-3 flex gap-2">
-            <Button variant="outline" className="h-9 flex-1 justify-start border-white/[0.08] bg-white/[0.03] text-zinc-300 hover:bg-white/[0.06] hover:text-white" onClick={() => router.push("/admin/settings")}>
-              <UserRoundCog className="h-4 w-4" /> Profile
-            </Button>
-            <Button variant="outline" className="h-9 flex-1 justify-start border-white/[0.08] bg-white/[0.03] text-zinc-300 hover:bg-white/[0.06] hover:text-white" onClick={() => signOut({ callbackUrl: "/admin/login" })}>
-              <LogOut className="h-4 w-4" /> Logout
-            </Button>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <Badge className={cn("rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em]", getRoleTone(userRole))}>
+              {userRole || "ADMIN"}
+            </Badge>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger className="inline-flex h-8 items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2 text-xs text-zinc-300 hover:bg-white/[0.06] hover:text-white">
+                Actions
+                <ChevronDown className="h-3.5 w-3.5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40 border-white/[0.08] bg-[#11131a]/95 text-zinc-200 backdrop-blur-xl">
+                <DropdownMenuItem className="cursor-pointer focus:bg-white/[0.05]" onClick={() => router.push("/admin/settings")}>
+                  <UserRoundCog className="mr-2 h-4 w-4" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer focus:bg-white/[0.05]" onClick={() => signOut({ callbackUrl: "/admin/login" })}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         ) : (
           <div className="mt-2 flex flex-col gap-2">
@@ -343,7 +354,7 @@ export function Sidebar() {
 
   const sidebarContent = (
     <div className="flex h-full flex-col">
-      <div className={cn("flex h-16 items-center border-b border-white/[0.06] px-3", collapsed ? "justify-center" : "justify-between")}>
+      <div className={cn("flex h-14 items-center border-b border-white/[0.06] px-2.5", collapsed ? "justify-center" : "justify-between")}>
         <Link href="/admin" className="flex items-center gap-3">
           {collapsed ? (
             <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.04] shadow-[0_10px_24px_rgba(27,23,35,0.24)]">
@@ -367,12 +378,12 @@ export function Sidebar() {
         ) : null}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2.5 py-3">
+      <div className="flex-1 overflow-y-auto px-2 py-2.5">
         {!collapsed ? (
           <Card className="mb-3 border-white/[0.06] bg-white/[0.025] shadow-none">
-            <CardContent className="p-2.5">
-              <div className="flex items-center gap-2 text-[13px] text-zinc-400">
-                <Search className="h-4 w-4 text-zinc-500" />
+            <CardContent className="p-2">
+              <div className="flex items-center gap-2 text-xs text-zinc-400">
+                <Search className="h-3.5 w-3.5 text-zinc-500" />
                 <span>Use the top search to jump fast</span>
               </div>
             </CardContent>
@@ -382,15 +393,15 @@ export function Sidebar() {
         <div className="space-y-4">
           {filteredGroups.map((group) => (
             <div key={group.title}>
-              {!collapsed ? <p className="mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">{group.title}</p> : null}
+              {!collapsed ? <p className="mb-1 px-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-zinc-500">{group.title}</p> : null}
               <div className="space-y-1">{group.items.map(renderNavItem)}</div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="border-t border-white/[0.06] p-2.5">
-        <div className="space-y-2.5">
+      <div className="border-t border-white/[0.06] p-2">
+        <div className="space-y-2">
           {notificationsPanel}
           {userCard}
           {collapsed ? (

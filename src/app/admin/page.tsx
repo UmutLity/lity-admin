@@ -4,20 +4,23 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
-  ArrowRight,
-  BadgeDollarSign,
   Boxes,
   CreditCard,
-  Gift,
+  DollarSign,
   ShoppingCart,
   Ticket,
   UserRound,
-  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Topbar } from "@/components/admin/topbar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { DashboardShell } from "@/components/admin/dashboard/dashboard-shell";
+import { KpiCard } from "@/components/admin/dashboard/kpi-card";
+import { SectionHeader } from "@/components/admin/dashboard/section-header";
+import { AlertRow } from "@/components/admin/dashboard/alert-row";
+import { AnalyticsCard } from "@/components/admin/dashboard/analytics-card";
+import { DataTable } from "@/components/admin/dashboard/data-table";
 
 type AnyJson = Record<string, any>;
 
@@ -28,46 +31,35 @@ interface DashboardData {
   pendingPayments: number;
   activeProducts: number;
   openTickets: number;
-  totalDeposits: number;
-  productSales: number;
-  mysteryBoxRevenue: number;
   todaySales: number;
   todayRevenue: number;
   todayDeposits: number;
   todayUsers: number;
-  todayBoxOpens: number;
+  todayBoxRevenue: number;
   weekSales: number;
   weekRevenue: number;
   weekDeposits: number;
   weekUsers: number;
-  weekBoxOpens: number;
+  weekBoxRevenue: number;
   monthSales: number;
   monthRevenue: number;
   monthDeposits: number;
   monthUsers: number;
-  monthBoxOpens: number;
-  activities: Array<{
-    id: string;
-    label: string;
-    detail: string;
-    type: "ticket" | "order" | "payment";
-    status: string;
-    createdAt: string;
-  }>;
-  leaderboard: Array<{
-    id: string;
-    user: string;
-    spent: number;
-    rank: string;
-    profileHref: string | null;
-  }>;
+  monthBoxRevenue: number;
   criticalUnreadCount: number;
   criticalAlerts: Array<{
     id: string;
     title: string;
     message: string;
     createdAt: string;
-    type: string;
+  }>;
+  recentOrders: Array<{
+    id: string;
+    user: string;
+    product: string;
+    amount: number;
+    status: string;
+    createdAt: string;
   }>;
 }
 
@@ -78,53 +70,25 @@ const EMPTY: DashboardData = {
   pendingPayments: 0,
   activeProducts: 0,
   openTickets: 0,
-  totalDeposits: 0,
-  productSales: 0,
-  mysteryBoxRevenue: 0,
   todaySales: 0,
   todayRevenue: 0,
   todayDeposits: 0,
   todayUsers: 0,
-  todayBoxOpens: 0,
+  todayBoxRevenue: 0,
   weekSales: 0,
   weekRevenue: 0,
   weekDeposits: 0,
   weekUsers: 0,
-  weekBoxOpens: 0,
+  weekBoxRevenue: 0,
   monthSales: 0,
   monthRevenue: 0,
   monthDeposits: 0,
   monthUsers: 0,
-  monthBoxOpens: 0,
-  activities: [],
-  leaderboard: [],
+  monthBoxRevenue: 0,
   criticalUnreadCount: 0,
   criticalAlerts: [],
+  recentOrders: [],
 };
-
-const RANK_TIERS = [
-  { name: "Bronze", min: 10, text: "text-amber-400" },
-  { name: "Silver", min: 25, text: "text-slate-300" },
-  { name: "Gold", min: 50, text: "text-yellow-400" },
-  { name: "Platinum", min: 100, text: "text-cyan-300" },
-  { name: "Diamond", min: 250, text: "text-sky-300" },
-  { name: "Ascendant", min: 500, text: "text-violet-300" },
-  { name: "Sovereign", min: 1000, text: "text-orange-300" },
-  { name: "Celestial", min: 2500, text: "text-fuchsia-300" },
-] as const;
-
-function resolveRank(spent: number) {
-  let current = "Unranked";
-  for (const tier of RANK_TIERS) {
-    if (spent >= tier.min) current = tier.name;
-  }
-  return current;
-}
-
-function tierStyles(rank: string) {
-  const matched = RANK_TIERS.find((t) => t.name === rank);
-  return matched ? matched.text : "text-zinc-500";
-}
 
 function safeArray<T = any>(value: any): T[] {
   return Array.isArray(value) ? value : [];
@@ -170,138 +134,18 @@ function timeAgo(dateStr: string) {
   const min = Math.floor(diffMs / (1000 * 60));
   const hour = Math.floor(min / 60);
   const day = Math.floor(hour / 24);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min}m ago`;
-  if (hour < 24) return `${hour}h ago`;
-  return `${day}d ago`;
+  if (min < 1) return "now";
+  if (min < 60) return `${min}m`;
+  if (hour < 24) return `${hour}h`;
+  return `${day}d`;
 }
 
-function StatCard({
-  title,
-  value,
-  icon: Icon,
-  iconClass,
-  valueClass,
-  href,
-  emphasize = false,
-}: {
-  title: string;
-  value: string | number;
-  icon: any;
-  iconClass: string;
-  valueClass?: string;
-  href?: string;
-  emphasize?: boolean;
-}) {
-  const card = (
-    <Card
-      className={cn(
-        "admin-card",
-        href ? "admin-card-interactive cursor-pointer" : ""
-      )}
-    >
-      <CardContent className={cn("p-4", emphasize && "p-5")}>
-      <div className="mb-4 flex items-center justify-between">
-        <p className={cn("text-xs text-zinc-500", emphasize && "text-[11px] uppercase tracking-[0.14em]")}>{title}</p>
-        <div className={cn("flex items-center justify-center rounded-xl border border-white/[0.06]", emphasize ? "h-10 w-10" : "h-9 w-9", iconClass)}>
-          <Icon className="h-4 w-4" />
-        </div>
-      </div>
-      <p className={cn(emphasize ? "text-[24px] font-bold leading-none tracking-tight text-white sm:text-[26px]" : "text-[18px] font-bold leading-none tracking-tight text-white sm:text-[19px]", valueClass)}>{value}</p>
-      </CardContent>
-    </Card>
-  );
-
-  if (href) return <Link href={href}>{card}</Link>;
-  return card;
-}
-
-function SummaryCard({
-  title,
-  value,
-  subtext,
-  icon: Icon,
-  iconClass,
-  valueClass,
-}: {
-  title: string;
-  value: string;
-  subtext: string;
-  icon: any;
-  iconClass: string;
-  valueClass?: string;
-}) {
-  return (
-    <Card className="admin-card">
-      <CardContent className="p-4">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-medium text-zinc-300">{title}</h3>
-        <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.06]", iconClass)}>
-          <Icon className="h-4 w-4" />
-        </div>
-      </div>
-      <p className={cn("text-[28px] font-bold leading-none sm:text-[30px]", valueClass || "text-white")}>{value}</p>
-      <p className="mt-2 text-[11px] text-zinc-500">{subtext}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function PeriodCard({
-  title,
-  sales,
-  revenue,
-  deposits,
-  users,
-  boxOpens,
-}: {
-  title: string;
-  sales: number;
-  revenue: number;
-  deposits: number;
-  users: number;
-  boxOpens: number;
-}) {
-  const formatMoney = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-  return (
-    <Card className="admin-card">
-      <CardContent className="px-4 py-4">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-[18px] font-semibold leading-none text-zinc-100 sm:text-[20px]">{title}</h3>
-        <span className="rounded-full border border-white/[0.07] bg-white/[0.02] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
-          Summary
-        </span>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="min-w-0">
-          <p className="text-[20px] font-bold leading-none text-white sm:text-[22px]">{sales}</p>
-          <p className="mt-1 text-[11px] text-zinc-500">sales</p>
-        </div>
-        <div className="min-w-0">
-          <p className="text-[18px] font-bold leading-none text-emerald-400 sm:text-[20px]">{formatMoney(revenue)}</p>
-          <p className="mt-1 text-[11px] text-zinc-500">product rev.</p>
-        </div>
-        <div className="min-w-0">
-          <p className="text-[18px] font-bold leading-none text-[#c7bdd8] sm:text-[20px]">{formatMoney(deposits)}</p>
-          <p className="mt-1 text-[11px] text-zinc-500">deposits</p>
-        </div>
-        <div className="min-w-0">
-          <p className="text-[20px] font-bold leading-none text-[#c7bdd8] sm:text-[22px]">{boxOpens}</p>
-          <p className="mt-1 text-[11px] text-zinc-500">box opens</p>
-        </div>
-      </div>
-
-      <div className="mt-4 border-t border-white/[0.06] pt-3">
-        <p className="flex items-center gap-1 text-xs text-zinc-400">
-          <UserRound className="h-3.5 w-3.5 text-blue-400" />
-          {users} new users
-        </p>
-      </div>
-      </CardContent>
-    </Card>
-  );
+function statusBadgeClass(status: string) {
+  const value = status.toUpperCase();
+  if (value.includes("DELIVERED") || value.includes("PAID")) return "bg-emerald-500/10 text-emerald-300 border-emerald-500/25";
+  if (value.includes("PENDING") || value.includes("PROCESSING")) return "bg-amber-500/10 text-amber-300 border-amber-500/25";
+  if (value.includes("CANCEL") || value.includes("REFUND")) return "bg-red-500/10 text-red-300 border-red-500/25";
+  return "bg-violet-500/10 text-violet-300 border-violet-500/25";
 }
 
 export default function DashboardPage() {
@@ -313,24 +157,26 @@ export default function DashboardPage() {
 
     async function load() {
       setLoading(true);
-      const [productsRes, customersRes, ticketsRes, paymentsRes, criticalRes] = await Promise.all([
+      const [productsRes, customersRes, ticketsRes, paymentsRes, criticalRes, ordersRes] = await Promise.all([
         safeFetch("/api/admin/products"),
         safeFetch("/api/admin/customers"),
         safeFetch("/api/admin/tickets?status=ALL"),
         safeFetch("/api/admin/logs?type=payment&page=1&pageSize=300"),
         safeFetch("/api/admin/notifications?severity=CRITICAL&unread=true&limit=6"),
+        safeFetch("/api/admin/orders"),
       ]);
 
       const products = safeArray(productsRes?.data);
       const customers = safeArray(customersRes?.data);
       const tickets = safeArray(ticketsRes?.data);
       const payments = safeArray(paymentsRes?.data);
+      const orders = safeArray(ordersRes?.data);
+
       const criticalAlerts = safeArray(criticalRes?.data).map((item: any, idx: number) => ({
         id: String(item.id || `critical-${idx}-${Date.now()}`),
         title: String(item.title || "Critical alert"),
         message: String(item.message || ""),
         createdAt: String(item.createdAt || new Date().toISOString()),
-        type: String(item.type || "SYSTEM"),
       }));
       const criticalUnreadCount = Number(criticalRes?.unreadCount || criticalAlerts.length || 0);
 
@@ -344,9 +190,6 @@ export default function DashboardPage() {
       const activeProducts = products.filter((p) => p.isActive).length;
       const openTickets = tickets.filter((t) => ["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER"].includes(String(t.status))).length;
       const pendingPayments = creditPayments.filter((p) => String(p.status || "").toUpperCase() === "PENDING").length;
-      const totalDeposits = creditPayments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
-      const productSales = totalRevenue;
-      const mysteryBoxRevenue = mysteryPayments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
 
       const todayFrom = startOfToday();
       const weekFrom = daysAgo(7);
@@ -364,124 +207,50 @@ export default function DashboardPage() {
       const usersWeek = customers.filter((c) => inRange(String(c.createdAt || ""), weekFrom)).length;
       const usersMonth = customers.filter((c) => inRange(String(c.createdAt || ""), monthFrom)).length;
 
-      const mysteryToday = mysteryPayments.filter((p) => inRange(String(p.createdAt || ""), todayFrom)).length;
-      const mysteryWeek = mysteryPayments.filter((p) => inRange(String(p.createdAt || ""), weekFrom)).length;
-      const mysteryMonth = mysteryPayments.filter((p) => inRange(String(p.createdAt || ""), monthFrom)).length;
+      const mysteryToday = mysteryPayments.filter((p) => inRange(String(p.createdAt || ""), todayFrom));
+      const mysteryWeek = mysteryPayments.filter((p) => inRange(String(p.createdAt || ""), weekFrom));
+      const mysteryMonth = mysteryPayments.filter((p) => inRange(String(p.createdAt || ""), monthFrom));
 
-      const ticketActivities = tickets.slice(0, 8).map((t: any) => ({
-        id: `ticket-${t.id}`,
-        label: t.email || t.discordUsername || "User",
-        detail: t.subject || "Support ticket",
-        type: "ticket" as const,
-        status: String(t.status || "OPEN").toLowerCase(),
-        createdAt: String(t.createdAt || new Date().toISOString()),
-      }));
-
-      const paymentActivities = payments.slice(0, 8).map((p: any) => ({
-        id: `payment-${p.id}`,
-        label: p.customer?.username || "Customer",
-        detail: `$${Number(p.amount || 0).toFixed(2)} via ${p.reason || "wallet"}`,
-        type: "payment" as const,
-        status: String(p.type || "").toUpperCase() === "DEBIT" ? "active" : "awaiting",
-        createdAt: String(p.createdAt || new Date().toISOString()),
-      }));
-
-      const activities = [...ticketActivities, ...paymentActivities]
-        .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
-        .slice(0, 10);
-
-      const customersById = new Map(customers.map((customer: any) => [String(customer.id || ""), customer]));
-      const customersByEmail = new Map(
-        customers
-          .filter((customer: any) => customer?.email)
-          .map((customer: any) => [String(customer.email || "").toLowerCase(), customer])
-      );
-      const customersByUsername = new Map(
-        customers
-          .filter((customer: any) => customer?.username)
-          .map((customer: any) => [String(customer.username || "").toLowerCase(), customer])
-      );
-
-      const resolveCustomerProfileHref = (payment: any) => {
-        const directId = String(payment?.customerId || payment?.customer?.id || "").trim();
-        if (directId && customersById.has(directId)) return `/admin/customers/${directId}`;
-
-        const email = String(payment?.customer?.email || "").trim().toLowerCase();
-        if (email && customersByEmail.has(email)) {
-          return `/admin/customers/${String(customersByEmail.get(email)?.id)}`;
-        }
-
-        const username = String(payment?.customer?.username || "").trim().toLowerCase();
-        if (username && customersByUsername.has(username)) {
-          return `/admin/customers/${String(customersByUsername.get(username)?.id)}`;
-        }
-
-        return null;
-      };
-
-      const spenderMap = new Map<string, { id: string; user: string; spent: number; profileHref: string | null }>();
-      for (const payment of debitPayments) {
-        const profileHref = resolveCustomerProfileHref(payment);
-        const cid = String(payment.customerId || payment.customer?.id || payment.customer?.email || payment.id);
-        const user = payment.customer?.username || payment.customer?.email || "Guest User";
-        const prev = spenderMap.get(cid);
-        if (prev) prev.spent += Number(payment.amount || 0);
-        else spenderMap.set(cid, { id: cid, user, spent: Number(payment.amount || 0), profileHref });
-      }
-
-      if (spenderMap.size === 0) {
-        customers.slice(0, 6).forEach((c: any, idx: number) => {
-          const cid = String(c.id || idx + 1);
-          spenderMap.set(cid, {
-            id: cid,
-            user: c.username || c.email || `User ${idx + 1}`,
-            spent: 0,
-            profileHref: c?.id ? `/admin/customers/${String(c.id)}` : null,
-          });
-        });
-      }
-
-      const leaderboard = Array.from(spenderMap.values())
-        .sort((a, b) => b.spent - a.spent)
-        .slice(0, 6)
-        .map((row) => ({
-          ...row,
-          rank: resolveRank(row.spent),
+      const recentOrders = orders
+        .slice(0, 8)
+        .map((order: any) => ({
+          id: String(order.id || ""),
+          user: String(order?.customer?.username || order?.customer?.email || "Guest"),
+          product: String(order?.items?.[0]?.product?.name || "Product"),
+          amount: Number(order.totalAmount || 0),
+          status: String(order.status || "PENDING"),
+          createdAt: String(order.createdAt || new Date().toISOString()),
         }));
 
-      if (active) {
-        setData({
-          totalUsers,
-          totalOrders,
-          totalRevenue,
-          pendingPayments,
-          activeProducts,
-          openTickets,
-          totalDeposits,
-          productSales,
-          mysteryBoxRevenue,
-          todaySales: salesToday.length,
-          todayRevenue: salesToday.reduce((acc, s) => acc + Number(s.amount || 0), 0),
-          todayDeposits: depositsToday.reduce((acc, s) => acc + Number(s.amount || 0), 0),
-          todayUsers: usersToday,
-          todayBoxOpens: mysteryToday,
-          weekSales: salesWeek.length,
-          weekRevenue: salesWeek.reduce((acc, s) => acc + Number(s.amount || 0), 0),
-          weekDeposits: depositsWeek.reduce((acc, s) => acc + Number(s.amount || 0), 0),
-          weekUsers: usersWeek,
-          weekBoxOpens: mysteryWeek,
-          monthSales: salesMonth.length,
-          monthRevenue: salesMonth.reduce((acc, s) => acc + Number(s.amount || 0), 0),
-          monthDeposits: depositsMonth.reduce((acc, s) => acc + Number(s.amount || 0), 0),
-          monthUsers: usersMonth,
-          monthBoxOpens: mysteryMonth,
-          activities,
-          leaderboard,
-          criticalUnreadCount,
-          criticalAlerts,
-        });
-        setLoading(false);
-      }
+      if (!active) return;
+
+      setData({
+        totalUsers,
+        totalOrders,
+        totalRevenue,
+        pendingPayments,
+        activeProducts,
+        openTickets,
+        todaySales: salesToday.length,
+        todayRevenue: salesToday.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+        todayDeposits: depositsToday.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+        todayUsers: usersToday,
+        todayBoxRevenue: mysteryToday.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+        weekSales: salesWeek.length,
+        weekRevenue: salesWeek.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+        weekDeposits: depositsWeek.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+        weekUsers: usersWeek,
+        weekBoxRevenue: mysteryWeek.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+        monthSales: salesMonth.length,
+        monthRevenue: salesMonth.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+        monthDeposits: depositsMonth.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+        monthUsers: usersMonth,
+        monthBoxRevenue: mysteryMonth.reduce((acc, s) => acc + Number(s.amount || 0), 0),
+        criticalUnreadCount,
+        criticalAlerts,
+        recentOrders,
+      });
+      setLoading(false);
     }
 
     load();
@@ -490,279 +259,109 @@ export default function DashboardPage() {
     };
   }, []);
 
-  const activityStatusClass = useMemo(() => {
-    return (status: string) => {
-      if (status.includes("open")) return "bg-blue-500/15 text-blue-300 border border-blue-500/25";
-      if (status.includes("progress")) return "bg-amber-500/15 text-amber-300 border border-amber-500/25";
-      if (status.includes("waiting") || status.includes("awaiting")) return "bg-yellow-500/15 text-yellow-300 border border-yellow-500/25";
-      if (status.includes("resolved") || status.includes("closed")) return "bg-emerald-500/15 text-emerald-300 border border-emerald-500/25";
-      if (status.includes("active")) return "bg-teal-500/15 text-teal-300 border border-teal-500/25";
-      return "bg-zinc-500/15 text-zinc-300 border border-zinc-500/25";
-    };
-  }, []);
-
-  if (loading) {
-    return (
-      <div>
-        <Topbar title="Admin Dashboard" description="Overview of your platform" />
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-32 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
-            ))}
-          </div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-2">
-            {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="h-32 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
-            ))}
-          </div>
-          <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-36 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
-            ))}
-          </div>
-          <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-52 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
-            ))}
-          </div>
-          <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.3fr_0.9fr]">
-            <div className="h-96 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
-            <div className="h-96 rounded-2xl border border-white/[0.07] bg-zinc-900/50 animate-pulse" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const columns = useMemo(
+    () => [
+      { key: "id", header: "ID", render: (row: DashboardData["recentOrders"][number]) => <span className="font-mono text-[11px] text-zinc-400">{row.id.slice(0, 8)}</span> },
+      { key: "user", header: "User", render: (row: DashboardData["recentOrders"][number]) => <span className="text-zinc-200">{row.user}</span> },
+      { key: "product", header: "Product", render: (row: DashboardData["recentOrders"][number]) => <span className="text-zinc-300">{row.product}</span> },
+      { key: "amount", header: "Amount", render: (row: DashboardData["recentOrders"][number]) => <span className="font-semibold text-emerald-300">${row.amount.toFixed(2)}</span> },
+      {
+        key: "status",
+        header: "Status",
+        render: (row: DashboardData["recentOrders"][number]) => (
+          <Badge className={cn("rounded-full border text-[10px] uppercase tracking-wide", statusBadgeClass(row.status))}>{row.status}</Badge>
+        ),
+      },
+      { key: "date", header: "Date", render: (row: DashboardData["recentOrders"][number]) => <span className="text-zinc-500">{timeAgo(row.createdAt)}</span> },
+    ],
+    []
+  );
 
   return (
-    <div>
-      <Topbar title="Admin Dashboard" description="Overview of your platform">
-        <Link
-          href="/admin/orders"
-          className="inline-flex h-10 items-center justify-center rounded-md border border-white/[0.08] bg-white/[0.03] px-4 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/[0.06] hover:text-white"
-        >
-          Open Orders
-        </Link>
-      </Topbar>
+    <DashboardShell>
+      <div className="grid gap-4">
+        <Topbar title="Dashboard" description="Operational overview">
+          <Link href="/admin/orders">
+            <Button variant="outline" className="h-8 rounded-xl border-white/[0.1] bg-white/[0.02] px-3 text-xs text-zinc-200 hover:bg-white/[0.06]">
+              Open Orders
+            </Button>
+          </Link>
+        </Topbar>
 
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard title="Total Revenue" value={`$${data.totalRevenue.toFixed(2)}`} icon={BadgeDollarSign} iconClass="bg-emerald-500/15 text-emerald-300" valueClass="text-emerald-400" emphasize />
-          <StatCard title="Total Orders" value={data.totalOrders} icon={ShoppingCart} iconClass="bg-emerald-500/15 text-emerald-300" emphasize />
-          <StatCard title="Open Tickets" value={data.openTickets} icon={AlertTriangle} iconClass="bg-rose-500/15 text-rose-300" href="/admin/tickets" emphasize />
-          <StatCard title="Pending Payments" value={data.pendingPayments} icon={CreditCard} iconClass="bg-amber-500/15 text-amber-300" href="/admin/topups" emphasize />
-        </div>
+        <div className="grid gap-4">
+          <div className="grid grid-cols-2 gap-4 xl:grid-cols-6">
+            <KpiCard label="Revenue" value={`$${data.totalRevenue.toFixed(2)}`} icon={DollarSign} tone="green" />
+            <KpiCard label="Orders" value={data.totalOrders} icon={ShoppingCart} tone="green" />
+            <KpiCard label="Tickets" value={data.openTickets} icon={Ticket} tone="red" />
+            <KpiCard label="Pending Payments" value={data.pendingPayments} icon={CreditCard} tone="yellow" />
+            <KpiCard label="Users" value={data.totalUsers} icon={UserRound} tone="purple" />
+            <KpiCard label="Products" value={data.activeProducts} icon={Boxes} tone="purple" />
+          </div>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-2">
-          <StatCard title="Total Users" value={data.totalUsers} icon={UserRound} iconClass="bg-blue-500/15 text-blue-300" />
-          <StatCard title="Active Products" value={data.activeProducts} icon={Boxes} iconClass="bg-violet-500/15 text-violet-300" href="/admin/products" />
-        </div>
-
-        <Card className="admin-card">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle className="text-[20px] font-semibold text-white">Critical Alerts</CardTitle>
-                <CardDescription>High-risk changes and incidents that need attention.</CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className="border-red-500/30 bg-red-500/10 text-red-200">{data.criticalUnreadCount} unread</Badge>
-                <Link
-                  href="/admin/notifications?filter=critical"
-                  className="inline-flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-1.5 text-[11px] font-medium text-zinc-200 transition hover:bg-white/[0.05] hover:text-white"
-                >
-                  Open Alerts
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="space-y-2">
-              {data.criticalAlerts.length === 0 ? (
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-5 text-zinc-500">
-                  No unread critical alerts.
-                </div>
+          <div className="admin-card rounded-2xl p-4">
+            <SectionHeader
+              title="Critical Alerts"
+              description="High-priority system events"
+              action={<Badge className="rounded-full border border-red-500/30 bg-red-500/10 text-[10px] uppercase tracking-wide text-red-200">{data.criticalUnreadCount} unread</Badge>}
+            />
+            <div className="mt-3 grid gap-2">
+              {loading ? (
+                <div className="h-12 animate-pulse rounded-xl border border-white/[0.06] bg-white/[0.02]" />
+              ) : data.criticalAlerts.length === 0 ? (
+                <p className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-3 text-xs text-zinc-500">No unread critical alerts.</p>
               ) : (
-                data.criticalAlerts.map((alert) => (
-                  <div key={alert.id} className="rounded-xl border border-red-500/20 bg-red-500/[0.06] px-3.5 py-3">
-                    <p className="text-sm font-semibold text-red-100">{alert.title}</p>
-                    <p className="mt-1 text-xs text-red-200/80">{alert.message}</p>
-                    <p className="mt-2 text-[11px] uppercase tracking-[0.12em] text-red-200/60">
-                      {alert.type} • {timeAgo(alert.createdAt)}
-                    </p>
-                  </div>
+                data.criticalAlerts.slice(0, 4).map((alert) => (
+                  <AlertRow
+                    key={alert.id}
+                    title={alert.title}
+                    message={alert.message}
+                    time={timeAgo(alert.createdAt)}
+                    action={
+                      <Link href="/admin/notifications?filter=critical">
+                        <Button variant="outline" className="h-7 rounded-lg border-red-500/30 bg-red-500/10 px-2 text-[11px] text-red-100 hover:bg-red-500/15">
+                          Open
+                        </Button>
+                      </Link>
+                    }
+                  />
                 ))
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
-          <SummaryCard
-            title="Balance Deposits"
-            value={`$${data.totalDeposits.toFixed(2)}`}
-            subtext="Total approved deposits"
-            icon={Wallet}
-            iconClass="bg-emerald-500/15 text-emerald-300"
-            valueClass="text-emerald-400"
+          <AnalyticsCard
+            today={{
+              salesCount: data.todaySales,
+              revenue: data.todayRevenue,
+              deposits: data.todayDeposits,
+              boxRevenue: data.todayBoxRevenue,
+              users: data.todayUsers,
+            }}
+            week={{
+              salesCount: data.weekSales,
+              revenue: data.weekRevenue,
+              deposits: data.weekDeposits,
+              boxRevenue: data.weekBoxRevenue,
+              users: data.weekUsers,
+            }}
+            month={{
+              salesCount: data.monthSales,
+              revenue: data.monthRevenue,
+              deposits: data.monthDeposits,
+              boxRevenue: data.monthBoxRevenue,
+              users: data.monthUsers,
+            }}
           />
-          <SummaryCard
-            title="Product Sales"
-            value={`$${data.productSales.toFixed(2)}`}
-            subtext="Revenue from product purchases"
-            icon={ShoppingCart}
-            iconClass="bg-teal-500/15 text-teal-300"
-            valueClass="text-emerald-400"
-          />
-          <SummaryCard
-            title="Mystery Box"
-            value={`$${data.mysteryBoxRevenue.toFixed(2)}`}
-            subtext={`${data.monthBoxOpens} total opens this month`}
-            icon={Gift}
-            iconClass="bg-[#a996c4]/18 text-[#d7caea]"
-            valueClass="text-[#d7caea]"
-          />
-        </div>
 
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
-          <PeriodCard
-            title="Today"
-            sales={data.todaySales}
-            revenue={data.todayRevenue}
-            deposits={data.todayDeposits}
-            users={data.todayUsers}
-            boxOpens={data.todayBoxOpens}
-          />
-          <PeriodCard
-            title="This Week"
-            sales={data.weekSales}
-            revenue={data.weekRevenue}
-            deposits={data.weekDeposits}
-            users={data.weekUsers}
-            boxOpens={data.weekBoxOpens}
-          />
-          <PeriodCard
-            title="This Month"
-            sales={data.monthSales}
-            revenue={data.monthRevenue}
-            deposits={data.monthDeposits}
-            users={data.monthUsers}
-            boxOpens={data.monthBoxOpens}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.3fr_0.9fr]">
-          <Card className="admin-card">
-            <CardHeader className="pb-4">
-              <div className="mb-1 flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[#c7bdd8]" />
-                <CardTitle className="text-[22px] font-semibold text-white">Recent Activity</CardTitle>
-              </div>
-              <CardDescription>Orders, payments, and support signals across the platform.</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0">
-
-            <div className="space-y-2">
-              {data.activities.length === 0 ? (
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-5 text-zinc-500">No activity found.</div>
-              ) : (
-                data.activities.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-3 transition-colors hover:bg-white/[0.035]"
-                  >
-                    <div className="min-w-0 flex items-center gap-3">
-                      <div
-                        className={cn(
-                          "flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-white/[0.06]",
-                          activity.type === "ticket" ? "bg-blue-500/10 text-blue-300" : "bg-emerald-500/10 text-emerald-300"
-                        )}
-                      >
-                        {activity.type === "ticket" ? <Ticket className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-zinc-100">{activity.label}</p>
-                        <p className="truncate text-xs text-zinc-500">{activity.detail}</p>
-                      </div>
-                    </div>
-
-                    <div className="ml-4 flex items-center gap-3">
-                      <span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-semibold", activityStatusClass(activity.status))}>
-                        {activity.status}
-                      </span>
-                      <span className="text-xs text-zinc-500">{timeAgo(activity.createdAt)}</span>
-                      <ArrowRight className="h-3.5 w-3.5 text-zinc-700" />
-                    </div>
-                  </div>
-                ))
-              )}
+          <div className="admin-card rounded-2xl p-4">
+            <SectionHeader title="Recent Orders" description="Latest transactions and delivery state" />
+            <div className="mt-3">
+              <DataTable columns={columns} rows={data.recentOrders} emptyText="No recent orders." />
             </div>
-            </CardContent>
-          </Card>
-
-          <Card className="admin-card">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <CardTitle className="text-[22px] font-semibold text-white">Top Customers</CardTitle>
-                  <CardDescription>Highest spenders this cycle</CardDescription>
-                </div>
-                <Link
-                  href="/admin/users"
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs font-medium text-zinc-200 transition hover:bg-white/[0.05] hover:text-white"
-                >
-                  Open Users
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-
-            <div className="space-y-2">
-              {data.leaderboard.length === 0 ? (
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-5 text-zinc-500">No user data yet.</div>
-              ) : (
-                data.leaderboard.map((row, idx) => (
-                  <div key={row.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.03] text-sm font-semibold text-zinc-300">
-                        {idx + 1}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-zinc-100">{row.user}</p>
-                        <div className="mt-1">
-                          <Badge variant="outline" className={cn("border-white/[0.08] bg-white/[0.03] text-xs font-medium", tierStyles(row.rank))}>
-                            {row.rank}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <p className="text-sm font-semibold text-white">${row.spent.toFixed(2)}</p>
-                      {row.profileHref ? (
-                        <Link
-                          href={row.profileHref}
-                          className="inline-flex items-center gap-1 rounded-lg border border-violet-500/20 bg-violet-500/10 px-2.5 py-1.5 text-[11px] font-medium text-violet-200 transition hover:bg-violet-500/15 hover:text-white"
-                        >
-                          Open 360
-                          <ArrowRight className="h-3.5 w-3.5" />
-                        </Link>
-                      ) : (
-                        <span className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5 text-[11px] font-medium text-zinc-500">
-                          No profile
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-            </CardContent>
-          </Card>
+          </div>
         </div>
       </div>
-    </div>
+    </DashboardShell>
   );
 }
+
