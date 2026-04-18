@@ -91,6 +91,30 @@ async function productSlugExists(slug: string) {
   return rows.length > 0;
 }
 
+async function clearOtherFeaturedProducts(excludeId?: string) {
+  try {
+    await prisma.product.updateMany({
+      where: excludeId ? { isFeatured: true, NOT: { id: excludeId } } : { isFeatured: true },
+      data: { isFeatured: false },
+    });
+    return;
+  } catch (error) {
+    if (!isSchemaMismatchError(error)) throw error;
+    console.warn("Featured cleanup schema mismatch, retrying with raw SQL");
+  }
+
+  if (excludeId) {
+    await prisma.$executeRaw(
+      Prisma.sql`UPDATE "Product" SET "isFeatured" = false WHERE "isFeatured" = true AND "id" <> ${excludeId}`
+    );
+    return;
+  }
+
+  await prisma.$executeRaw(
+    Prisma.sql`UPDATE "Product" SET "isFeatured" = false WHERE "isFeatured" = true`
+  );
+}
+
 async function createProductWithRawFallback(
   productData: Omit<ProductFormData, "prices" | "features">
 ) {
@@ -427,6 +451,10 @@ export async function POST(req: NextRequest) {
     const existing = await productSlugExists(productData.slug);
     if (existing) {
       return NextResponse.json({ error: "This slug is already in use", errors: { slug: "Slug already exists" } }, { status: 400 });
+    }
+
+    if (productData.isFeatured) {
+      await clearOtherFeaturedProducts();
     }
 
     let product: any;

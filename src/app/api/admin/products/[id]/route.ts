@@ -170,6 +170,23 @@ async function productSlugExists(slug: string, excludeId?: string) {
   return rows.length > 0;
 }
 
+async function clearOtherFeaturedProducts(excludeId: string) {
+  try {
+    await prisma.product.updateMany({
+      where: { isFeatured: true, NOT: { id: excludeId } },
+      data: { isFeatured: false },
+    });
+    return;
+  } catch (error) {
+    if (!isSchemaMismatchError(error)) throw error;
+    console.warn("PUT /api/admin/products/[id]: featured cleanup schema mismatch, retrying raw SQL");
+  }
+
+  await prisma.$executeRaw(
+    Prisma.sql`UPDATE "Product" SET "isFeatured" = false WHERE "isFeatured" = true AND "id" <> ${excludeId}`
+  );
+}
+
 function buildMinimalProductUpdateData(productData: Omit<ProductFormData, "prices" | "features">) {
   return {
     name: productData.name,
@@ -429,6 +446,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     // Check if status changed
     const statusChanged = productData.status !== existing.status;
+
+    if (productData.isFeatured) {
+      await clearOtherFeaturedProducts(params.id);
+    }
 
     const product = await updateProductCoreWithFallbacks(params.id, productData, statusChanged);
     await syncProductRelationsWithFallbacks(params.id, prices, features);
