@@ -390,7 +390,63 @@ async function hardDeleteProductWithRelations(id: string) {
     })
   );
 
+  await safe("dynamic fk cleanup", () => cleanupLegacyProductForeignKeys(id));
+
   await prisma.product.delete({ where: { id } });
+}
+
+function quoteIdent(identifier: string) {
+  return `"${String(identifier).replace(/"/g, "\"\"")}"`;
+}
+
+async function cleanupLegacyProductForeignKeys(productId: string) {
+  const refs = await prisma.$queryRaw<
+    Array<{
+      table_schema: string;
+      table_name: string;
+      column_name: string;
+      is_nullable: "YES" | "NO";
+    }>
+  >(Prisma.sql`
+    SELECT
+      tc.table_schema,
+      tc.table_name,
+      kcu.column_name,
+      cols.is_nullable
+    FROM information_schema.table_constraints tc
+    JOIN information_schema.key_column_usage kcu
+      ON tc.constraint_name = kcu.constraint_name
+      AND tc.table_schema = kcu.table_schema
+    JOIN information_schema.constraint_column_usage ccu
+      ON ccu.constraint_name = tc.constraint_name
+      AND ccu.table_schema = tc.table_schema
+    JOIN information_schema.columns cols
+      ON cols.table_schema = tc.table_schema
+      AND cols.table_name = tc.table_name
+      AND cols.column_name = kcu.column_name
+    WHERE tc.constraint_type = 'FOREIGN KEY'
+      AND ccu.table_name = 'Product'
+      AND ccu.column_name = 'id'
+      AND tc.table_name <> 'Product'
+  `);
+
+  for (const ref of refs) {
+    const schema = quoteIdent(ref.table_schema);
+    const table = quoteIdent(ref.table_name);
+    const column = quoteIdent(ref.column_name);
+
+    if (ref.is_nullable === "YES") {
+      await prisma.$executeRawUnsafe(
+        `UPDATE ${schema}.${table} SET ${column} = NULL WHERE ${column} = $1`,
+        productId
+      );
+    } else {
+      await prisma.$executeRawUnsafe(
+        `DELETE FROM ${schema}.${table} WHERE ${column} = $1`,
+        productId
+      );
+    }
+  }
 }
 
 // GET /api/admin/products/[id]
