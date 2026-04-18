@@ -364,6 +364,7 @@ async function hardDeleteProductWithRelations(id: string) {
   // This prevents one legacy-table mismatch from poisoning the whole delete flow.
   await safe("order items", () => prisma.orderItem.deleteMany({ where: { productId: id } }));
   await safe("licenses", () => prisma.license.deleteMany({ where: { productId: id } }));
+  await safe("reseller sales", () => prisma.resellerSale.deleteMany({ where: { productId: id } }));
   await safe("cart items", () => prisma.cartItem.deleteMany({ where: { productId: id } }));
   await safe("favorites", () => prisma.favoriteProduct.deleteMany({ where: { productId: id } }));
   await safe("changelog relations", () => prisma.changelogProduct.deleteMany({ where: { productId: id } }));
