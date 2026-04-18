@@ -79,6 +79,24 @@ const SETTING_DEFAULTS: Record<string, { value: string; type: string; group: str
     group: "discord",
     label: "Release Email Hook URL",
   },
+  referral_enabled: {
+    value: "true",
+    type: "boolean",
+    group: "growth",
+    label: "Referral Program Enabled",
+  },
+  referral_reward_referrer: {
+    value: "5",
+    type: "number",
+    group: "growth",
+    label: "Referral Reward (Referrer)",
+  },
+  site_public_url: {
+    value: "https://litysoftware.com",
+    type: "string",
+    group: "general",
+    label: "Public Site URL",
+  },
 };
 
 // GET /api/admin/settings

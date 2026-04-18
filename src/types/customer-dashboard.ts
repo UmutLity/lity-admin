@@ -23,3 +23,10 @@ export type FaqItem = {
   answer: string;
 };
 
+export type ReferralOverview = {
+  inviteCode: string;
+  inviteLink: string;
+  totalReferrals: number;
+  successfulReferrals: number;
+  totalRewards: number;
+};

@@ -30,6 +30,7 @@ import {
   UserRoundCog,
   Users,
   Wallet,
+  Webhook,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -61,6 +62,8 @@ const navGroups: NavGroup[] = [
       { href: "/admin/pending-deliveries", label: "Pending Deliveries", icon: Truck, roles: ["FOUNDER", "ADMIN", "MODERATOR", "SUPPORT"] },
       { href: "/admin/tickets", label: "Tickets", icon: Ticket, roles: ["FOUNDER", "ADMIN", "MODERATOR", "SUPPORT", "EDITOR"] },
       { href: "/admin/users", label: "Users", icon: Users, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/security", label: "Security Center", icon: Shield, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/security/sessions", label: "Sessions", icon: UserRoundCog, roles: ["FOUNDER", "ADMIN"] },
     ],
   },
   {
@@ -81,6 +84,7 @@ const navGroups: NavGroup[] = [
       { href: "/admin/guides", label: "Guides", icon: BookOpen, roles: ["FOUNDER", "ADMIN", "EDITOR"] },
       { href: "/admin/blog", label: "Blog", icon: Newspaper, roles: ["FOUNDER", "ADMIN", "EDITOR"] },
       { href: "/admin/media", label: "Media", icon: MessageSquare, roles: ["FOUNDER", "ADMIN", "MEDIA"] },
+      { href: "/admin/webhooks", label: "Webhook Center", icon: Webhook, roles: ["FOUNDER", "ADMIN", "SUPPORT", "EDITOR"] },
       { href: "/admin/logs", label: "Logs", icon: ClipboardList, roles: ["FOUNDER", "ADMIN"] },
       { href: "/admin/audit", label: "Audit Log", icon: Shield, roles: ["FOUNDER", "ADMIN"] },
       { href: "/admin/settings", label: "Settings", icon: Settings, roles: ["FOUNDER", "ADMIN"] },

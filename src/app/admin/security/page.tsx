@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Topbar } from "@/components/admin/topbar";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -183,6 +184,29 @@ export default function SecurityPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mb-6">
+        <CardHeader><CardTitle>Security Hardening</CardTitle></CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4">
+            <p className="text-xs text-zinc-500">Risk Score</p>
+            <p className="mt-2 text-2xl font-semibold text-white">
+              {Math.max(0, 100 - Math.min(100, (stats?.failedAttempts24h || 0) + (stats?.unresolvedAlerts || 0) * 8))}
+            </p>
+            <p className="mt-1 text-xs text-zinc-500">Based on failed logins and unresolved alerts.</p>
+          </div>
+          <Link href="/admin/security/sessions" className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 transition hover:bg-white/[0.05]">
+            <p className="text-xs text-zinc-500">Admin Sessions</p>
+            <p className="mt-2 text-base font-semibold text-white">Manage active sessions</p>
+            <p className="mt-1 text-xs text-zinc-500">Revoke suspicious sessions instantly.</p>
+          </Link>
+          <Link href="/admin/webhooks" className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 transition hover:bg-white/[0.05]">
+            <p className="text-xs text-zinc-500">Webhook Center</p>
+            <p className="mt-2 text-base font-semibold text-white">Retry failed deliveries</p>
+            <p className="mt-1 text-xs text-zinc-500">Recover Discord delivery failures quickly.</p>
+          </Link>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="alerts" className="space-y-4">
         <TabsList>

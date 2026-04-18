@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { LicenseCard } from "@/components/customer/dashboard/license-card";
 import { RecommendedProducts } from "@/components/customer/dashboard/recommended-products";
-import { CustomerLicense, RecommendedProduct } from "@/types/customer-dashboard";
+import { ReferralCard } from "@/components/customer/dashboard/referral-card";
+import { CustomerLicense, RecommendedProduct, ReferralOverview } from "@/types/customer-dashboard";
 
 type LicenseApiItem = {
   id: string;
@@ -33,6 +34,7 @@ export default function CustomerDashboardPage() {
   const [licenses, setLicenses] = useState<CustomerLicense[]>([]);
   const [ownedProductIds, setOwnedProductIds] = useState<string[]>([]);
   const [recommended, setRecommended] = useState<RecommendedProduct[]>([]);
+  const [referral, setReferral] = useState<ReferralOverview | null>(null);
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
@@ -47,9 +49,12 @@ export default function CustomerDashboardPage() {
           fetch("/api/auth/customer/licenses", { credentials: "include" }),
           fetch("/api/products", { credentials: "include" }),
         ]);
+        const referralPromise = fetch("/api/auth/customer/referral", { credentials: "include" }).catch(() => null);
 
         const licensesJson = await licensesRes.json();
         const productsJson = await productsRes.json();
+        const referralRes = await referralPromise;
+        const referralJson = referralRes ? await referralRes.json().catch(() => null) : null;
 
         if (!licensesRes.ok || !licensesJson?.success) {
           throw new Error(licensesJson?.error || "Could not load licenses");
@@ -86,6 +91,11 @@ export default function CustomerDashboardPage() {
         setLicenses(mappedLicenses);
         setOwnedProductIds(owned);
         setRecommended(mappedProducts);
+        if (referralRes?.ok && referralJson?.success) {
+          setReferral(referralJson.data);
+        } else {
+          setReferral(null);
+        }
       } catch (e: any) {
         if (!mounted) return;
         setError(e?.message || "Dashboard data could not be loaded.");
@@ -150,9 +160,10 @@ export default function CustomerDashboardPage() {
           )}
         </section>
 
+        <ReferralCard referral={referral} />
+
         <RecommendedProducts products={recommended} ownedProductIds={ownedProductIds} />
       </div>
     </main>
   );
 }
-

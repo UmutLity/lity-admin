@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { createCustomerToken } from "@/lib/customer-auth";
 import { checkRateLimit, recordStrike, isIpBanned } from "@/lib/rate-limit";
+import { appendReferrerToNotes, decodeReferralCode } from "@/lib/referrals";
 
 export const dynamic = "force-dynamic";
 
@@ -31,9 +32,18 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    const { searchParams } = new URL(req.url);
     const email = String(body?.email || "").trim().toLowerCase();
     const username = String(body?.username || "").trim().toLowerCase();
     const password = String(body?.password || "");
+    const rawInviteCode = String(
+      body?.inviteCode ||
+      body?.invite ||
+      body?.ref ||
+      searchParams.get("invite") ||
+      searchParams.get("ref") ||
+      ""
+    ).trim();
 
     if (!email || !username || !password) {
       return NextResponse.json({ success: false, error: "Email, username and password are required." }, { status: 400 });
@@ -66,6 +76,10 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
+    const invitedById = rawInviteCode ? decodeReferralCode(rawInviteCode) : null;
+    const referralEnabledSetting = await prisma.siteSetting.findUnique({ where: { key: "referral_enabled" } }).catch(() => null);
+    const referralEnabled = referralEnabledSetting?.value !== "false";
+
     const customer = await prisma.customer.create({
       data: {
         email,
@@ -73,6 +87,7 @@ export async function POST(req: NextRequest) {
         password: passwordHash,
         role: "MEMBER",
         isActive: true,
+        ...(referralEnabled && invitedById ? { adminNotes: appendReferrerToNotes(null, invitedById) } : {}),
       },
       select: {
         id: true,
@@ -85,6 +100,53 @@ export async function POST(req: NextRequest) {
         createdAt: true,
       },
     });
+
+    if (referralEnabled && invitedById && invitedById !== customer.id) {
+      try {
+        const referrer = await prisma.customer.findUnique({
+          where: { id: invitedById },
+          select: { id: true, isActive: true, role: true, balance: true },
+        });
+
+        if (referrer && referrer.isActive && referrer.role !== "BANNED") {
+          const existingReward = await prisma.balanceTransaction.findFirst({
+            where: {
+              customerId: referrer.id,
+              reason: `REFERRAL_BONUS:${customer.id}`,
+            },
+            select: { id: true },
+          });
+
+          if (!existingReward) {
+            const rewardSetting = await prisma.siteSetting.findUnique({ where: { key: "referral_reward_referrer" } }).catch(() => null);
+            const rewardAmount = Math.max(0, Number(rewardSetting?.value || 5));
+
+            if (rewardAmount > 0) {
+              const before = Number(referrer.balance || 0);
+              const after = before + rewardAmount;
+              await prisma.$transaction([
+                prisma.customer.update({
+                  where: { id: referrer.id },
+                  data: { balance: after },
+                }),
+                prisma.balanceTransaction.create({
+                  data: {
+                    customerId: referrer.id,
+                    type: "CREDIT",
+                    amount: rewardAmount,
+                    balanceBefore: before,
+                    balanceAfter: after,
+                    reason: `REFERRAL_BONUS:${customer.id}`,
+                  },
+                }),
+              ]);
+            }
+          }
+        }
+      } catch (referralError) {
+        console.error("Referral bonus processing failed:", referralError);
+      }
+    }
 
     try {
       await prisma.adminNotification.create({
