@@ -332,28 +332,44 @@ async function findProductForDelete(id: string) {
 
 async function hardDeleteProductWithRelations(id: string) {
   await prisma.$transaction(async (tx) => {
-    await tx.orderItem.deleteMany({ where: { productId: id } });
-    await tx.license.deleteMany({ where: { productId: id } });
-    await tx.cartItem.deleteMany({ where: { productId: id } });
-    await tx.favoriteProduct.deleteMany({ where: { productId: id } });
-    await tx.changelogProduct.deleteMany({ where: { productId: id } });
-    await tx.productImage.deleteMany({ where: { productId: id } });
-    await tx.productGalleryImage.deleteMany({ where: { productId: id } });
-    await tx.productSpecification.deleteMany({ where: { productId: id } });
-    await tx.productFeature.deleteMany({ where: { productId: id } });
-    await tx.productPrice.deleteMany({ where: { productId: id } });
-    await tx.statusHistory.deleteMany({ where: { productId: id } });
-    await tx.productEnvironment.deleteMany({ where: { productId: id } });
-    await tx.guide.deleteMany({ where: { productId: id } });
+    const safe = async (label: string, run: () => Promise<unknown>) => {
+      try {
+        await run();
+      } catch (error) {
+        if (isSchemaMismatchError(error)) {
+          console.warn(`DELETE /api/admin/products/[id]: skipped ${label} due to schema mismatch`);
+          return;
+        }
+        throw error;
+      }
+    };
 
-    await tx.supportTicket.updateMany({
-      where: { productId: id },
-      data: { productId: null },
-    });
-    await tx.review.updateMany({
-      where: { productId: id },
-      data: { productId: null },
-    });
+    await safe("order items", () => tx.orderItem.deleteMany({ where: { productId: id } }));
+    await safe("licenses", () => tx.license.deleteMany({ where: { productId: id } }));
+    await safe("cart items", () => tx.cartItem.deleteMany({ where: { productId: id } }));
+    await safe("favorites", () => tx.favoriteProduct.deleteMany({ where: { productId: id } }));
+    await safe("changelog relations", () => tx.changelogProduct.deleteMany({ where: { productId: id } }));
+    await safe("product images", () => tx.productImage.deleteMany({ where: { productId: id } }));
+    await safe("gallery", () => tx.productGalleryImage.deleteMany({ where: { productId: id } }));
+    await safe("specifications", () => tx.productSpecification.deleteMany({ where: { productId: id } }));
+    await safe("features", () => tx.productFeature.deleteMany({ where: { productId: id } }));
+    await safe("prices", () => tx.productPrice.deleteMany({ where: { productId: id } }));
+    await safe("status history", () => tx.statusHistory.deleteMany({ where: { productId: id } }));
+    await safe("environments", () => tx.productEnvironment.deleteMany({ where: { productId: id } }));
+    await safe("guides", () => tx.guide.deleteMany({ where: { productId: id } }));
+
+    await safe("support tickets unlink", () =>
+      tx.supportTicket.updateMany({
+        where: { productId: id },
+        data: { productId: null },
+      })
+    );
+    await safe("reviews unlink", () =>
+      tx.review.updateMany({
+        where: { productId: id },
+        data: { productId: null },
+      })
+    );
 
     await tx.product.delete({ where: { id } });
   });
@@ -491,6 +507,15 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     });
   } catch (error: any) {
     if (error.message === "Unauthorized") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      return NextResponse.json(
+        {
+          error: "Product could not be deleted because linked records still exist. Please run latest DB migrations and try again.",
+          code: "PRODUCT_DELETE_BLOCKED",
+        },
+        { status: 409 }
+      );
+    }
     console.error("DELETE /api/admin/products/[id] error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
