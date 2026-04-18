@@ -12,10 +12,6 @@ function isSchemaMismatchError(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && (error.code === "P2021" || error.code === "P2022");
 }
 
-function isForeignKeyDeleteError(error: unknown) {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003";
-}
-
 function withDetailDefaults<T extends Record<string, any>>(product: T) {
   return {
     ...product,
@@ -334,50 +330,33 @@ async function findProductForDelete(id: string) {
   }
 }
 
-async function archiveProductFallback(id: string) {
-  try {
-    return await prisma.product.update({
-      where: { id },
-      data: {
-        isActive: false,
-        isFeatured: false,
-        status: "DISCONTINUED",
-      },
+async function hardDeleteProductWithRelations(id: string) {
+  await prisma.$transaction(async (tx) => {
+    await tx.orderItem.deleteMany({ where: { productId: id } });
+    await tx.license.deleteMany({ where: { productId: id } });
+    await tx.cartItem.deleteMany({ where: { productId: id } });
+    await tx.favoriteProduct.deleteMany({ where: { productId: id } });
+    await tx.changelogProduct.deleteMany({ where: { productId: id } });
+    await tx.productImage.deleteMany({ where: { productId: id } });
+    await tx.productGalleryImage.deleteMany({ where: { productId: id } });
+    await tx.productSpecification.deleteMany({ where: { productId: id } });
+    await tx.productFeature.deleteMany({ where: { productId: id } });
+    await tx.productPrice.deleteMany({ where: { productId: id } });
+    await tx.statusHistory.deleteMany({ where: { productId: id } });
+    await tx.productEnvironment.deleteMany({ where: { productId: id } });
+    await tx.guide.deleteMany({ where: { productId: id } });
+
+    await tx.supportTicket.updateMany({
+      where: { productId: id },
+      data: { productId: null },
     });
-  } catch (error) {
-    if (!isSchemaMismatchError(error)) throw error;
-  }
+    await tx.review.updateMany({
+      where: { productId: id },
+      data: { productId: null },
+    });
 
-  const rows = await prisma.$queryRaw<Array<{ id: string }>>(
-    Prisma.sql`
-      UPDATE "Product"
-      SET
-        "isActive" = false,
-        "isFeatured" = false,
-        "status" = 'DISCONTINUED',
-        "updatedAt" = ${new Date()}
-      WHERE "id" = ${id}
-      RETURNING "id"
-    `
-  );
-  return rows[0] || null;
-}
-
-async function deleteProductWithFallbacks(id: string) {
-  try {
-    await prisma.product.delete({ where: { id } });
-    return { mode: "deleted" as const };
-  } catch (error) {
-    if (!isForeignKeyDeleteError(error) && !isSchemaMismatchError(error)) {
-      throw error;
-    }
-  }
-
-  const archived = await archiveProductFallback(id);
-  if (!archived) {
-    throw new Error("Archive fallback failed");
-  }
-  return { mode: "archived" as const };
+    await tx.product.delete({ where: { id } });
+  });
 }
 
 // GET /api/admin/products/[id]
@@ -484,26 +463,22 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    const result = await deleteProductWithFallbacks(params.id);
+    await hardDeleteProductWithRelations(params.id);
 
     await trackAdminEvent({
       userId: (session.user as any).id,
-      action: result.mode === "deleted" ? "DELETE" : "UPDATE",
+      action: "DELETE",
       entity: "Product",
       entityId: params.id,
       before: { name: product.name, slug: product.slug, isActive: product.isActive, status: product.status },
-      after: result.mode === "archived" ? { isActive: false, status: "DISCONTINUED" } : null,
+      after: null,
       alert: {
         type: "SYSTEM",
-        severity: result.mode === "deleted" ? "WARNING" : "CRITICAL",
-        title: result.mode === "deleted" ? `Product deleted: ${product.name}` : `Product archived: ${product.name}`,
-        message:
-          result.mode === "deleted"
-            ? `${product.name} was permanently removed.`
-            : `${product.name} had linked data and was archived as DISCONTINUED.`,
+        severity: "WARNING",
+        title: `Product deleted: ${product.name}`,
+        message: `${product.name} and related product data were permanently removed.`,
         meta: {
           productId: params.id,
-          mode: result.mode,
           previousStatus: product.status,
         },
       },
@@ -511,10 +486,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
     return NextResponse.json({
       success: true,
-      mode: result.mode,
-      message: result.mode === "deleted"
-        ? "Product deleted successfully."
-        : "Product has linked records, so it was archived instead of being deleted.",
+      mode: "deleted",
+      message: "Product deleted successfully.",
     });
   } catch (error: any) {
     if (error.message === "Unauthorized") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
