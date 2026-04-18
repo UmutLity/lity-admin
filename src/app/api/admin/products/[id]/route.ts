@@ -425,6 +425,8 @@ async function cleanupLegacyProductForeignKeys(productId: string) {
       AND cols.table_name = tc.table_name
       AND cols.column_name = kcu.column_name
     WHERE tc.constraint_type = 'FOREIGN KEY'
+      AND tc.table_schema = 'public'
+      AND ccu.table_schema = 'public'
       AND ccu.table_name = 'Product'
       AND ccu.column_name = 'id'
       AND tc.table_name <> 'Product'
@@ -435,18 +437,51 @@ async function cleanupLegacyProductForeignKeys(productId: string) {
     const table = quoteIdent(ref.table_name);
     const column = quoteIdent(ref.column_name);
 
-    if (ref.is_nullable === "YES") {
-      await prisma.$executeRawUnsafe(
-        `UPDATE ${schema}.${table} SET ${column} = NULL WHERE ${column} = $1`,
-        productId
-      );
-    } else {
-      await prisma.$executeRawUnsafe(
-        `DELETE FROM ${schema}.${table} WHERE ${column} = $1`,
-        productId
-      );
+    try {
+      if (ref.is_nullable === "YES") {
+        await prisma.$executeRawUnsafe(
+          `UPDATE ${schema}.${table} SET ${column} = NULL WHERE ${column} = $1`,
+          productId
+        );
+      } else {
+        await prisma.$executeRawUnsafe(
+          `DELETE FROM ${schema}.${table} WHERE ${column} = $1`,
+          productId
+        );
+      }
+    } catch (error) {
+      console.warn("cleanupLegacyProductForeignKeys skipped relation cleanup step", {
+        table: `${ref.table_schema}.${ref.table_name}`,
+        column: ref.column_name,
+        error,
+      });
     }
   }
+}
+
+async function archiveProductFallback(id: string) {
+  try {
+    await prisma.product.update({
+      where: { id },
+      data: {
+        isActive: false,
+        status: "DISCONTINUED",
+      },
+    });
+    return true;
+  } catch (error) {
+    if (!isSchemaMismatchError(error)) throw error;
+  }
+
+  const rows = await prisma.$queryRaw<Array<{ id: string }>>(
+    Prisma.sql`
+      UPDATE "Product"
+      SET "isActive" = false, "status" = 'DISCONTINUED', "updatedAt" = ${new Date()}
+      WHERE "id" = ${id}
+      RETURNING "id"
+    `
+  );
+  return rows.length > 0;
 }
 
 // GET /api/admin/products/[id]
@@ -585,6 +620,18 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     });
   } catch (error: any) {
     if (error.message === "Unauthorized") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    try {
+      const archived = await archiveProductFallback(params.id);
+      if (archived) {
+        return NextResponse.json({
+          success: true,
+          mode: "archived",
+          message: "Hard delete failed due to linked data. Product archived instead.",
+        });
+      }
+    } catch (archiveError) {
+      console.error("DELETE /api/admin/products/[id] archive fallback failed:", archiveError);
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
       return NextResponse.json(
         {
