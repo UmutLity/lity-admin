@@ -331,48 +331,48 @@ async function findProductForDelete(id: string) {
 }
 
 async function hardDeleteProductWithRelations(id: string) {
-  await prisma.$transaction(async (tx) => {
-    const safe = async (label: string, run: () => Promise<unknown>) => {
-      try {
-        await run();
-      } catch (error) {
-        if (isSchemaMismatchError(error)) {
-          console.warn(`DELETE /api/admin/products/[id]: skipped ${label} due to schema mismatch`);
-          return;
-        }
-        throw error;
+  const safe = async (label: string, run: () => Promise<unknown>) => {
+    try {
+      await run();
+    } catch (error) {
+      if (isSchemaMismatchError(error)) {
+        console.warn(`DELETE /api/admin/products/[id]: skipped ${label} due to schema mismatch`);
+        return;
       }
-    };
+      throw error;
+    }
+  };
 
-    await safe("order items", () => tx.orderItem.deleteMany({ where: { productId: id } }));
-    await safe("licenses", () => tx.license.deleteMany({ where: { productId: id } }));
-    await safe("cart items", () => tx.cartItem.deleteMany({ where: { productId: id } }));
-    await safe("favorites", () => tx.favoriteProduct.deleteMany({ where: { productId: id } }));
-    await safe("changelog relations", () => tx.changelogProduct.deleteMany({ where: { productId: id } }));
-    await safe("product images", () => tx.productImage.deleteMany({ where: { productId: id } }));
-    await safe("gallery", () => tx.productGalleryImage.deleteMany({ where: { productId: id } }));
-    await safe("specifications", () => tx.productSpecification.deleteMany({ where: { productId: id } }));
-    await safe("features", () => tx.productFeature.deleteMany({ where: { productId: id } }));
-    await safe("prices", () => tx.productPrice.deleteMany({ where: { productId: id } }));
-    await safe("status history", () => tx.statusHistory.deleteMany({ where: { productId: id } }));
-    await safe("environments", () => tx.productEnvironment.deleteMany({ where: { productId: id } }));
-    await safe("guides", () => tx.guide.deleteMany({ where: { productId: id } }));
+  // Run cleanup steps outside a single DB transaction.
+  // This prevents one legacy-table mismatch from poisoning the whole delete flow.
+  await safe("order items", () => prisma.orderItem.deleteMany({ where: { productId: id } }));
+  await safe("licenses", () => prisma.license.deleteMany({ where: { productId: id } }));
+  await safe("cart items", () => prisma.cartItem.deleteMany({ where: { productId: id } }));
+  await safe("favorites", () => prisma.favoriteProduct.deleteMany({ where: { productId: id } }));
+  await safe("changelog relations", () => prisma.changelogProduct.deleteMany({ where: { productId: id } }));
+  await safe("product images", () => prisma.productImage.deleteMany({ where: { productId: id } }));
+  await safe("gallery", () => prisma.productGalleryImage.deleteMany({ where: { productId: id } }));
+  await safe("specifications", () => prisma.productSpecification.deleteMany({ where: { productId: id } }));
+  await safe("features", () => prisma.productFeature.deleteMany({ where: { productId: id } }));
+  await safe("prices", () => prisma.productPrice.deleteMany({ where: { productId: id } }));
+  await safe("status history", () => prisma.statusHistory.deleteMany({ where: { productId: id } }));
+  await safe("environments", () => prisma.productEnvironment.deleteMany({ where: { productId: id } }));
+  await safe("guides", () => prisma.guide.deleteMany({ where: { productId: id } }));
 
-    await safe("support tickets unlink", () =>
-      tx.supportTicket.updateMany({
-        where: { productId: id },
-        data: { productId: null },
-      })
-    );
-    await safe("reviews unlink", () =>
-      tx.review.updateMany({
-        where: { productId: id },
-        data: { productId: null },
-      })
-    );
+  await safe("support tickets unlink", () =>
+    prisma.supportTicket.updateMany({
+      where: { productId: id },
+      data: { productId: null },
+    })
+  );
+  await safe("reviews unlink", () =>
+    prisma.review.updateMany({
+      where: { productId: id },
+      data: { productId: null },
+    })
+  );
 
-    await tx.product.delete({ where: { id } });
-  });
+  await prisma.product.delete({ where: { id } });
 }
 
 // GET /api/admin/products/[id]
