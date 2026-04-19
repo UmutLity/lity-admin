@@ -192,7 +192,6 @@ export const CoverGeneratorPreview = forwardRef<CoverPreviewHandle, PreviewProps
       const titleLeft = width * 0.08;
       const titleTop = height * 0.52 + config.titleYOffset;
       const maxTitleWidth = width * 0.52;
-      const tagY = titleTop - 110;
 
       // Brand
       if (state.assets.customLogoUrl) {
@@ -244,20 +243,6 @@ export const CoverGeneratorPreview = forwardRef<CoverPreviewHandle, PreviewProps
       ctx.fillText(gameText, badgesStart + statusWidth + 34, badgesY + 29);
       ctx.restore();
 
-      // Post type chip
-      ctx.save();
-      ctx.fillStyle = hexWithOpacity(state.style.accentColor, 0.16);
-      ctx.strokeStyle = hexWithOpacity(state.style.accentColor, 0.65);
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.roundRect(titleLeft, tagY, 370, 46, 10);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = "rgba(230,222,255,0.95)";
-      ctx.font = "700 18px Inter";
-      ctx.fillText(state.postType.toUpperCase(), titleLeft + 18, tagY + 30);
-      ctx.restore();
-
       // Main title
       const title = state.content.productName.toUpperCase();
       const customSize = state.content.titleSizeMode === "custom";
@@ -267,6 +252,27 @@ export const CoverGeneratorPreview = forwardRef<CoverPreviewHandle, PreviewProps
         fontSize -= 2;
         ctx.font = `900 ${fontSize}px Inter`;
       }
+
+      // Post type chip (positioned dynamically to never overlap the title)
+      const chipText = state.postType.toUpperCase();
+      const chipHeight = 46;
+      const chipPaddingX = 18;
+      ctx.save();
+      ctx.font = "700 18px Inter";
+      const chipTextWidth = ctx.measureText(chipText).width;
+      const chipWidth = Math.min(420, Math.max(180, chipTextWidth + chipPaddingX * 2));
+      const chipY = Math.max(38, titleTop - fontSize - chipHeight - 20);
+      ctx.fillStyle = hexWithOpacity(state.style.accentColor, 0.16);
+      ctx.strokeStyle = hexWithOpacity(state.style.accentColor, 0.65);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(titleLeft, chipY, chipWidth, chipHeight, 10);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "rgba(230,222,255,0.95)";
+      ctx.fillText(chipText, titleLeft + chipPaddingX, chipY + 30);
+      ctx.restore();
+
       ctx.shadowColor = hexWithOpacity(state.style.accentColor, config.glow);
       ctx.shadowBlur = state.templateId === "minimal-clean" ? 10 : 28;
       ctx.fillStyle = "#f8f8ff";
