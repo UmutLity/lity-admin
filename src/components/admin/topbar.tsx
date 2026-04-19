@@ -29,7 +29,7 @@ export function Topbar({ title, description, children }: TopbarProps) {
   const role = (session?.user as any)?.role;
 
   return (
-    <div className="ui-fade-up">
+    <div className="ui-fade-up mb-4">
       <Card className="admin-card">
         <CardContent className="flex min-h-[62px] items-center justify-between gap-3 p-4">
           <div className="min-w-0">
