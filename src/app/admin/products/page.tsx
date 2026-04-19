@@ -46,6 +46,7 @@ export default function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [deleteMode, setDeleteMode] = useState<"archive" | "hard" | null>(null);
 
   // Quick status change
   const [quickStatusId, setQuickStatusId] = useState<string | null>(null);
@@ -78,11 +79,15 @@ export default function ProductsPage() {
     loadProducts();
   }, [search, statusFilter]);
 
-  const handleDelete = async () => {
+  const handleDelete = async (mode: "archive" | "hard" = "archive") => {
     if (!deleteId) return;
     setDeleting(true);
+    setDeleteMode(mode);
     try {
-      const res = await fetch(`/api/admin/products/${deleteId}`, { method: "DELETE" });
+      const url = mode === "hard"
+        ? `/api/admin/products/${deleteId}?mode=hard`
+        : `/api/admin/products/${deleteId}`;
+      const res = await fetch(url, { method: "DELETE" });
       const data = await res.json().catch(() => null);
       if (res.ok) {
         addToast({
@@ -100,6 +105,7 @@ export default function ProductsPage() {
       addToast({ type: "error", title: "Error" });
     } finally {
       setDeleting(false);
+      setDeleteMode(null);
       setDeleteId(null);
     }
   };
@@ -257,11 +263,32 @@ export default function ProductsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Product</DialogTitle>
-            <DialogDescription>This action cannot be undone. The product will be permanently deleted.</DialogDescription>
+            <DialogDescription>
+              Choose a delete mode.
+              <br />
+              Archive keeps data and marks product as discontinued.
+              <br />
+              Hard Delete permanently removes product and related records.
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteId(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} loading={deleting}>Delete</Button>
+            <Button variant="outline" onClick={() => setDeleteId(null)} disabled={deleting}>Cancel</Button>
+            <Button
+              variant="outline"
+              onClick={() => handleDelete("archive")}
+              disabled={deleting}
+              loading={deleting && deleteMode === "archive"}
+            >
+              Archive
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => handleDelete("hard")}
+              disabled={deleting}
+              loading={deleting && deleteMode === "hard"}
+            >
+              Hard Delete
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
