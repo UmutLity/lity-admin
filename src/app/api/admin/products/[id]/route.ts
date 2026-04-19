@@ -586,10 +586,54 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await requireRole(["FOUNDER", "ADMIN", "EDITOR"]);
+    const deleteMode = req.nextUrl.searchParams.get("mode");
+    const hardDeleteRequested =
+      deleteMode === "hard" ||
+      req.headers.get("x-hard-delete") === "1" ||
+      req.headers.get("x-delete-mode") === "hard";
 
     const product = await findProductForDelete(params.id);
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    if (!hardDeleteRequested) {
+      const archived = await archiveProductFallback(params.id);
+      if (!archived) {
+        return NextResponse.json(
+          {
+            error: "Product could not be archived. Try hard delete mode after checking linked records.",
+            code: "PRODUCT_ARCHIVE_FAILED",
+          },
+          { status: 409 }
+        );
+      }
+
+      await trackAdminEvent({
+        userId: (session.user as any).id,
+        action: "UPDATE",
+        entity: "Product",
+        entityId: params.id,
+        before: { name: product.name, slug: product.slug, isActive: product.isActive, status: product.status },
+        after: { isActive: false, status: "DISCONTINUED" },
+        alert: {
+          type: "SYSTEM",
+          severity: "WARNING",
+          title: `Product archived: ${product.name}`,
+          message: `${product.name} was archived (inactive + discontinued). Use hard delete mode for permanent removal.`,
+          meta: {
+            productId: params.id,
+            previousStatus: product.status,
+            mode: "archived",
+          },
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        mode: "archived",
+        message: "Product archived successfully. Hard delete requires mode=hard.",
+      });
     }
 
     await hardDeleteProductWithRelations(params.id);
@@ -603,12 +647,13 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       after: null,
       alert: {
         type: "SYSTEM",
-        severity: "WARNING",
-        title: `Product deleted: ${product.name}`,
+        severity: "CRITICAL",
+        title: `Product permanently deleted: ${product.name}`,
         message: `${product.name} and related product data were permanently removed.`,
         meta: {
           productId: params.id,
           previousStatus: product.status,
+          mode: "hard",
         },
       },
     });
@@ -616,7 +661,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     return NextResponse.json({
       success: true,
       mode: "deleted",
-      message: "Product deleted successfully.",
+      message: "Product permanently deleted.",
     });
   } catch (error: any) {
     if (error.message === "Unauthorized") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

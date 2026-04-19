@@ -3,6 +3,46 @@ import { checkRateLimit } from "@/lib/rate-limit";
 
 // ━━━ Request Size Limit (prevent payload bombs) ━━━
 const MAX_JSON_SIZE = 1 * 1024 * 1024; // 1 MB
+const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL;
+const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+async function checkRateLimitDistributed(
+  ip: string,
+  scope: string,
+  limit: number,
+  windowSeconds: number
+): Promise<boolean> {
+  if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN) {
+    return checkRateLimit(ip, "general").success;
+  }
+
+  const redisKey = encodeURIComponent(`rl:${scope}:${ip}`);
+
+  try {
+    const incrRes = await fetch(`${UPSTASH_REDIS_REST_URL}/incr/${redisKey}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}` },
+      cache: "no-store",
+    });
+
+    if (!incrRes.ok) return checkRateLimit(ip, "general").success;
+
+    const data = await incrRes.json() as { result?: number };
+    const count = Number(data?.result || 0);
+
+    if (count <= 1) {
+      await fetch(`${UPSTASH_REDIS_REST_URL}/expire/${redisKey}/${windowSeconds}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}` },
+        cache: "no-store",
+      }).catch(() => undefined);
+    }
+
+    return count <= limit;
+  } catch {
+    return checkRateLimit(ip, "general").success;
+  }
+}
 
 export function checkRequestSize(req: NextRequest): NextResponse | null {
   const contentLength = req.headers.get("content-length");
@@ -94,8 +134,8 @@ export async function guardAdminRoute(
 
   // Rate limit check
   if (options?.rateLimit !== false) {
-    const rl = checkRateLimit(ip, "general");
-    if (!rl.success) {
+    const allowed = await checkRateLimitDistributed(ip, "admin", 100, 60);
+    if (!allowed) {
       return NextResponse.json(
         { error: "Too many requests" },
         { status: 429, headers: { "Retry-After": "60" } }

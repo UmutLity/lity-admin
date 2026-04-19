@@ -10,6 +10,8 @@ const LOGIN_RATE_LIMIT = 8;           // login attempts per window
 const LOGIN_WINDOW_MS = 60_000;       // 1 minute
 const GLOBAL_RATE_LIMIT = 120;        // all requests per IP per window
 const GLOBAL_WINDOW_MS = 60_000;
+const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL;
+const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
 function checkRate(key: string, limit: number, windowMs: number): boolean {
   const now = Date.now();
@@ -21,6 +23,47 @@ function checkRate(key: string, limit: number, windowMs: number): boolean {
   if (entry.count >= limit) return false;
   entry.count++;
   return true;
+}
+
+async function checkRateDistributed(key: string, limit: number, windowMs: number): Promise<boolean> {
+  if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN) {
+    return checkRate(key, limit, windowMs);
+  }
+
+  const redisKey = `rl:${key}`;
+  const encodedKey = encodeURIComponent(redisKey);
+  const ttlSeconds = Math.max(1, Math.ceil(windowMs / 1000));
+
+  try {
+    const incrRes = await fetch(`${UPSTASH_REDIS_REST_URL}/incr/${encodedKey}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
+      },
+      cache: "no-store",
+    });
+
+    if (!incrRes.ok) {
+      return checkRate(key, limit, windowMs);
+    }
+
+    const incrData = await incrRes.json() as { result?: number };
+    const count = Number(incrData?.result || 0);
+
+    if (count <= 1) {
+      await fetch(`${UPSTASH_REDIS_REST_URL}/expire/${encodedKey}/${ttlSeconds}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
+        },
+        cache: "no-store",
+      }).catch(() => undefined);
+    }
+
+    return count <= limit;
+  } catch {
+    return checkRate(key, limit, windowMs);
+  }
 }
 
 // Cleanup stale entries every 2 minutes
@@ -75,7 +118,7 @@ function isBadUserAgent(req: NextRequest): boolean {
 }
 
 export default withAuth(
-  function middleware(req) {
+  async function middleware(req) {
     const token = req.nextauth.token;
     const pathname = req.nextUrl.pathname;
     const ip = getIp(req);
@@ -97,7 +140,7 @@ export default withAuth(
     }
 
     // ── Global rate limit (per IP) ──
-    if (!checkRate(`global:${ip}`, GLOBAL_RATE_LIMIT, GLOBAL_WINDOW_MS)) {
+    if (!(await checkRateDistributed(`global:${ip}`, GLOBAL_RATE_LIMIT, GLOBAL_WINDOW_MS))) {
       return new NextResponse(
         JSON.stringify({ error: "Too many requests. Please slow down." }),
         {
@@ -112,7 +155,7 @@ export default withAuth(
 
     // ── Login endpoint rate limiting ──
     if (pathname.startsWith("/api/auth")) {
-      if (!checkRate(`login:${ip}`, LOGIN_RATE_LIMIT, LOGIN_WINDOW_MS)) {
+      if (!(await checkRateDistributed(`login:${ip}`, LOGIN_RATE_LIMIT, LOGIN_WINDOW_MS))) {
         return new NextResponse(
           JSON.stringify({ error: "Too many login attempts. Please wait." }),
           {
@@ -128,7 +171,7 @@ export default withAuth(
 
     // ── Admin API rate limiting ──
     if (pathname.startsWith("/api/admin/")) {
-      if (!checkRate(`admin-api:${ip}`, ADMIN_API_RATE_LIMIT, ADMIN_API_WINDOW_MS)) {
+      if (!(await checkRateDistributed(`admin-api:${ip}`, ADMIN_API_RATE_LIMIT, ADMIN_API_WINDOW_MS))) {
         return new NextResponse(
           JSON.stringify({ error: "Rate limit exceeded for admin API." }),
           {

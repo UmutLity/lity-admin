@@ -41,7 +41,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     return NextResponse.json({
       success: result.success,
-      data: result,
+      retryStatus: result.success ? "DELIVERED" : "FAILED",
+      data: {
+        ...result,
+        event: delivery.event,
+        provider: delivery.provider,
+        entityId: delivery.entityId,
+        deliveryId: delivery.id,
+      },
       message: result.success ? "Webhook redelivered successfully." : "Webhook retry failed.",
     });
   } catch (error: any) {

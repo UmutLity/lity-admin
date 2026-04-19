@@ -14,17 +14,23 @@ function run(command, args, extraEnv = {}) {
 
 run("npx", ["prisma", "generate"]);
 
-if (process.env.DIRECT_URL) {
-  console.log("Using DIRECT_URL for prisma migrate deploy.");
-  run("npx", ["prisma", "migrate", "deploy"], {
-    DATABASE_URL: process.env.DIRECT_URL,
-    PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK: "1",
-  });
+const skipMigrate = process.env.SKIP_PRISMA_MIGRATE === "1";
+
+if (skipMigrate) {
+  console.log("Skipping prisma migrate deploy because SKIP_PRISMA_MIGRATE=1.");
 } else {
-  console.warn("DIRECT_URL is not set. Falling back to DATABASE_URL for prisma migrate deploy.");
-  run("npx", ["prisma", "migrate", "deploy"], {
-    PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK: "1",
-  });
+  if (process.env.DIRECT_URL) {
+    console.log("Using DIRECT_URL for prisma migrate deploy.");
+    run("npx", ["prisma", "migrate", "deploy"], {
+      DATABASE_URL: process.env.DIRECT_URL,
+      PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK: "1",
+    });
+  } else {
+    console.warn("DIRECT_URL is not set. Falling back to DATABASE_URL for prisma migrate deploy.");
+    run("npx", ["prisma", "migrate", "deploy"], {
+      PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK: "1",
+    });
+  }
 }
 
 run("npx", ["next", "build"]);
