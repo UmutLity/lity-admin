@@ -91,6 +91,23 @@ prisma generate && prisma migrate deploy && next build
 - Keep `DATABASE_URL` for runtime (pooler is fine).
 - Set `DIRECT_URL` to a direct/non-pooler Postgres connection for Prisma migrate.
 
+### Vercel Env Setup (Rate Limit + Stable Deploy)
+
+Set these environment variables in Vercel (`Project -> Settings -> Environment Variables`):
+
+- `DATABASE_URL` (runtime DB connection)
+- `DIRECT_URL` (direct DB connection, non-pooler)
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`
+- `UPSTASH_REDIS_REST_URL` (optional but recommended)
+- `UPSTASH_REDIS_REST_TOKEN` (optional but recommended)
+
+Optional for build stability:
+
+- `SKIP_PRISMA_MIGRATE=1` to skip migrate during build
+- Then run migrations separately from trusted environment:
+  - `npx prisma migrate deploy`
+
 ### Demo Credentials
 
 | Role   | Email                      | Password  |
