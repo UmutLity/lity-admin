@@ -40,13 +40,13 @@ export function StyleTab({ style, onStyleFieldChange, onAccentChange, onApplyCus
           <Input
             value={style.customHex}
             onChange={(event) => onStyleFieldChange("customHex", event.target.value)}
-            placeholder="#8B1A2B"
+            placeholder="#8B7CFF"
             className="h-10 border-white/[0.09] bg-black/35 font-mono text-sm"
           />
           <button
             type="button"
             onClick={onApplyCustomHex}
-            className="inline-flex h-10 items-center justify-center rounded-lg border border-red-400/45 bg-red-500/15 px-4 text-sm font-semibold text-red-100 hover:bg-red-500/22"
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-violet-300/45 bg-violet-500/15 px-4 text-sm font-semibold text-violet-100 hover:bg-violet-500/22"
           >
             Apply
           </button>
@@ -64,7 +64,7 @@ export function StyleTab({ style, onStyleFieldChange, onAccentChange, onApplyCus
               className={cn(
                 "rounded-lg border px-3 py-2 text-xs font-semibold transition",
                 style.backgroundPattern === pattern
-                  ? "border-red-400/45 bg-red-500/12 text-red-100"
+                  ? "border-violet-300/45 bg-violet-500/12 text-violet-100"
                   : "border-white/[0.08] bg-[#111218] text-zinc-300 hover:border-white/[0.2]"
               )}
             >

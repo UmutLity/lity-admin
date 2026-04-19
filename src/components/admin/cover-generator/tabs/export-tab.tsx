@@ -26,7 +26,7 @@ export function ExportTab({ exportState, onExportSizeChange, onFormatChange, onD
             onClick={() => onExportSizeChange(1920, 1080)}
             className={cn(
               "flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm font-semibold transition",
-              exportState.width === 1920 ? "border-red-400/45 bg-red-500/12 text-red-100" : "border-white/[0.09] bg-[#111218] text-zinc-300"
+              exportState.width === 1920 ? "border-violet-300/45 bg-violet-500/12 text-violet-100" : "border-white/[0.09] bg-[#111218] text-zinc-300"
             )}
           >
             <span>Blog Cover · 1920x1080</span>
@@ -37,7 +37,7 @@ export function ExportTab({ exportState, onExportSizeChange, onFormatChange, onD
             onClick={() => onExportSizeChange(1200, 630)}
             className={cn(
               "flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm font-semibold transition",
-              exportState.width === 1200 ? "border-red-400/45 bg-red-500/12 text-red-100" : "border-white/[0.09] bg-[#111218] text-zinc-300"
+              exportState.width === 1200 ? "border-violet-300/45 bg-violet-500/12 text-violet-100" : "border-white/[0.09] bg-[#111218] text-zinc-300"
             )}
           >
             <span>Social / OG · 1200x630</span>
@@ -57,7 +57,7 @@ export function ExportTab({ exportState, onExportSizeChange, onFormatChange, onD
               className={cn(
                 "rounded-lg border px-3 py-2 text-sm font-semibold uppercase transition",
                 exportState.format === format
-                  ? "border-red-400/45 bg-red-500/12 text-red-100"
+                  ? "border-violet-300/45 bg-violet-500/12 text-violet-100"
                   : "border-white/[0.09] bg-[#111218] text-zinc-300"
               )}
             >
@@ -68,11 +68,11 @@ export function ExportTab({ exportState, onExportSizeChange, onFormatChange, onD
         <p className="mt-2 text-[11px] text-zinc-500">PNG = lossless · JPG = smaller file size.</p>
       </section>
 
-      <section className="rounded-xl border border-red-500/20 bg-red-500/[0.07] p-4">
+      <section className="rounded-xl border border-violet-500/20 bg-violet-500/[0.07] p-4">
         <button
           type="button"
           onClick={onDownload}
-          className="inline-flex h-11 w-full items-center justify-center rounded-lg border border-red-400/45 bg-red-500/20 text-sm font-semibold text-red-100 transition hover:bg-red-500/28"
+          className="inline-flex h-11 w-full items-center justify-center rounded-lg border border-violet-300/45 bg-violet-500/20 text-sm font-semibold text-violet-100 transition hover:bg-violet-500/28"
         >
           <Download className="mr-2 h-4 w-4" />
           Download {exportState.format.toUpperCase()} · {sizeLabel}

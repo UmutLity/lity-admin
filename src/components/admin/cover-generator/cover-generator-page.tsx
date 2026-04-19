@@ -93,7 +93,7 @@ export function CoverGeneratorPage() {
         title="Cover Generator"
         description="Generate studio-quality blog/post covers with template presets, uploaded assets, style controls, and export actions."
       >
-        <span className="inline-flex items-center gap-1 rounded-md border border-red-400/40 bg-red-500/14 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-red-100">
+        <span className="inline-flex items-center gap-1 rounded-md border border-violet-300/40 bg-violet-500/14 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-100">
           <ImagePlus className="h-3 w-3" />
           Pro Tool
         </span>

@@ -19,7 +19,7 @@ const INITIAL_STATE: CoverGeneratorState = {
   templateId: "hero-character",
   postType: "Setup Guide",
   content: {
-    productName: "Byteon NewEra",
+    productName: "Lity NewEra",
     game: "VALORANT",
     statusBadge: "UNDETECTED",
     year: String(new Date().getFullYear()),
@@ -43,8 +43,8 @@ const INITIAL_STATE: CoverGeneratorState = {
     mirror: false,
   },
   style: {
-    accentColor: "#8B1A2B",
-    customHex: "#8B1A2B",
+    accentColor: "#8B7CFF",
+    customHex: "#8B7CFF",
     backgroundPattern: "Grid",
     showCornerDecorations: true,
     showScanLines: true,

@@ -35,7 +35,7 @@ export function TemplateTab({
               className={cn(
                 "rounded-lg border px-3 py-2 text-left transition",
                 templateId === template.id
-                  ? "border-red-400/45 bg-red-500/12 text-red-100"
+                  ? "border-violet-300/45 bg-violet-500/12 text-violet-100"
                   : "border-white/[0.08] bg-[#111218] text-zinc-200 hover:border-white/[0.2]"
               )}
             >
@@ -57,7 +57,7 @@ export function TemplateTab({
               className={cn(
                 "rounded-lg border px-3 py-2 text-left text-sm font-semibold transition",
                 postType === item
-                  ? "border-red-400/45 bg-red-500/12 text-red-100"
+                  ? "border-violet-300/45 bg-violet-500/12 text-violet-100"
                   : "border-white/[0.08] bg-[#111218] text-zinc-300 hover:border-white/[0.2]"
               )}
             >
@@ -75,9 +75,9 @@ export function TemplateTab({
               key={preset.id}
               type="button"
               onClick={() => onQuickPresetApply(preset)}
-              className="flex w-full items-center gap-3 rounded-lg border border-white/[0.08] bg-[#111218] px-3 py-2 text-left transition hover:border-red-400/35 hover:bg-red-500/[0.08]"
+              className="flex w-full items-center gap-3 rounded-lg border border-white/[0.08] bg-[#111218] px-3 py-2 text-left transition hover:border-violet-300/35 hover:bg-violet-500/[0.08]"
             >
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-400/30 bg-red-500/15 text-red-100">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-violet-300/35 bg-violet-500/15 text-violet-100">
                 <Shield className="h-3.5 w-3.5" />
               </span>
               <span className="min-w-0">

@@ -23,7 +23,7 @@ export function ContentTab({ content, onContentFieldChange, onAddTag, onRemoveTa
         <Input
           value={content.productName}
           onChange={(event) => onContentFieldChange("productName", event.target.value)}
-          placeholder="Byteon NewEra"
+          placeholder="Lity NewEra"
           className="h-10 border-white/[0.09] bg-black/35"
         />
         <p className="mt-2 text-[11px] text-zinc-500">Auto-shrinks on long product names.</p>
@@ -48,7 +48,7 @@ export function ContentTab({ content, onContentFieldChange, onAddTag, onRemoveTa
         <Input
           value={content.subtitle}
           onChange={(event) => onContentFieldChange("subtitle", event.target.value)}
-          placeholder="Installation · Configuration · Troubleshooting"
+          placeholder="Installation • Configuration • Troubleshooting"
           className="h-10 border-white/[0.09] bg-black/35"
         />
       </section>
@@ -71,7 +71,7 @@ export function ContentTab({ content, onContentFieldChange, onAddTag, onRemoveTa
           <button
             type="button"
             onClick={onAddTag}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-red-400/45 bg-red-500/15 text-red-100 transition hover:bg-red-500/22"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-violet-300/45 bg-violet-500/15 text-violet-100 transition hover:bg-violet-500/22"
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -82,7 +82,7 @@ export function ContentTab({ content, onContentFieldChange, onAddTag, onRemoveTa
               key={tag}
               type="button"
               onClick={() => onRemoveTag(tag)}
-              className="rounded-md border border-red-400/35 bg-red-500/14 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-red-100"
+              className="rounded-md border border-violet-300/35 bg-violet-500/14 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-violet-100"
             >
               {tag} ×
             </button>
@@ -99,7 +99,7 @@ export function ContentTab({ content, onContentFieldChange, onAddTag, onRemoveTa
             className={cn(
               "rounded-lg border px-3 py-1.5 text-xs font-semibold transition",
               content.titleSizeMode === "auto"
-                ? "border-red-400/45 bg-red-500/15 text-red-100"
+                ? "border-violet-300/45 bg-violet-500/15 text-violet-100"
                 : "border-white/[0.09] bg-[#111218] text-zinc-300 hover:border-white/[0.2]"
             )}
           >
@@ -111,7 +111,7 @@ export function ContentTab({ content, onContentFieldChange, onAddTag, onRemoveTa
             className={cn(
               "rounded-lg border px-3 py-1.5 text-xs font-semibold transition",
               content.titleSizeMode === "custom"
-                ? "border-red-400/45 bg-red-500/15 text-red-100"
+                ? "border-violet-300/45 bg-violet-500/15 text-violet-100"
                 : "border-white/[0.09] bg-[#111218] text-zinc-300 hover:border-white/[0.2]"
             )}
           >
@@ -121,7 +121,10 @@ export function ContentTab({ content, onContentFieldChange, onAddTag, onRemoveTa
         {content.titleSizeMode === "custom" ? (
           <div className="mt-3">
             <div className="mb-1 flex items-center justify-between text-[11px] text-zinc-500">
-              <span className="inline-flex items-center gap-1"><Type className="h-3 w-3" />Size</span>
+              <span className="inline-flex items-center gap-1">
+                <Type className="h-3 w-3" />
+                Size
+              </span>
               <span>{Math.round(content.customTitleSize)} px</span>
             </div>
             <input
@@ -131,7 +134,7 @@ export function ContentTab({ content, onContentFieldChange, onAddTag, onRemoveTa
               step={1}
               value={content.customTitleSize}
               onChange={(event) => onContentFieldChange("customTitleSize", Number(event.target.value))}
-              className="w-full accent-red-500"
+              className="w-full accent-violet-500"
             />
           </div>
         ) : null}

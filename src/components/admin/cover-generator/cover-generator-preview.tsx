@@ -231,7 +231,7 @@ export const CoverGeneratorPreview = forwardRef<CoverPreviewHandle, PreviewProps
       ctx.roundRect(badgesStart, badgesY, statusWidth, 44, 22);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = "#ffd7df";
+      ctx.fillStyle = "rgba(233,227,255,0.96)";
       ctx.fillText(statusText, badgesStart + 24, badgesY + 29);
 
       ctx.fillStyle = "rgba(17,20,30,0.88)";
@@ -253,7 +253,7 @@ export const CoverGeneratorPreview = forwardRef<CoverPreviewHandle, PreviewProps
       ctx.roundRect(titleLeft, tagY, 370, 46, 10);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = "rgba(255,227,232,0.92)";
+      ctx.fillStyle = "rgba(230,222,255,0.95)";
       ctx.font = "700 18px Inter";
       ctx.fillText(state.postType.toUpperCase(), titleLeft + 18, tagY + 30);
       ctx.restore();
@@ -330,7 +330,7 @@ export const CoverGeneratorPreview = forwardRef<CoverPreviewHandle, PreviewProps
           ctx.drawImage(characterImage, x, y, characterWidth, characterHeight);
           ctx.restore();
         } catch {
-          // ignore failed image draw
+          // Ignore failed image draw.
         }
       } else {
         ctx.fillStyle = "rgba(255,255,255,0.03)";
@@ -339,7 +339,7 @@ export const CoverGeneratorPreview = forwardRef<CoverPreviewHandle, PreviewProps
         ctx.fill();
       }
 
-      // Corner deco
+      // Corner decorations.
       if (state.style.showCornerDecorations) {
         const cornerColor = hexWithOpacity(state.style.accentColor, 0.9);
         ctx.strokeStyle = cornerColor;
@@ -383,12 +383,12 @@ export const CoverGeneratorPreview = forwardRef<CoverPreviewHandle, PreviewProps
       ctx.fillStyle = vignette;
       ctx.fillRect(0, 0, width, height);
 
-      // footer
+      // Footer
       ctx.fillStyle = "rgba(220,226,240,0.66)";
       ctx.font = "600 17px Inter";
-      ctx.fillText("LITYSOFTWARE.COM", titleLeft, height - 28);
+      ctx.fillText("litysoftware.com", titleLeft, height - 28);
       ctx.textAlign = "right";
-      ctx.fillText(`CINEMATIC · ${state.content.year}`, width - 52, height - 28);
+      ctx.fillText(`LITY SOFTWARE • ${state.content.year}`, width - 52, height - 28);
       ctx.textAlign = "left";
       setReady(true);
     }
@@ -403,11 +403,11 @@ export const CoverGeneratorPreview = forwardRef<CoverPreviewHandle, PreviewProps
       <header className="mb-3 flex items-center justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400">Live Preview</p>
-          <p className="text-[10px] text-zinc-500">{sizeLabel} · exports as {sizeLabel}</p>
+          <p className="text-[10px] text-zinc-500">{sizeLabel} • exports as {sizeLabel}</p>
         </div>
         <div className="flex items-center gap-2 text-[11px] font-semibold">
           <span className="text-zinc-500">{state.export.zoom}%</span>
-          <span className="rounded-md border border-red-400/28 bg-red-500/10 px-2 py-0.5 text-red-200">{metaTitle}</span>
+          <span className="rounded-md border border-violet-300/28 bg-violet-500/10 px-2 py-0.5 text-violet-200">{metaTitle}</span>
         </div>
       </header>
       <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#0c0d12]">
@@ -417,9 +417,7 @@ export const CoverGeneratorPreview = forwardRef<CoverPreviewHandle, PreviewProps
           style={{ aspectRatio: `${state.export.width} / ${state.export.height}`, opacity: ready ? 1 : 0.5 }}
         />
       </div>
-      <p className="mt-3 text-xs text-zinc-500">
-        💡 Tip: switch templates, assets and styles freely — preview remains export-accurate.
-      </p>
+      <p className="mt-3 text-xs text-zinc-500">Tip: switch templates, assets and styles freely - preview remains export-accurate.</p>
     </section>
   );
 });

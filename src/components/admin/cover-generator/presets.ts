@@ -1,7 +1,7 @@
 import type { BackgroundPattern, PostType, QuickPreset, TemplatePreset } from "./types";
 
 export const TEMPLATE_PRESETS: TemplatePreset[] = [
-  { id: "bold-shield", name: "Bold Shield", description: "Massive title, shield crest, cinematic red accents." },
+  { id: "bold-shield", name: "Bold Shield", description: "Massive title, shield crest, cinematic accent lines." },
   { id: "minimal-clean", name: "Minimal Clean", description: "Clean centered layout with subtle surface texture." },
   { id: "cyber-matrix", name: "Cyber Matrix", description: "Terminal-inspired frame with code-like visual rhythm." },
   { id: "neon-glow", name: "Neon Glow", description: "Dual-color bloom and stronger edge lighting." },
@@ -12,8 +12,8 @@ export const POST_TYPES: PostType[] = ["Setup Guide", "Update", "News", "Announc
 
 export const QUICK_PRESETS: QuickPreset[] = [
   {
-    id: "byteon-newera",
-    productName: "Byteon NewEra",
+    id: "lity-newera",
+    productName: "Lity NewEra",
     game: "VALORANT",
     subtitle: "Installation · Configuration · Troubleshooting",
     tags: ["NEW", "v2.3", "UPDATED"],
@@ -21,8 +21,8 @@ export const QUICK_PRESETS: QuickPreset[] = [
     templateId: "hero-character",
   },
   {
-    id: "byteon-vip",
-    productName: "Byteon VIP",
+    id: "lity-vip",
+    productName: "Lity VIP",
     game: "VALORANT",
     subtitle: "Premium feature branch and private updates",
     tags: ["VIP", "PRO", "MEMBERS"],
@@ -39,8 +39,8 @@ export const QUICK_PRESETS: QuickPreset[] = [
     templateId: "cyber-matrix",
   },
   {
-    id: "byteon-private",
-    productName: "Byteon Private",
+    id: "lity-private",
+    productName: "Lity Private",
     game: "VALORANT",
     subtitle: "Release notes for private channel users",
     tags: ["PRIVATE", "BUILD", "STABLE"],
@@ -50,14 +50,14 @@ export const QUICK_PRESETS: QuickPreset[] = [
 ];
 
 export const ACCENT_PRESETS = [
-  "#8B1A2B",
-  "#7B1024",
-  "#B42318",
-  "#5D1631",
-  "#1098AD",
-  "#E11D48",
-  "#334155",
-  "#CA8A04",
+  "#8B7CFF",
+  "#A78BFA",
+  "#7C6BFF",
+  "#C4B5FD",
+  "#A5B4FC",
+  "#8EC5FF",
+  "#B8A4FF",
+  "#9D86FF",
 ];
 
 export const BACKGROUND_PATTERNS: BackgroundPattern[] = ["Dots", "Grid", "Hexagon", "Diagonal", "Circuit", "Plain"];
