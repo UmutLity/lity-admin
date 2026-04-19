@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { slugify } from "@/lib/utils";
-import { X, Plus, Ticket, Image as ImageIcon, Layers, DollarSign } from "lucide-react";
+import { X, Plus, Ticket, Image as ImageIcon, Layers, DollarSign, Upload, Loader2 } from "lucide-react";
 
 interface ProductFormProps {
   initialData?: any;
@@ -184,6 +184,8 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
   const [mainImageUrl, setMainImageUrl] = useState(String(initialThumbnail?.url || ""));
   const [galleryInput, setGalleryInput] = useState("");
   const [galleryUrls, setGalleryUrls] = useState<string[]>(initialGalleryUrls);
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [uploadingGalleryFiles, setUploadingGalleryFiles] = useState(false);
   const [videoInput, setVideoInput] = useState("");
   const [videoUrls, setVideoUrls] = useState<string[]>(parsedDescription.videos);
 
@@ -213,6 +215,90 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
     if (!value) return;
     setGalleryUrls((prev) => (prev.includes(value) ? prev : [...prev, value]));
     setGalleryInput("");
+  };
+
+  const onGalleryFilesSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+    const onlyImages = files.filter((file) => file.type.startsWith("image/"));
+    if (!onlyImages.length) {
+      addToast({
+        type: "error",
+        title: "Invalid File",
+        description: "Please select image files only.",
+      });
+      return;
+    }
+    setGalleryFiles((prev) => {
+      const dedupe = new Map<string, File>();
+      [...prev, ...onlyImages].forEach((file) => {
+        const key = `${file.name}:${file.size}:${file.lastModified}`;
+        dedupe.set(key, file);
+      });
+      return Array.from(dedupe.values());
+    });
+    event.target.value = "";
+  };
+
+  const removeGalleryFile = (index: number) => {
+    setGalleryFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadGalleryFiles = async () => {
+    if (!galleryFiles.length) return;
+    setUploadingGalleryFiles(true);
+    try {
+      const uploadedUrls: string[] = [];
+
+      for (const file of galleryFiles) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("/api/admin/media", {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data?.success || !data?.data?.url) {
+          throw new Error(data?.error || `Upload failed for ${file.name}`);
+        }
+
+        uploadedUrls.push(String(data.data.url));
+      }
+
+      if (uploadedUrls.length > 0) {
+        if (!String(mainImageUrl || "").trim()) {
+          setMainImageUrl(uploadedUrls[0]);
+        }
+        setGalleryUrls((prev) => {
+          const existing = new Set(prev.map((url) => String(url).trim()).filter(Boolean));
+          const next = [...prev];
+          uploadedUrls.forEach((url) => {
+            if (existing.has(url)) return;
+            existing.add(url);
+            next.push(url);
+          });
+          return next;
+        });
+      }
+
+      setGalleryFiles([]);
+      addToast({
+        type: "success",
+        title: "Uploaded",
+        description: `${uploadedUrls.length} image${uploadedUrls.length > 1 ? "s" : ""} uploaded and added to gallery.`,
+      });
+    } catch (error: any) {
+      addToast({
+        type: "error",
+        title: "Upload Failed",
+        description: error?.message || "Images could not be uploaded.",
+      });
+    } finally {
+      setUploadingGalleryFiles(false);
+    }
   };
 
   const addVideoUrl = () => {
@@ -629,6 +715,64 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
 
           {activeTab === "media" && (
             <div className="space-y-6">
+              <div className="space-y-2">
+                <label className={labelClass}>Upload Images (Multiple)</label>
+                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={onGalleryFilesSelected}
+                      className="block w-full cursor-pointer text-sm text-zinc-300 file:mr-3 file:rounded-xl file:border file:border-white/[0.1] file:bg-white/[0.06] file:px-3 file:py-2 file:text-sm file:font-medium file:text-zinc-200 hover:file:bg-white/[0.1]"
+                    />
+                    <button
+                      type="button"
+                      onClick={uploadGalleryFiles}
+                      disabled={!galleryFiles.length || uploadingGalleryFiles}
+                      className={`${primaryButtonClass} whitespace-nowrap disabled:opacity-60`}
+                    >
+                      {uploadingGalleryFiles ? (
+                        <>
+                          <Loader2 className="mr-1 inline h-4 w-4 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-1 inline h-4 w-4" />
+                          Upload Selected
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {galleryFiles.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {galleryFiles.map((file, index) => (
+                        <div
+                          key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
+                          className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.02] px-3 py-2 text-sm text-zinc-300"
+                        >
+                          <span className="truncate">
+                            {file.name} · {(file.size / 1024 / 1024).toFixed(2)} MB
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeGalleryFile(index)}
+                            className="text-zinc-500 hover:text-zinc-300"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-zinc-500">
+                  Uploaded images are automatically added to the product gallery slider.
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <label className={labelClass}>Main Thumbnail / Cover Image</label>
                 <input
