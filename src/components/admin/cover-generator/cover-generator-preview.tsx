@@ -20,6 +20,9 @@ const templateStrength: Record<CoverTemplateId, { vignette: number; glow: number
   "hero-character": { vignette: 0.28, glow: 0.5, titleYOffset: 0 },
 };
 
+const COVER_FONT_DISPLAY = "'Sora', 'Manrope', 'Inter', 'Segoe UI', sans-serif";
+const COVER_FONT_UI = "'Manrope', 'Inter', 'Segoe UI', sans-serif";
+
 async function loadImage(url: string): Promise<HTMLImageElement> {
   const image = new Image();
   image.crossOrigin = "anonymous";
@@ -203,18 +206,18 @@ export const CoverGeneratorPreview = forwardRef<CoverPreviewHandle, PreviewProps
           ctx.drawImage(logoImage, titleLeft, 46, logoWidth, logoHeight);
         } catch {
           ctx.fillStyle = "#f6f7fb";
-          ctx.font = "700 34px Inter";
+          ctx.font = `700 34px ${COVER_FONT_UI}`;
           ctx.fillText("LITY SOFTWARE", titleLeft, 94);
         }
       } else {
         ctx.fillStyle = "rgba(255,255,255,0.9)";
-        ctx.font = "700 34px Inter";
+        ctx.font = `700 34px ${COVER_FONT_UI}`;
         ctx.fillText("LITY SOFTWARE", titleLeft, 92);
       }
 
       // Top badges
       ctx.save();
-      ctx.font = "700 24px Inter";
+      ctx.font = `700 24px ${COVER_FONT_UI}`;
       const statusText = state.content.statusBadge.toUpperCase();
       const gameText = state.content.game.toUpperCase();
       const statusWidth = ctx.measureText(statusText).width + 48;
@@ -247,10 +250,10 @@ export const CoverGeneratorPreview = forwardRef<CoverPreviewHandle, PreviewProps
       const title = state.content.productName.toUpperCase();
       const customSize = state.content.titleSizeMode === "custom";
       let fontSize = customSize ? state.content.customTitleSize : 142;
-      ctx.font = `900 ${fontSize}px Inter`;
+      ctx.font = `900 ${fontSize}px ${COVER_FONT_DISPLAY}`;
       while (!customSize && ctx.measureText(title).width > maxTitleWidth && fontSize > 66) {
         fontSize -= 2;
-        ctx.font = `900 ${fontSize}px Inter`;
+        ctx.font = `900 ${fontSize}px ${COVER_FONT_DISPLAY}`;
       }
 
       // Post type chip (positioned dynamically to never overlap the title)
@@ -258,7 +261,7 @@ export const CoverGeneratorPreview = forwardRef<CoverPreviewHandle, PreviewProps
       const chipHeight = 46;
       const chipPaddingX = 18;
       ctx.save();
-      ctx.font = "700 18px Inter";
+      ctx.font = `700 18px ${COVER_FONT_UI}`;
       const chipTextWidth = ctx.measureText(chipText).width;
       const chipWidth = Math.min(420, Math.max(180, chipTextWidth + chipPaddingX * 2));
       const chipY = Math.max(38, titleTop - fontSize - chipHeight - 20);
@@ -283,13 +286,13 @@ export const CoverGeneratorPreview = forwardRef<CoverPreviewHandle, PreviewProps
       ctx.fillRect(titleLeft, titleTop + 28, Math.min(220, maxTitleWidth * 0.45), 6);
 
       ctx.fillStyle = "rgba(228,230,240,0.82)";
-      ctx.font = "600 44px Inter";
+      ctx.font = `600 44px ${COVER_FONT_UI}`;
       ctx.fillText(state.content.subtitle || "Subtitle", titleLeft, titleTop + 78);
 
       // Tag chips
       let tagStartX = titleLeft;
       const tagStartY = titleTop + 122;
-      ctx.font = "700 18px Inter";
+      ctx.font = `700 18px ${COVER_FONT_UI}`;
       for (const tag of state.content.tags.slice(0, 4)) {
         const text = tag.toUpperCase();
         const chipWidth = ctx.measureText(text).width + 30;
@@ -391,10 +394,10 @@ export const CoverGeneratorPreview = forwardRef<CoverPreviewHandle, PreviewProps
 
       // Footer
       ctx.fillStyle = "rgba(220,226,240,0.66)";
-      ctx.font = "600 17px Inter";
+      ctx.font = `600 17px ${COVER_FONT_UI}`;
       ctx.fillText("litysoftware.com", titleLeft, height - 28);
       ctx.textAlign = "right";
-      ctx.fillText(`LITY SOFTWARE • ${state.content.year}`, width - 52, height - 28);
+      ctx.fillText(`LITY SOFTWARE - ${state.content.year}`, width - 52, height - 28);
       ctx.textAlign = "left";
       setReady(true);
     }
@@ -409,7 +412,7 @@ export const CoverGeneratorPreview = forwardRef<CoverPreviewHandle, PreviewProps
       <header className="mb-3 flex items-center justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400">Live Preview</p>
-          <p className="text-[10px] text-zinc-500">{sizeLabel} • exports as {sizeLabel}</p>
+          <p className="text-[10px] text-zinc-500">{sizeLabel} - exports as {sizeLabel}</p>
         </div>
         <div className="flex items-center gap-2 text-[11px] font-semibold">
           <span className="text-zinc-500">{state.export.zoom}%</span>
