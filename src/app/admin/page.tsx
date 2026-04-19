@@ -21,6 +21,8 @@ import { SectionHeader } from "@/components/admin/dashboard/section-header";
 import { AlertRow } from "@/components/admin/dashboard/alert-row";
 import { AnalyticsCard } from "@/components/admin/dashboard/analytics-card";
 import { DataTable } from "@/components/admin/dashboard/data-table";
+import { LiveStatusCard, type LiveStatusSnapshot } from "@/components/admin/dashboard/live-status-card";
+import { PublishingScheduleCard, type PublishingEvent } from "@/components/admin/dashboard/publishing-schedule-card";
 
 type AnyJson = Record<string, any>;
 
@@ -61,6 +63,8 @@ interface DashboardData {
     status: string;
     createdAt: string;
   }>;
+  liveStatus: LiveStatusSnapshot;
+  publishingSchedule: PublishingEvent[];
 }
 
 const EMPTY: DashboardData = {
@@ -88,6 +92,16 @@ const EMPTY: DashboardData = {
   criticalUnreadCount: 0,
   criticalAlerts: [],
   recentOrders: [],
+  liveStatus: {
+    api: "unknown",
+    database: "unknown",
+    webhook: "unknown",
+    databaseLatencyMs: 0,
+    webhookSuccessRate: 0,
+    failedWebhooks: 0,
+    checkedAt: new Date(0).toISOString(),
+  },
+  publishingSchedule: [],
 };
 
 function safeArray<T = any>(value: any): T[] {
@@ -157,13 +171,17 @@ export default function DashboardPage() {
 
     async function load() {
       setLoading(true);
-      const [productsRes, customersRes, ticketsRes, paymentsRes, criticalRes, ordersRes] = await Promise.all([
+      const [productsRes, customersRes, ticketsRes, paymentsRes, criticalRes, ordersRes, systemRes, changelogRes, guidesRes, blogRes] = await Promise.all([
         safeFetch("/api/admin/products"),
         safeFetch("/api/admin/customers"),
         safeFetch("/api/admin/tickets?status=ALL"),
         safeFetch("/api/admin/logs?type=payment&page=1&pageSize=300"),
         safeFetch("/api/admin/notifications?severity=CRITICAL&unread=true&limit=6"),
         safeFetch("/api/admin/orders"),
+        safeFetch("/api/admin/system"),
+        safeFetch("/api/admin/changelog"),
+        safeFetch("/api/admin/guides"),
+        safeFetch("/api/admin/blog"),
       ]);
 
       const products = safeArray(productsRes?.data);
@@ -222,6 +240,74 @@ export default function DashboardPage() {
           createdAt: String(order.createdAt || new Date().toISOString()),
         }));
 
+      const dbRawStatus = String(systemRes?.data?.database?.status || "").toLowerCase();
+      const databaseStatus: LiveStatusSnapshot["database"] =
+        dbRawStatus === "healthy" || dbRawStatus === "connected"
+          ? "healthy"
+          : dbRawStatus === "error"
+            ? "down"
+            : systemRes
+              ? "degraded"
+              : "unknown";
+
+      const webhookFailed = Number(systemRes?.data?.webhooks?.failed || 0);
+      const webhookSuccessRate = Number(systemRes?.data?.webhooks?.successRate || 0);
+      const webhookStatus: LiveStatusSnapshot["webhook"] =
+        !systemRes
+          ? "unknown"
+          : webhookSuccessRate >= 95
+            ? "healthy"
+            : webhookSuccessRate >= 75
+              ? "degraded"
+              : "down";
+
+      const liveStatus: LiveStatusSnapshot = {
+        api: systemRes ? "healthy" : "down",
+        database: databaseStatus,
+        webhook: webhookStatus,
+        databaseLatencyMs: Number(systemRes?.data?.database?.latencyMs || 0),
+        webhookSuccessRate,
+        failedWebhooks: webhookFailed,
+        checkedAt: new Date().toISOString(),
+      };
+
+      const now = Date.now();
+      const changelogEvents = safeArray(changelogRes?.data)
+        .filter((entry: any) => !entry?.isDraft && entry?.publishedAt)
+        .map((entry: any): PublishingEvent => ({
+          id: `changelog-${entry.id}`,
+          type: "CHANGELOG",
+          title: String(entry.title || "Untitled changelog"),
+          when: String(entry.publishedAt),
+          state: new Date(entry.publishedAt).getTime() > now ? "scheduled" : "published",
+          href: `/admin/changelog/${entry.id}/edit`,
+        }));
+
+      const guideEvents = safeArray(guidesRes?.data)
+        .filter((entry: any) => !entry?.isDraft && entry?.publishedAt)
+        .map((entry: any): PublishingEvent => ({
+          id: `guide-${entry.id}`,
+          type: "GUIDE",
+          title: String(entry.title || entry?.product?.name || "Untitled guide"),
+          when: String(entry.publishedAt),
+          state: new Date(entry.publishedAt).getTime() > now ? "scheduled" : "published",
+          href: `/admin/guides/${entry.id}/edit`,
+        }));
+
+      const blogEvents = safeArray(blogRes?.data)
+        .filter((entry: any) => !entry?.isDraft && entry?.publishedAt)
+        .map((entry: any): PublishingEvent => ({
+          id: `blog-${entry.id}`,
+          type: "BLOG",
+          title: String(entry.title || "Untitled blog"),
+          when: String(entry.publishedAt),
+          state: new Date(entry.publishedAt).getTime() > now ? "scheduled" : "published",
+          href: `/admin/blog/${entry.id}/edit`,
+        }));
+
+      const publishingSchedule = [...changelogEvents, ...guideEvents, ...blogEvents]
+        .sort((a, b) => new Date(a.when).getTime() - new Date(b.when).getTime());
+
       if (!active) return;
 
       setData({
@@ -249,6 +335,8 @@ export default function DashboardPage() {
         criticalUnreadCount,
         criticalAlerts,
         recentOrders,
+        liveStatus,
+        publishingSchedule,
       });
       setLoading(false);
     }
@@ -296,6 +384,11 @@ export default function DashboardPage() {
             <KpiCard label="Pending Payments" value={data.pendingPayments} icon={CreditCard} tone="yellow" />
             <KpiCard label="Users" value={data.totalUsers} icon={UserRound} tone="purple" />
             <KpiCard label="Products" value={data.activeProducts} icon={Boxes} tone="purple" />
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-2">
+            <LiveStatusCard loading={loading} snapshot={data.liveStatus} />
+            <PublishingScheduleCard loading={loading} events={data.publishingSchedule} />
           </div>
 
           <div className="admin-card rounded-2xl p-4">
@@ -364,4 +457,3 @@ export default function DashboardPage() {
     </DashboardShell>
   );
 }
-
