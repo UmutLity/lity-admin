@@ -24,7 +24,7 @@ export function TemplateTab({
 }: TemplateTabProps) {
   return (
     <div className="space-y-3">
-      <section className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
+      <section className="relative z-10 rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400">Template Design</p>
         <div className="grid grid-cols-2 gap-2">
           {TEMPLATE_PRESETS.map((template) => (
@@ -46,7 +46,7 @@ export function TemplateTab({
         </div>
       </section>
 
-      <section className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
+      <section className="relative z-10 rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400">Post Type</p>
         <div className="grid grid-cols-2 gap-2">
           {POST_TYPES.map((item) => (
@@ -67,9 +67,9 @@ export function TemplateTab({
         </div>
       </section>
 
-      <section className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
+      <section className="relative z-0 rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400">Quick Presets</p>
-        <div className="space-y-2">
+        <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
           {quickPresets.map((preset) => (
             <button
               key={preset.id}
