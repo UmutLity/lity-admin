@@ -20,8 +20,8 @@ const templateStrength: Record<CoverTemplateId, { vignette: number; glow: number
   "hero-character": { vignette: 0.28, glow: 0.5, titleYOffset: 0 },
 };
 
-const COVER_FONT_DISPLAY = "'Sora', 'Manrope', 'Inter', 'Segoe UI', sans-serif";
-const COVER_FONT_UI = "'Manrope', 'Inter', 'Segoe UI', sans-serif";
+const COVER_FONT_DISPLAY = "'Outfit', 'Inter', 'Segoe UI', sans-serif";
+const COVER_FONT_UI = "'Outfit', 'Inter', 'Segoe UI', sans-serif";
 
 async function loadImage(url: string): Promise<HTMLImageElement> {
   const image = new Image();
