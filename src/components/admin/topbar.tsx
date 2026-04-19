@@ -116,6 +116,7 @@ export function AdminHeader() {
       { label: "Coupons", path: "/admin/coupons", keywords: "discount promos" },
       { label: "Reviews", path: "/admin/reviews", keywords: "feedback ratings" },
       { label: "Media", path: "/admin/media", keywords: "videos gallery creator uploads" },
+      { label: "Cover Generator", path: "/admin/cover-generator", keywords: "cover generator design editor template export banner" },
       { label: "Blog", path: "/admin/blog", keywords: "articles content" },
       { label: "Settings", path: "/admin/settings", keywords: "configuration site settings" },
     ],
