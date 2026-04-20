@@ -27,6 +27,7 @@ interface AdminTicket {
   discordUsername: string | null;
   createdAt: string;
   updatedAt: string;
+  resolvedAt?: string | null;
   conversation: TicketMessage[];
   assignedTo?: { id: string; name: string; email?: string | null } | null;
 }
@@ -90,6 +91,11 @@ function ageHours(value: string) {
   return Math.max(0, Math.floor(diff / (1000 * 60 * 60)));
 }
 
+function average(numbers: number[]) {
+  if (!numbers.length) return 0;
+  return numbers.reduce((sum, value) => sum + value, 0) / numbers.length;
+}
+
 export default function AdminTicketsPage() {
   const [tickets, setTickets] = useState<AdminTicket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,6 +113,27 @@ export default function AdminTicketsPage() {
   );
 
   const queueStats = useMemo(() => {
+    const firstResponseSamples = filteredTickets
+      .map((ticket) => {
+        const firstAdminReply = (ticket.conversation || []).find((message) => message.sender === "ADMIN");
+        if (!firstAdminReply) return null;
+        const createdAtMs = new Date(ticket.createdAt).getTime();
+        const firstReplyMs = new Date(firstAdminReply.createdAt).getTime();
+        if (!Number.isFinite(createdAtMs) || !Number.isFinite(firstReplyMs) || firstReplyMs < createdAtMs) return null;
+        return (firstReplyMs - createdAtMs) / (1000 * 60 * 60);
+      })
+      .filter((value): value is number => typeof value === "number");
+
+    const resolvedSamples = filteredTickets
+      .filter((ticket) => ["RESOLVED", "CLOSED"].includes(ticket.status))
+      .map((ticket) => {
+        const createdAtMs = new Date(ticket.createdAt).getTime();
+        const resolvedAtMs = new Date(ticket.resolvedAt || ticket.updatedAt).getTime();
+        if (!Number.isFinite(createdAtMs) || !Number.isFinite(resolvedAtMs) || resolvedAtMs < createdAtMs) return null;
+        return (resolvedAtMs - createdAtMs) / (1000 * 60 * 60);
+      })
+      .filter((value): value is number => typeof value === "number");
+
     return {
       total: filteredTickets.length,
       waitingCustomer: filteredTickets.filter((ticket) => ticket.status === "WAITING_CUSTOMER").length,
@@ -114,6 +141,8 @@ export default function AdminTicketsPage() {
       unassigned: filteredTickets.filter((ticket) => !ticket.assignedTo).length,
       staleOpen: filteredTickets.filter((ticket) => ["OPEN", "IN_PROGRESS"].includes(ticket.status) && ageHours(ticket.updatedAt) >= 24).length,
       oldestHours: filteredTickets.length ? Math.max(...filteredTickets.map((ticket) => ageHours(ticket.updatedAt))) : 0,
+      avgFirstResponseHours: average(firstResponseSamples),
+      avgResolutionHours: average(resolvedSamples),
     };
   }, [filteredTickets]);
 
@@ -225,7 +254,7 @@ export default function AdminTicketsPage() {
         </div>
       </div>
 
-      <div className="mb-4 grid gap-3 md:grid-cols-3">
+      <div className="mb-4 grid gap-3 md:grid-cols-4">
         <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3.5">
           <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Open Queue</p>
           <p className="mt-2 text-xl font-semibold text-white">{filteredTickets.filter((ticket) => ticket.status === "OPEN").length}</p>
@@ -240,6 +269,13 @@ export default function AdminTicketsPage() {
           <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Oldest Ticket Age</p>
           <p className="mt-2 text-xl font-semibold text-rose-300">{queueStats.oldestHours}h</p>
           <p className="mt-1 text-xs text-zinc-500">Longest untouched thread still sitting in the queue.</p>
+        </div>
+        <div className="rounded-2xl border border-emerald-400/15 bg-emerald-500/5 p-3.5">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">SLA (Avg)</p>
+          <p className="mt-2 text-xl font-semibold text-emerald-300">
+            {queueStats.avgFirstResponseHours.toFixed(1)}h / {queueStats.avgResolutionHours.toFixed(1)}h
+          </p>
+          <p className="mt-1 text-xs text-zinc-500">First response and resolution averages.</p>
         </div>
       </div>
 

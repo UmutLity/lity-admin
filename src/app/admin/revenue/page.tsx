@@ -96,9 +96,15 @@ export default function RevenuePage() {
     });
     const thisWeek = validOrders.filter((order) => now.getTime() - new Date(order.createdAt).getTime() <= 7 * 24 * 60 * 60 * 1000);
     const approvedTopups = topups.filter((row) => row.status === "APPROVED");
+    const grossRevenue = validOrders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0);
+    const totalDiscount = validOrders.reduce((sum, order) => sum + Number(order.discountAmount || 0), 0);
+    const netRevenue = Math.max(0, grossRevenue - totalDiscount);
+    const discountedOrderCount = validOrders.filter((order) => Number(order.discountAmount || 0) > 0).length;
 
     return {
-      totalRevenue: validOrders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0),
+      totalRevenue: grossRevenue,
+      netRevenue,
+      totalDiscount,
       monthlyRevenue: thisMonth.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0),
       weeklyRevenue: thisWeek.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0),
       totalOrders: validOrders.length,
@@ -106,6 +112,7 @@ export default function RevenuePage() {
         ? validOrders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0) / validOrders.length
         : 0,
       approvedTopupVolume: approvedTopups.reduce((sum, row) => sum + Number(row.amount || 0), 0),
+      discountedOrderRate: validOrders.length ? (discountedOrderCount / validOrders.length) * 100 : 0,
     };
   }, [orders, topups]);
 
@@ -211,9 +218,10 @@ export default function RevenuePage() {
     <div className="space-y-6">
       <Topbar title="Revenue & Sales" description="Live revenue analytics, top customers, and sales performance." />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
         {[
           { label: "Total Revenue", value: formatCurrency(metrics.totalRevenue), sub: "All completed orders", icon: DollarSign, tone: "text-emerald-300" },
+          { label: "Net Revenue", value: formatCurrency(metrics.netRevenue), sub: "After discounts", icon: Wallet, tone: "text-green-300" },
           { label: "Monthly Revenue", value: formatCurrency(metrics.monthlyRevenue), sub: "Current calendar month", icon: TrendingUp, tone: "text-violet-300" },
           { label: "Weekly Revenue", value: formatCurrency(metrics.weeklyRevenue), sub: "Last 7 days", icon: ArrowUpRight, tone: "text-sky-300" },
           { label: "Orders", value: String(metrics.totalOrders), sub: "Non-canceled orders", icon: ShoppingCart, tone: "text-zinc-100" },
@@ -228,6 +236,19 @@ export default function RevenuePage() {
             <p className="mt-2 text-sm text-zinc-500">{card.sub}</p>
           </div>
         ))}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
+          <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Discount Impact</p>
+          <p className="mt-2 text-2xl font-semibold text-rose-300">{formatCurrency(metrics.totalDiscount)}</p>
+          <p className="mt-1 text-xs text-zinc-500">Total discounts applied to completed orders.</p>
+        </div>
+        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
+          <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">Discounted Order Rate</p>
+          <p className="mt-2 text-2xl font-semibold text-violet-200">{metrics.discountedOrderRate.toFixed(1)}%</p>
+          <p className="mt-1 text-xs text-zinc-500">Share of orders that used a discount.</p>
+        </div>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">

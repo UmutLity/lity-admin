@@ -88,7 +88,11 @@ export default function InsightsPage() {
       const res = await fetch("/api/admin/insights", { credentials: "include" });
       const json = await res.json();
       if (json.success && json.data) {
-        setData(json.data);
+        if (Array.isArray(json.data)) {
+          setData({ insights: json.data, weeklySummary: {} });
+        } else {
+          setData(json.data);
+        }
       }
     } catch (err) {
       console.error("Failed to fetch insights:", err);
@@ -127,7 +131,7 @@ export default function InsightsPage() {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ insightId }),
+        body: JSON.stringify({ id: insightId }),
       });
       if (res.ok) {
         await fetchInsights();

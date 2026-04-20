@@ -25,7 +25,21 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({ success: true, data: insights });
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const weeklyRows = await prisma.insightEvent.groupBy({
+      by: ["type"],
+      where: {
+        ...where,
+        createdAt: { gte: sevenDaysAgo },
+      },
+      _count: { id: true },
+    });
+    const weeklySummary = weeklyRows.reduce((acc, row) => {
+      acc[row.type] = row._count.id;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return NextResponse.json({ success: true, data: { insights, weeklySummary } });
   } catch (error: unknown) {
     const err = error as Error;
     if (err.message === "Unauthorized")
@@ -243,7 +257,7 @@ export async function PATCH(req: NextRequest) {
     await requireRole(["ADMIN"]);
 
     const body = await req.json();
-    const { id } = body;
+    const id = body?.id || body?.insightId;
 
     if (!id) {
       return NextResponse.json({ success: false, error: "id is required" }, { status: 400 });

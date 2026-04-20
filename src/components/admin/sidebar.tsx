@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { signOut, useSession } from "next-auth/react";
 import {
+  BarChart3,
   Bell,
   BookOpen,
   ChevronDown,
@@ -39,17 +40,20 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useAdminI18n } from "@/lib/admin-i18n";
 
 type Role = "FOUNDER" | "ADMIN" | "EDITOR" | "VIEWER" | "MODERATOR" | "SUPPORT" | "ANALYST" | "MEDIA";
 
 interface NavGroup {
   title: string;
+  titleKey: string;
   items: NavItem[];
 }
 
 interface NavItem {
   href: string;
   label: string;
+  labelKey: string;
   icon: any;
   roles: Role[];
 }
@@ -57,39 +61,53 @@ interface NavItem {
 const navGroups: NavGroup[] = [
   {
     title: "Overview",
+    titleKey: "sidebar.group.overview",
     items: [
-      { href: "/admin", label: "Dashboard", icon: LayoutDashboard, roles: ["FOUNDER", "ADMIN", "MODERATOR", "SUPPORT", "EDITOR", "VIEWER", "ANALYST"] },
-      { href: "/admin/orders", label: "Orders", icon: ShoppingCart, roles: ["FOUNDER", "ADMIN", "MODERATOR", "SUPPORT"] },
-      { href: "/admin/pending-deliveries", label: "Pending Deliveries", icon: Truck, roles: ["FOUNDER", "ADMIN", "MODERATOR", "SUPPORT"] },
-      { href: "/admin/tickets", label: "Tickets", icon: Ticket, roles: ["FOUNDER", "ADMIN", "MODERATOR", "SUPPORT", "EDITOR"] },
-      { href: "/admin/users", label: "Users", icon: Users, roles: ["FOUNDER", "ADMIN"] },
-      { href: "/admin/security", label: "Security Center", icon: Shield, roles: ["FOUNDER", "ADMIN"] },
-      { href: "/admin/security/sessions", label: "Sessions", icon: UserRoundCog, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin", label: "Dashboard", labelKey: "sidebar.dashboard", icon: LayoutDashboard, roles: ["FOUNDER", "ADMIN", "MODERATOR", "SUPPORT", "EDITOR", "VIEWER", "ANALYST"] },
+      { href: "/admin/analytics", label: "Analytics", labelKey: "sidebar.analytics", icon: BarChart3, roles: ["FOUNDER", "ADMIN", "ANALYST"] },
+      { href: "/admin/executive", label: "Executive", labelKey: "sidebar.executive", icon: Landmark, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/orders", label: "Orders", labelKey: "sidebar.orders", icon: ShoppingCart, roles: ["FOUNDER", "ADMIN", "MODERATOR", "SUPPORT"] },
+      { href: "/admin/pending-deliveries", label: "Pending Deliveries", labelKey: "sidebar.pendingDeliveries", icon: Truck, roles: ["FOUNDER", "ADMIN", "MODERATOR", "SUPPORT"] },
+      { href: "/admin/tickets", label: "Tickets", labelKey: "sidebar.tickets", icon: Ticket, roles: ["FOUNDER", "ADMIN", "MODERATOR", "SUPPORT", "EDITOR"] },
+      { href: "/admin/users", label: "Users", labelKey: "sidebar.users", icon: Users, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/security", label: "Security Center", labelKey: "sidebar.security", icon: Shield, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/security/sessions", label: "Sessions", labelKey: "sidebar.sessions", icon: UserRoundCog, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/roles", label: "Roles", labelKey: "sidebar.roles", icon: UserRoundCog, roles: ["FOUNDER", "ADMIN"] },
     ],
   },
   {
     title: "Commerce",
+    titleKey: "sidebar.group.commerce",
     items: [
-      { href: "/admin/products", label: "Products", icon: Package, roles: ["FOUNDER", "ADMIN", "EDITOR"] },
-      { href: "/admin/licenses", label: "Licenses", icon: Download, roles: ["FOUNDER", "ADMIN", "MODERATOR"] },
-      { href: "/admin/revenue", label: "Payments", icon: Wallet, roles: ["FOUNDER", "ADMIN"] },
-      { href: "/admin/topups", label: "Top-up Requests", icon: Landmark, roles: ["FOUNDER", "ADMIN", "SUPPORT"] },
-      { href: "/admin/coupons", label: "Coupons", icon: TicketPercent, roles: ["FOUNDER", "ADMIN"] },
-      { href: "/admin/reviews", label: "Reviews", icon: MessageSquare, roles: ["FOUNDER", "ADMIN", "EDITOR"] },
+      { href: "/admin/products", label: "Products", labelKey: "sidebar.products", icon: Package, roles: ["FOUNDER", "ADMIN", "EDITOR"] },
+      { href: "/admin/categories", label: "Categories", labelKey: "sidebar.categories", icon: Package, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/licenses", label: "Licenses", labelKey: "sidebar.licenses", icon: Download, roles: ["FOUNDER", "ADMIN", "MODERATOR"] },
+      { href: "/admin/revenue", label: "Payments", labelKey: "sidebar.payments", icon: Wallet, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/topups", label: "Top-up Requests", labelKey: "sidebar.topups", icon: Landmark, roles: ["FOUNDER", "ADMIN", "SUPPORT"] },
+      { href: "/admin/coupons", label: "Coupons", labelKey: "sidebar.coupons", icon: TicketPercent, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/resellers", label: "Resellers", labelKey: "sidebar.resellers", icon: Users, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/reviews", label: "Reviews", labelKey: "sidebar.reviews", icon: MessageSquare, roles: ["FOUNDER", "ADMIN", "EDITOR"] },
     ],
   },
   {
     title: "Content",
+    titleKey: "sidebar.group.content",
     items: [
-      { href: "/admin/changelog", label: "Changelogs", icon: FileText, roles: ["FOUNDER", "ADMIN", "EDITOR"] },
-      { href: "/admin/guides", label: "Guides", icon: BookOpen, roles: ["FOUNDER", "ADMIN", "EDITOR"] },
-      { href: "/admin/blog", label: "Blog", icon: Newspaper, roles: ["FOUNDER", "ADMIN", "EDITOR"] },
-      { href: "/admin/media", label: "Media", icon: MessageSquare, roles: ["FOUNDER", "ADMIN", "MEDIA"] },
-      { href: "/admin/cover-generator", label: "Cover Generator", icon: ImagePlus, roles: ["FOUNDER", "ADMIN", "EDITOR", "MEDIA"] },
-      { href: "/admin/webhooks", label: "Webhook Center", icon: Webhook, roles: ["FOUNDER", "ADMIN", "SUPPORT", "EDITOR"] },
-      { href: "/admin/logs", label: "Logs", icon: ClipboardList, roles: ["FOUNDER", "ADMIN"] },
-      { href: "/admin/audit", label: "Audit Log", icon: Shield, roles: ["FOUNDER", "ADMIN"] },
-      { href: "/admin/settings", label: "Settings", icon: Settings, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/changelog", label: "Changelogs", labelKey: "sidebar.changelogs", icon: FileText, roles: ["FOUNDER", "ADMIN", "EDITOR"] },
+      { href: "/admin/guides", label: "Guides", labelKey: "sidebar.guides", icon: BookOpen, roles: ["FOUNDER", "ADMIN", "EDITOR"] },
+      { href: "/admin/blog", label: "Blog", labelKey: "sidebar.blog", icon: Newspaper, roles: ["FOUNDER", "ADMIN", "EDITOR"] },
+      { href: "/admin/media", label: "Media", labelKey: "sidebar.media", icon: MessageSquare, roles: ["FOUNDER", "ADMIN", "MEDIA"] },
+      { href: "/admin/cover-generator", label: "Cover Generator", labelKey: "sidebar.coverGenerator", icon: ImagePlus, roles: ["FOUNDER", "ADMIN", "EDITOR", "MEDIA"] },
+      { href: "/admin/notifications", label: "Notifications", labelKey: "sidebar.notifications", icon: Bell, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/webhooks", label: "Webhook Center", labelKey: "sidebar.webhooks", icon: Webhook, roles: ["FOUNDER", "ADMIN", "SUPPORT", "EDITOR"] },
+      { href: "/admin/insights", label: "Insights", labelKey: "sidebar.insights", icon: BarChart3, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/timeline", label: "Timeline", labelKey: "sidebar.timeline", icon: ClipboardList, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/performance", label: "Performance", labelKey: "sidebar.performance", icon: BarChart3, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/seo", label: "SEO", labelKey: "sidebar.seo", icon: Search, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/system", label: "System", labelKey: "sidebar.system", icon: Settings, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/logs", label: "Logs", labelKey: "sidebar.logs", icon: ClipboardList, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/audit", label: "Audit Log", labelKey: "sidebar.audit", icon: Shield, roles: ["FOUNDER", "ADMIN"] },
+      { href: "/admin/settings", label: "Settings", labelKey: "sidebar.settings", icon: Settings, roles: ["FOUNDER", "ADMIN"] },
     ],
   },
 ];
@@ -122,6 +140,7 @@ export function Sidebar() {
   const router = useRouter();
   const { data: session, update } = useSession();
   const { collapsed, setCollapsed } = useSidebar();
+  const { t } = useAdminI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -208,7 +227,7 @@ export function Sidebar() {
       <Link
         key={item.href}
         href={item.href}
-        title={collapsed ? item.label : undefined}
+        title={collapsed ? t(item.labelKey, item.label) : undefined}
         className={cn(
           "flex h-8 w-full items-center rounded-lg px-2 text-xs font-medium transition-all",
           active
@@ -218,7 +237,7 @@ export function Sidebar() {
         )}
       >
         <item.icon className={cn("h-3.5 w-3.5 flex-shrink-0", !collapsed && "mr-2")} />
-        {!collapsed ? <span className="truncate">{item.label}</span> : null}
+        {!collapsed ? <span className="truncate">{t(item.labelKey, item.label)}</span> : null}
       </Link>
     );
   };
@@ -244,7 +263,7 @@ export function Sidebar() {
         </div>
         {!collapsed ? (
           <>
-            <span className="ml-2.5 flex-1 text-left">Notifications</span>
+            <span className="ml-2.5 flex-1 text-left">{t("header.notifications", "Notifications")}</span>
             <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold text-zinc-300">{unreadCount}</span>
           </>
         ) : null}
@@ -256,7 +275,7 @@ export function Sidebar() {
             <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
               <div className="flex items-center gap-2">
                 <Bell className="h-4 w-4 text-[#b9accf]" />
-                <span className="text-sm font-semibold text-white">Notifications</span>
+                <span className="text-sm font-semibold text-white">{t("header.notifications", "Notifications")}</span>
               </div>
               <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-zinc-500 hover:bg-white/[0.05] hover:text-white" onClick={() => setNotifOpen(false)}>
                 <X className="h-4 w-4" />
@@ -279,7 +298,7 @@ export function Sidebar() {
               ) : (
                 <div className="flex min-h-[160px] flex-col items-center justify-center text-center text-zinc-500">
                   <Bell className="mb-3 h-8 w-8 text-zinc-700" />
-                  <p className="text-sm">No notifications yet</p>
+                  <p className="text-sm">{t("header.noNotifications", "No notifications")}</p>
                 </div>
               )}
             </div>
@@ -335,11 +354,11 @@ export function Sidebar() {
               <DropdownMenuContent align="end" className="w-40 border-white/[0.08] bg-[#11131a]/95 text-zinc-200 backdrop-blur-xl">
                 <DropdownMenuItem className="cursor-pointer focus:bg-white/[0.05]" onClick={() => router.push("/admin/settings")}>
                   <UserRoundCog className="mr-2 h-4 w-4" />
-                  Profile
+                  {t("header.settings", "Settings")}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer focus:bg-white/[0.05]" onClick={() => signOut({ callbackUrl: "/admin/login" })}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  Logout
+                  {t("header.logout", "Logout")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -399,7 +418,7 @@ export function Sidebar() {
         <div className="space-y-4">
           {filteredGroups.map((group) => (
             <div key={group.title}>
-              {!collapsed ? <p className="mb-1 px-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-zinc-500">{group.title}</p> : null}
+              {!collapsed ? <p className="mb-1 px-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-zinc-500">{t(group.titleKey, group.title)}</p> : null}
               <div className="space-y-1">{group.items.map(renderNavItem)}</div>
             </div>
           ))}
