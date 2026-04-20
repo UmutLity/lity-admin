@@ -17,7 +17,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { useAdminI18n } from "@/lib/admin-i18n";
 
 interface TopbarProps {
   title: string;
@@ -28,7 +27,6 @@ interface TopbarProps {
 export function Topbar({ title, description, children }: TopbarProps) {
   const { data: session } = useSession();
   const role = (session?.user as any)?.role;
-  const { t } = useAdminI18n();
 
   return (
     <div className="ui-fade-up mb-4">
@@ -59,7 +57,7 @@ export function Topbar({ title, description, children }: TopbarProps) {
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-200">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
-              {t("header.live", "Live")}
+              Live
             </span>
             <div className="shrink-0">{children}</div>
           </div>
@@ -72,7 +70,6 @@ export function Topbar({ title, description, children }: TopbarProps) {
 export function AdminHeader() {
   const { data: session } = useSession();
   const router = useRouter();
-  const { lang, setLang, t } = useAdminI18n();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -108,33 +105,33 @@ export function AdminHeader() {
 
   const searchRoutes = useMemo(
     () => [
-      { label: t("sidebar.dashboard", "Dashboard"), path: "/admin", keywords: "overview home stats" },
-      { label: t("sidebar.analytics", "Analytics"), path: "/admin/analytics", keywords: "analytics charts funnels sessions traffic" },
-      { label: t("sidebar.executive", "Executive"), path: "/admin/executive", keywords: "executive strategic summary" },
-      { label: t("sidebar.products", "Products"), path: "/admin/products", keywords: "products catalog store" },
-      { label: t("sidebar.categories", "Categories"), path: "/admin/categories", keywords: "categories tags grouping" },
-      { label: t("sidebar.orders", "Orders"), path: "/admin/orders", keywords: "orders purchases delivery" },
-      { label: t("sidebar.pendingDeliveries", "Pending Deliveries"), path: "/admin/pending-deliveries", keywords: "manual delivery pending" },
-      { label: t("sidebar.users", "Users"), path: "/admin/users", keywords: "customers members customer 360 profile" },
-      { label: t("sidebar.tickets", "Tickets"), path: "/admin/tickets", keywords: "support replies sla" },
-      { label: t("sidebar.licenses", "Licenses"), path: "/admin/licenses", keywords: "keys plans" },
-      { label: t("sidebar.topups", "Top-up Requests"), path: "/admin/topups", keywords: "balance topup payments" },
-      { label: t("sidebar.coupons", "Coupons"), path: "/admin/coupons", keywords: "discount promos" },
-      { label: t("sidebar.reviews", "Reviews"), path: "/admin/reviews", keywords: "feedback ratings" },
-      { label: t("sidebar.media", "Media"), path: "/admin/media", keywords: "videos gallery creator uploads" },
-      { label: t("sidebar.coverGenerator", "Cover Generator"), path: "/admin/cover-generator", keywords: "cover generator design editor template export banner" },
-      { label: t("sidebar.blog", "Blog"), path: "/admin/blog", keywords: "articles content" },
-      { label: t("sidebar.changelogs", "Changelogs"), path: "/admin/changelog", keywords: "release updates notes" },
-      { label: t("sidebar.notifications", "Notifications"), path: "/admin/notifications", keywords: "notification alerts system" },
-      { label: t("sidebar.webhooks", "Webhook Center"), path: "/admin/webhooks", keywords: "webhook retries queue" },
-      { label: t("sidebar.insights", "Insights"), path: "/admin/insights", keywords: "anomaly insight detections" },
-      { label: t("sidebar.timeline", "Timeline"), path: "/admin/timeline", keywords: "timeline activity audit events" },
-      { label: t("sidebar.performance", "Performance"), path: "/admin/performance", keywords: "latency speed performance" },
-      { label: t("sidebar.seo", "SEO"), path: "/admin/seo", keywords: "seo metadata indexing" },
-      { label: t("sidebar.system", "System"), path: "/admin/system", keywords: "system status health" },
-      { label: t("sidebar.settings", "Settings"), path: "/admin/settings", keywords: "configuration site settings" },
+      { label: "Dashboard", path: "/admin", keywords: "overview home stats" },
+      { label: "Analytics", path: "/admin/analytics", keywords: "analytics charts funnels sessions traffic" },
+      { label: "Executive", path: "/admin/executive", keywords: "executive strategic summary" },
+      { label: "Products", path: "/admin/products", keywords: "products catalog store" },
+      { label: "Categories", path: "/admin/categories", keywords: "categories tags grouping" },
+      { label: "Orders", path: "/admin/orders", keywords: "orders purchases delivery" },
+      { label: "Pending Deliveries", path: "/admin/pending-deliveries", keywords: "manual delivery pending" },
+      { label: "Users", path: "/admin/users", keywords: "customers members customer 360 profile" },
+      { label: "Tickets", path: "/admin/tickets", keywords: "support replies sla" },
+      { label: "Licenses", path: "/admin/licenses", keywords: "keys plans" },
+      { label: "Top-up Requests", path: "/admin/topups", keywords: "balance topup payments" },
+      { label: "Coupons", path: "/admin/coupons", keywords: "discount promos" },
+      { label: "Reviews", path: "/admin/reviews", keywords: "feedback ratings" },
+      { label: "Media", path: "/admin/media", keywords: "videos gallery creator uploads" },
+      { label: "Cover Generator", path: "/admin/cover-generator", keywords: "cover generator design editor template export banner" },
+      { label: "Blog", path: "/admin/blog", keywords: "articles content" },
+      { label: "Changelogs", path: "/admin/changelog", keywords: "release updates notes" },
+      { label: "Notifications", path: "/admin/notifications", keywords: "notification alerts system" },
+      { label: "Webhook Center", path: "/admin/webhooks", keywords: "webhook retries queue" },
+      { label: "Insights", path: "/admin/insights", keywords: "anomaly insight detections" },
+      { label: "Timeline", path: "/admin/timeline", keywords: "timeline activity audit events" },
+      { label: "Performance", path: "/admin/performance", keywords: "latency speed performance" },
+      { label: "SEO", path: "/admin/seo", keywords: "seo metadata indexing" },
+      { label: "System", path: "/admin/system", keywords: "system status health" },
+      { label: "Settings", path: "/admin/settings", keywords: "configuration site settings" },
     ],
-    [t]
+    []
   );
 
   const filteredRoutes = searchQuery.trim()
@@ -158,7 +155,7 @@ export function AdminHeader() {
               }}
               onFocus={() => setSearchOpen(true)}
               onBlur={() => setTimeout(() => setSearchOpen(false), 200)}
-              placeholder={t("header.searchPlaceholder", "Search pages, tools, and admin sections...")}
+              placeholder="Search pages, tools, and admin sections..."
               className="h-10 rounded-2xl border-white/[0.08] bg-white/[0.03] pl-10 pr-10 text-sm text-zinc-200 placeholder:text-zinc-500 focus-visible:ring-0 sm:h-11 sm:pr-14"
             />
             <div className="absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2 py-1 text-[10px] text-zinc-500 sm:flex">
@@ -190,21 +187,6 @@ export function AdminHeader() {
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="hidden items-center gap-1 rounded-xl border border-white/[0.08] bg-white/[0.03] p-1 sm:flex">
-            {(["en", "tr"] as const).map((code) => (
-              <button
-                key={code}
-                type="button"
-                onClick={() => setLang(code)}
-                className={cn(
-                  "rounded-lg px-2 py-1 text-[11px] font-semibold uppercase transition",
-                  lang === code ? "bg-[#a996c4]/25 text-white" : "text-zinc-400 hover:text-zinc-200"
-                )}
-              >
-                {t(`lang.${code}`, code.toUpperCase())}
-              </button>
-            ))}
-          </div>
           <div ref={notifRef} className="relative">
             <Button
               variant="ghost"
@@ -220,8 +202,8 @@ export function AdminHeader() {
               <Card className="ui-fade-in absolute right-0 top-full mt-2 w-[88vw] max-w-80 border-white/[0.08] bg-[#11131a]/95 shadow-2xl shadow-black/35">
                 <CardContent className="p-3">
                   <div className="mb-3 flex items-center justify-between">
-                    <p className="text-sm font-semibold text-white">{t("header.notifications", "Notifications")}</p>
-                    {unreadCount > 0 ? <Badge className="border-[#b9accf]/30 bg-[#a996c4]/12 text-[#e0d7ef]">{unreadCount} {t("header.new", "new")}</Badge> : null}
+                    <p className="text-sm font-semibold text-white">Notifications</p>
+                    {unreadCount > 0 ? <Badge className="border-[#b9accf]/30 bg-[#a996c4]/12 text-[#e0d7ef]">{unreadCount} new</Badge> : null}
                   </div>
                   <div className="space-y-2">
                     {notifications.length ? (
@@ -238,7 +220,7 @@ export function AdminHeader() {
                         </div>
                       ))
                     ) : (
-                      <div className="py-10 text-center text-sm text-zinc-500">{t("header.noNotifications", "No notifications")}</div>
+                      <div className="py-10 text-center text-sm text-zinc-500">No notifications</div>
                     )}
                   </div>
                 </CardContent>
@@ -274,10 +256,10 @@ export function AdminHeader() {
                 <p className="truncate text-xs text-zinc-500">{session?.user?.email}</p>
               </div>
               <DropdownMenuItem className="cursor-pointer focus:bg-white/[0.05]" onClick={() => router.push("/admin/settings")}>
-                <Settings className="mr-2 h-4 w-4" /> {t("header.settings", "Settings")}
+                <Settings className="mr-2 h-4 w-4" /> Settings
               </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer text-[#e0d7ef] focus:bg-[#a996c4]/10 focus:text-white" onClick={() => signOut({ callbackUrl: "/admin/login" })}>
-                <LogOut className="mr-2 h-4 w-4" /> {t("header.logout", "Logout")}
+                <LogOut className="mr-2 h-4 w-4" /> Logout
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
