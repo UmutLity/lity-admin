@@ -710,6 +710,20 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
                   ))}
                 </div>
               </div>
+
+              <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-3">
+                <label className="inline-flex items-center gap-2 text-sm text-zinc-200">
+                  <input
+                    type="checkbox"
+                    checked={!!form.isFeatured}
+                    onChange={(event) => updateField("isFeatured", event.target.checked)}
+                  />
+                  Set as featured product
+                </label>
+                <p className="mt-1 text-xs text-zinc-500">
+                  Only one product can be featured. Enabling this will automatically remove featured status from others.
+                </p>
+              </div>
             </div>
           )}
 
