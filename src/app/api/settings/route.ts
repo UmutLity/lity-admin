@@ -6,14 +6,9 @@ export const dynamic = "force-dynamic";
 // GET /api/settings - Public: site ayarları
 export async function GET() {
   try {
-    // Check public API pause
+    // Read pause flag but do not hard-fail this endpoint.
+    // Frontend maintenance guard depends on /api/settings to render maintenance screen.
     const apiPause = await prisma.siteSetting.findUnique({ where: { key: "public_api_pause" } });
-    if (apiPause?.value === "true") {
-      return NextResponse.json(
-        { success: false, error: "Service temporarily unavailable. Please try again later." },
-        { status: 503 }
-      );
-    }
 
     // Check maintenance mode
     const maintenance = await prisma.siteSetting.findUnique({ where: { key: "maintenance_mode" } });
@@ -24,6 +19,10 @@ export async function GET() {
       // Don't expose sensitive settings publicly
       if (s.group === "security" || s.key.includes("webhook_url") || s.key.includes("secret") || s.key.includes("last_test")) continue;
       data[s.key] = s.value;
+    }
+
+    if (apiPause?.value === "true") {
+      data.public_api_pause = "true";
     }
 
     // Add maintenance flag
