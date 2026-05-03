@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { signOut, useSession } from "next-auth/react";
 import {
   BarChart3,
@@ -108,7 +108,7 @@ const navGroups: NavGroup[] = [
 
 export const SidebarContext = createContext<{ collapsed: boolean; setCollapsed: (v: boolean) => void }>({
   collapsed: false,
-  setCollapsed: () => {},
+  setCollapsed: () => { },
 });
 
 export function useSidebar() {
@@ -116,7 +116,34 @@ export function useSidebar() {
 }
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsedRaw] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return localStorage.getItem("lity-sidebar-collapsed") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const setCollapsed = useCallback((v: boolean) => {
+    setCollapsedRaw(v);
+    try {
+      localStorage.setItem("lity-sidebar-collapsed", String(v));
+    } catch {}
+  }, []);
+
+  // Ctrl+B keyboard shortcut
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "b") {
+        e.preventDefault();
+        setCollapsed(!collapsed);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [collapsed, setCollapsed]);
+
   return <SidebarContext.Provider value={{ collapsed, setCollapsed }}>{children}</SidebarContext.Provider>;
 }
 
@@ -164,7 +191,7 @@ export function Sidebar() {
           setUnreadCount(Number(data.unreadCount || 0));
           setNotifications(Array.isArray(data.data) ? data.data : []);
         }
-      } catch {}
+      } catch { }
     };
     fetchUnread();
     const interval = setInterval(fetchUnread, 30000);
@@ -390,74 +417,86 @@ export function Sidebar() {
         </Link>
 
         {!collapsed ? (
-          <Button variant="ghost" size="icon" className="hidden h-9 w-9 rounded-xl text-zinc-500 hover:bg-white/[0.05] hover:text-white lg:flex" onClick={() => setCollapsed(true)}>
-            <PanelLeft className="h-4 w-4" />
-          </Button>
-        ) : null}
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-2 py-2.5">
-        {!collapsed ? (
-          <Card className="mb-3 border-white/[0.06] bg-white/[0.025] shadow-none">
-            <CardContent className="p-2">
-              <div className="flex items-center gap-2 text-xs text-zinc-400">
-                <Search className="h-3.5 w-3.5 text-zinc-500" />
-                <span>Use the top search to jump fast</span>
-              </div>
-            </CardContent>
-          </Card>
-        ) : null}
-
-        <div className="space-y-4">
-          {filteredGroups.map((group) => (
-            <div key={group.title}>
-              {!collapsed ? <p className="mb-1 px-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-zinc-500">{group.title}</p> : null}
-              <div className="space-y-1">{group.items.map(renderNavItem)}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="border-t border-white/[0.06] p-2">
-        <div className="space-y-2">
-          {notificationsPanel}
-          {userCard}
-          {collapsed ? (
-            <Button variant="ghost" size="icon" className="hidden h-10 w-full rounded-xl border border-white/[0.06] text-zinc-400 hover:bg-white/[0.05] hover:text-white lg:flex" onClick={() => setCollapsed(false)}>
-              <Menu className="h-4 w-4" />
+          <Button
+              variant="ghost"
+              size="icon"
+              title="Collapse sidebar (Ctrl+B)"
+              className="hidden h-9 w-9 rounded-xl text-zinc-500 hover:bg-white/[0.05] hover:text-white lg:flex"
+              onClick={() => setCollapsed(true)}
+            >
+              <PanelLeft className="h-4 w-4" />
             </Button>
+        ) : null}
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-2 py-2.5">
+            {!collapsed ? (
+              <Card className="mb-3 border-white/[0.06] bg-white/[0.025] shadow-none">
+                <CardContent className="p-2">
+                  <div className="flex items-center gap-2 text-xs text-zinc-400">
+                    <Search className="h-3.5 w-3.5 text-zinc-500" />
+                    <span>Use the top search to jump fast</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            <div className="space-y-4">
+              {filteredGroups.map((group) => (
+                <div key={group.title}>
+                  {!collapsed ? <p className="mb-1 px-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-zinc-500">{group.title}</p> : null}
+                  <div className="space-y-1">{group.items.map(renderNavItem)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t border-white/[0.06] p-2">
+            <div className="space-y-2">
+              {notificationsPanel}
+              {userCard}
+              {collapsed ? (
+            <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Expand sidebar (Ctrl+B)"
+                    className="hidden h-10 w-full rounded-xl border border-white/[0.06] text-zinc-400 transition-all hover:border-[#b9accf]/25 hover:bg-[#a996c4]/[0.08] hover:text-white lg:flex"
+                    onClick={() => setCollapsed(false)}
+                  >
+                    <Menu className="h-4 w-4" />
+                  </Button>
           ) : null}
-        </div>
+                </div>
       </div>
-    </div>
-  );
+          </div>
+        );
 
-  return (
-    <>
-      {mobileOpen ? <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} /> : null}
+        return (
+        <>
+          {mobileOpen ? <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} /> : null}
 
-      <aside
-        className={cn(
-          "fixed left-0 top-0 z-[70] flex h-full flex-col border-r border-white/[0.06] bg-[#111214]/95 backdrop-blur-2xl transition-all duration-300",
-          collapsed ? "w-[80px]" : "w-[258px]",
-          mobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full",
-          "max-lg:w-[258px] max-lg:shadow-2xl max-lg:shadow-black/50"
-        )}
-      >
-        {sidebarContent}
-      </aside>
+          <aside
+            className={cn(
+              "fixed left-0 top-0 z-[70] flex h-full flex-col border-r border-white/[0.06] bg-[#111214]/95 backdrop-blur-2xl transition-all duration-300",
+              collapsed ? "w-[80px]" : "w-[258px]",
+              mobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full",
+              "max-lg:w-[258px] max-lg:shadow-2xl max-lg:shadow-black/50"
+            )}
+          >
+            {sidebarContent}
+          </aside>
 
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => setMobileOpen(true)}
-        className={cn(
-          "fixed left-4 top-[calc(env(safe-area-inset-top,0px)+0.9rem)] z-[80] h-10 w-10 rounded-xl border-white/[0.08] bg-[#1a1b1f] text-zinc-300 shadow-lg lg:hidden",
-          mobileOpen && "pointer-events-none opacity-0"
-        )}
-      >
-        <Menu className="h-5 w-5" />
-      </Button>
-    </>
-  );
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setMobileOpen(true)}
+            className={cn(
+              "fixed left-4 top-[calc(env(safe-area-inset-top,0px)+0.9rem)] z-[80] h-10 w-10 rounded-xl border-white/[0.08] bg-[#1a1b1f] text-zinc-300 shadow-lg lg:hidden",
+              mobileOpen && "pointer-events-none opacity-0"
+            )}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        </>
+        );
 }
