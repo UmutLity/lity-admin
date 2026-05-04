@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -8,6 +9,7 @@ export function KpiCard({
   tone = "default",
   detail,
   trend,
+  href,
   onClick,
 }: {
   label: string;
@@ -16,22 +18,21 @@ export function KpiCard({
   tone?: "default" | "green" | "yellow" | "red" | "purple";
   detail?: string;
   trend?: string;
+  href?: string;
   onClick?: () => void;
 }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "admin-card admin-card-interactive min-h-[104px] w-full rounded-2xl p-3 text-left",
-        !onClick && "cursor-default"
-      )}
-    >
+  const className = cn(
+    "admin-card admin-card-interactive group block min-h-[104px] w-full rounded-2xl p-3 text-left outline-none transition focus-visible:ring-2 focus-visible:ring-[#b9accf]/35",
+    !onClick && !href && "cursor-default"
+  );
+
+  const content = (
+    <>
       <div className="flex items-start justify-between gap-2">
-        <span className="text-[10px] uppercase tracking-wide text-zinc-500">{label}</span>
+        <span className="text-[10px] uppercase tracking-wide text-zinc-500 transition group-hover:text-zinc-400">{label}</span>
         <span
           className={cn(
-            "flex h-6 w-6 items-center justify-center rounded-lg border border-white/[0.08]",
+            "flex h-6 w-6 items-center justify-center rounded-lg border border-white/[0.08] transition group-hover:border-white/[0.14]",
             tone === "green" && "bg-emerald-500/10 text-emerald-300",
             tone === "yellow" && "bg-amber-500/10 text-amber-300",
             tone === "red" && "bg-red-500/10 text-red-300",
@@ -60,6 +61,20 @@ export function KpiCard({
           </span>
         ) : null}
       </div>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className={className} aria-label={`Open ${label}`}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" onClick={onClick} className={className}>
+      {content}
     </button>
   );
 }

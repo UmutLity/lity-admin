@@ -378,12 +378,12 @@ export default function DashboardPage() {
 
         <div className="grid gap-4">
           <div className="grid grid-cols-2 gap-4 xl:grid-cols-6">
-            <KpiCard label="Revenue" value={`$${data.totalRevenue.toFixed(2)}`} icon={DollarSign} tone="green" detail={`$${data.todayRevenue.toFixed(2)} today`} trend={`$${data.weekRevenue.toFixed(0)} week`} />
-            <KpiCard label="Orders" value={data.totalOrders} icon={ShoppingCart} tone="green" detail={`${data.todaySales} today`} trend={`${data.weekSales} week`} />
-            <KpiCard label="Tickets" value={data.openTickets} icon={Ticket} tone={data.openTickets > 0 ? "red" : "default"} detail="Open support queue" trend={data.openTickets > 0 ? "needs triage" : "clear"} />
-            <KpiCard label="Pending Payments" value={data.pendingPayments} icon={CreditCard} tone={data.pendingPayments > 0 ? "yellow" : "default"} detail={`$${data.todayDeposits.toFixed(2)} deposits today`} trend={data.pendingPayments ? "review" : "none"} />
-            <KpiCard label="Users" value={data.totalUsers} icon={UserRound} tone="purple" detail={`${data.todayUsers} today`} trend={`${data.weekUsers} week`} />
-            <KpiCard label="Products" value={data.activeProducts} icon={Boxes} tone="purple" detail="Active catalog" trend={data.activeProducts ? "online" : "empty"} />
+            <KpiCard href="/admin/revenue" label="Revenue" value={`$${data.totalRevenue.toFixed(2)}`} icon={DollarSign} tone="green" detail={`$${data.todayRevenue.toFixed(2)} today`} trend={`$${data.weekRevenue.toFixed(0)} week`} />
+            <KpiCard href="/admin/orders" label="Orders" value={data.totalOrders} icon={ShoppingCart} tone="green" detail={`${data.todaySales} today`} trend={`${data.weekSales} week`} />
+            <KpiCard href="/admin/tickets" label="Tickets" value={data.openTickets} icon={Ticket} tone={data.openTickets > 0 ? "red" : "default"} detail="Open support queue" trend={data.openTickets > 0 ? "needs triage" : "clear"} />
+            <KpiCard href="/admin/topups" label="Pending Payments" value={data.pendingPayments} icon={CreditCard} tone={data.pendingPayments > 0 ? "yellow" : "default"} detail={`$${data.todayDeposits.toFixed(2)} deposits today`} trend={data.pendingPayments ? "review" : "none"} />
+            <KpiCard href="/admin/users" label="Users" value={data.totalUsers} icon={UserRound} tone="purple" detail={`${data.todayUsers} today`} trend={`${data.weekUsers} week`} />
+            <KpiCard href="/admin/products" label="Products" value={data.activeProducts} icon={Boxes} tone="purple" detail="Active catalog" trend={data.activeProducts ? "online" : "empty"} />
           </div>
 
           <div className="grid gap-4 xl:grid-cols-2">

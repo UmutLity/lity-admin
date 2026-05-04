@@ -178,7 +178,9 @@ select:focus-visible {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: #111214;
+  background:
+    radial-gradient(circle at 50% -20%, rgba(255, 255, 255, 0.035), transparent 52%),
+    linear-gradient(180deg, #08090d 0%, #06070a 58%, #06070a 100%);
 }
 
 .admin-shell::after {
@@ -186,38 +188,38 @@ select:focus-visible {
 }
 
 .admin-surface {
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 1.25rem;
-  background: rgba(17, 18, 20, 0.92);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.24);
+  background: rgba(12, 13, 17, 0.94);
+  box-shadow: 0 20px 52px rgba(0, 0, 0, 0.3);
 }
 
 .admin-section {
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: var(--radius-xl);
-  background: linear-gradient(180deg, rgba(27, 28, 31, 0.84), rgba(18, 19, 21, 0.9));
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+  background: linear-gradient(180deg, rgba(18, 19, 24, 0.9), rgba(10, 11, 15, 0.96));
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.26);
 }
 
 .ui-surface {
   border: 1px solid var(--stroke-soft);
   border-radius: var(--radius-xl);
-  background: linear-gradient(180deg, rgba(28, 29, 33, 0.9), rgba(19, 20, 23, 0.95));
+  background: linear-gradient(180deg, rgba(18, 19, 24, 0.9), rgba(11, 12, 16, 0.96));
   box-shadow: var(--shadow-soft);
 }
 
 .ui-card {
   border: 1px solid var(--stroke-soft);
   border-radius: var(--radius-xl);
-  background: linear-gradient(180deg, rgba(30, 31, 36, 0.86), rgba(20, 21, 25, 0.94));
+  background: linear-gradient(180deg, rgba(19, 20, 25, 0.88), rgba(11, 12, 16, 0.96));
   box-shadow: var(--shadow-soft);
 }
 
 .admin-card {
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.075);
   border-radius: 1rem;
-  background: linear-gradient(180deg, rgba(34, 35, 39, 0.86), rgba(21, 22, 25, 0.95));
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(180deg, rgba(19, 20, 25, 0.92), rgba(10, 11, 15, 0.97));
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.025);
 }
 
 .admin-card-interactive {
@@ -226,8 +228,9 @@ select:focus-visible {
 
 .admin-card-interactive:hover {
   transform: translateY(-1px);
-  border-color: rgba(255, 255, 255, 0.14);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.28);
+  border-color: rgba(205, 194, 225, 0.16);
+  background: linear-gradient(180deg, rgba(22, 23, 29, 0.96), rgba(12, 13, 18, 0.98));
+  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
 .admin-label {
