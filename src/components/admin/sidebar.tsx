@@ -166,6 +166,14 @@ export function Sidebar() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [notifOpen, setNotifOpen] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      return JSON.parse(localStorage.getItem("lity-sidebar-open-groups") || "{}");
+    } catch {
+      return {};
+    }
+  });
   const notifRef = useRef<HTMLDivElement>(null);
   const userRole = (session?.user as any)?.role as Role | undefined;
   const imageUrl = session?.user?.image || "";
@@ -218,6 +226,21 @@ export function Sidebar() {
         .filter((group) => group.items.length > 0),
     [userRole]
   );
+
+  const isGroupOpen = useCallback(
+    (title: string) => openGroups[title] !== false,
+    [openGroups]
+  );
+
+  const toggleGroup = useCallback((title: string) => {
+    setOpenGroups((prev) => {
+      const next = { ...prev, [title]: prev[title] === false };
+      try {
+        localStorage.setItem("lity-sidebar-open-groups", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
 
   const updateAvatarUrl = async () => {
     const nextUrl = window.prompt("Enter profile photo URL", imageUrl || "");
@@ -437,23 +460,26 @@ export function Sidebar() {
                     <Search className="h-3.5 w-3.5 text-zinc-500" />
                     <span>Use the top search to jump fast</span>
                   </div>
-                  <div className="mt-2 grid grid-cols-3 gap-1.5">
-                    {filteredGroups.map((group) => (
-                      <div key={group.title} className="rounded-lg border border-white/[0.05] bg-white/[0.025] px-2 py-1">
-                        <p className="truncate text-[9px] font-semibold uppercase tracking-[0.14em] text-zinc-500">{group.title}</p>
-                        <p className="mt-0.5 text-sm font-semibold text-zinc-200">{group.items.length}</p>
-                      </div>
-                    ))}
-                  </div>
                 </CardContent>
               </Card>
             ) : null}
 
-            <div className="space-y-4">
+            <div className="space-y-2.5">
               {filteredGroups.map((group) => (
                 <div key={group.title}>
-                  {!collapsed ? <p className="mb-1 px-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-zinc-500">{group.title}</p> : null}
-                  <div className="space-y-1">{group.items.map(renderNavItem)}</div>
+                  {!collapsed ? (
+                    <button
+                      type="button"
+                      className="mb-1 flex h-8 w-full items-center justify-between rounded-lg px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500 transition-colors hover:bg-white/[0.035] hover:text-zinc-300"
+                      onClick={() => toggleGroup(group.title)}
+                    >
+                      <span>{group.title}</span>
+                      <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", !isGroupOpen(group.title) && "-rotate-90")} />
+                    </button>
+                  ) : null}
+                  {(collapsed || isGroupOpen(group.title)) ? (
+                    <div className="space-y-1">{group.items.map(renderNavItem)}</div>
+                  ) : null}
                 </div>
               ))}
             </div>
