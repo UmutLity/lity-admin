@@ -102,7 +102,6 @@ export async function POST(req: NextRequest) {
         password: passwordHash,
         role: "MEMBER",
         isActive: true,
-        ...(referralEnabled && invitedById ? { adminNotes: appendReferrerToNotes(null, invitedById) } : {}),
       },
       select: {
         id: true,
@@ -110,11 +109,20 @@ export async function POST(req: NextRequest) {
         username: true,
         avatar: true,
         role: true,
-        balance: true,
-        totalSpent: true,
         createdAt: true,
       },
     });
+
+    if (referralEnabled && invitedById) {
+      prisma.customer
+        .update({
+          where: { id: customer.id },
+          data: { adminNotes: appendReferrerToNotes(null, invitedById) },
+        })
+        .catch((notesError) => {
+          console.warn("Referral note update failed on customer registration:", notesError);
+        });
+    }
 
     if (referralEnabled && invitedById && invitedById !== customer.id) {
       try {
@@ -194,7 +202,11 @@ export async function POST(req: NextRequest) {
       data: {
         token,
         mustChangePassword: false,
-        user: customer,
+        user: {
+          ...customer,
+          balance: 0,
+          totalSpent: 0,
+        },
       },
     }, { status: 201 });
   } catch (error: any) {
