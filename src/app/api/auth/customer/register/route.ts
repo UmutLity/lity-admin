@@ -77,8 +77,8 @@ export async function POST(req: NextRequest) {
     }
 
     const [existingEmail, existingUsername] = await Promise.all([
-      prisma.customer.findUnique({ where: { email } }),
-      prisma.customer.findUnique({ where: { username } }),
+      prisma.customer.findUnique({ where: { email }, select: { id: true } }),
+      prisma.customer.findUnique({ where: { username }, select: { id: true } }),
     ]);
 
     if (existingEmail) {
