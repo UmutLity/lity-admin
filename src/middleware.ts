@@ -117,11 +117,46 @@ function isBadUserAgent(req: NextRequest): boolean {
   return BAD_USER_AGENTS.some((p) => p.test(ua));
 }
 
+function isSameOriginRequest(req: NextRequest): boolean {
+  const origin = req.headers.get("origin");
+  if (!origin) return true;
+
+  const allowedOrigins = new Set<string>([req.nextUrl.origin]);
+  if (process.env.NEXTAUTH_URL) {
+    try {
+      allowedOrigins.add(new URL(process.env.NEXTAUTH_URL).origin);
+    } catch {}
+  }
+
+  return allowedOrigins.has(origin);
+}
+
 export default withAuth(
   async function middleware(req) {
     const token = req.nextauth.token;
     const pathname = req.nextUrl.pathname;
     const ip = getIp(req);
+
+    if (pathname.startsWith("/api/admin/") && !isSameOriginRequest(req)) {
+      return new NextResponse(
+        JSON.stringify({ error: "Forbidden origin" }),
+        { status: 403, headers: { "Content-Type": "application/json", "Vary": "Origin" } }
+      );
+    }
+
+    if (pathname.startsWith("/api/admin/") && req.method === "OPTIONS") {
+      const origin = req.headers.get("origin") || req.nextUrl.origin;
+      return new NextResponse(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": origin,
+          "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          "Access-Control-Allow-Credentials": "true",
+          "Vary": "Origin",
+        },
+      });
+    }
 
     // ── Block suspicious requests ──
     if (isSuspiciousRequest(req)) {
@@ -238,6 +273,7 @@ export default withAuth(
       authorized: ({ token, req }) => {
         // Allow login page without auth
         if (req.nextUrl.pathname === "/admin/login") return true;
+        if (req.nextUrl.pathname.startsWith("/api/admin/") && req.method === "OPTIONS") return true;
         // Allow public API routes without auth
         if (
           req.nextUrl.pathname.startsWith("/api/products") ||
@@ -247,8 +283,7 @@ export default withAuth(
           req.nextUrl.pathname.startsWith("/api/status") ||
           req.nextUrl.pathname.startsWith("/api/track") ||
           req.nextUrl.pathname.startsWith("/api/categories") ||
-          req.nextUrl.pathname.startsWith("/api/performance") ||
-          req.nextUrl.pathname.startsWith("/api/admin/weekly-report")
+          req.nextUrl.pathname.startsWith("/api/performance")
         ) {
           return true;
         }

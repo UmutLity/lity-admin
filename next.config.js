@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const publicSiteOrigin = process.env.PUBLIC_SITE_ORIGIN || "https://litysoftware.com";
+
 const nextConfig = {
   productionBrowserSourceMaps: false,
   images: {
@@ -57,29 +59,27 @@ const nextConfig = {
       },
 
       // 🌍 PUBLIC API CORS (STATIC SITE için)
-      {
-        source: "/api/:path*",
-        headers: [
-          {
-            key: "Access-Control-Allow-Origin",
-            value: "*",
-          },
-          {
-            key: "Access-Control-Allow-Methods",
-            value: "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-          },
-          {
-            key: "Access-Control-Allow-Headers",
-            value: "Content-Type, Authorization",
-          },
-          {
-            key: "Vary",
-            value: "Origin",
-          },
-        ],
-      },
-
       // 🔐 ADMIN API ekstra koruma
+      ...[
+        "/api/products/:path*",
+        "/api/categories",
+        "/api/settings",
+        "/api/status",
+        "/api/changelog",
+        "/api/blog/:path*",
+        "/api/reviews",
+        "/api/videos/:path*",
+        "/api/weekly-report",
+      ].map((source) => ({
+        source,
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: publicSiteOrigin },
+          { key: "Access-Control-Allow-Methods", value: "GET, OPTIONS" },
+          { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization" },
+          { key: "Vary", value: "Origin" },
+        ],
+      })),
+
       {
         source: "/api/admin/:path*",
         headers: [

@@ -9,8 +9,14 @@ function isSchemaMismatchError(error: unknown) {
 }
 
 function withProductDefaults<T extends Record<string, any>>(product: T) {
+  const {
+    accessRoleKey: _accessRoleKey,
+    defaultLoaderUrl: _defaultLoaderUrl,
+    ...safeProduct
+  } = product;
+
   return {
-    ...product,
+    ...safeProduct,
     stockStatus: product.stockStatus || "IN_STOCK",
     deliveryType: product.deliveryType || "MANUAL",
     estimatedDelivery: product.estimatedDelivery || null,
@@ -65,8 +71,6 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
           isActive: true,
           currency: true,
           buyUrl: true,
-          accessRoleKey: true,
-          defaultLoaderUrl: true,
           sortOrder: true,
           displayOrder: true,
           createdAt: true,
