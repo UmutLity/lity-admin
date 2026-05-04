@@ -1,17 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { verifyCustomerToken, getCustomerTokenFromRequest } from "@/lib/customer-auth";
+import { corsPreflight, publicCorsHeaders } from "@/lib/cors";
 
 export const dynamic = "force-dynamic";
+
+function json(req: NextRequest, body: unknown, init: ResponseInit = {}) {
+  return NextResponse.json(body, {
+    ...init,
+    headers: {
+      ...(publicCorsHeaders(req) || {}),
+      ...(init.headers || {}),
+    },
+  });
+}
+
+export async function OPTIONS(req: NextRequest) {
+  return corsPreflight(req);
+}
 
 // GET /api/auth/customer/cart - Get cart items
 export async function GET(req: NextRequest) {
   try {
     const token = getCustomerTokenFromRequest(req);
-    if (!token) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    if (!token) return json(req, { success: false, error: "Unauthorized" }, { status: 401 });
 
     const payload = verifyCustomerToken(token);
-    if (!payload) return NextResponse.json({ success: false, error: "Invalid token" }, { status: 401 });
+    if (!payload) return json(req, { success: false, error: "Invalid token" }, { status: 401 });
 
     const items = await prisma.cartItem.findMany({
       where: { customerId: payload.id },
@@ -36,9 +51,9 @@ export async function GET(req: NextRequest) {
       return { ...item, price };
     });
 
-    return NextResponse.json({ success: true, data: { items: cartItems, total } });
+    return json(req, { success: true, data: { items: cartItems, total } });
   } catch (error) {
-    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
+    return json(req, { success: false, error: "Server error" }, { status: 500 });
   }
 }
 
@@ -46,27 +61,27 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const token = getCustomerTokenFromRequest(req);
-    if (!token) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    if (!token) return json(req, { success: false, error: "Unauthorized" }, { status: 401 });
 
     const payload = verifyCustomerToken(token);
-    if (!payload) return NextResponse.json({ success: false, error: "Invalid token" }, { status: 401 });
+    if (!payload) return json(req, { success: false, error: "Invalid token" }, { status: 401 });
 
     const body = await req.json();
     const { productId, plan } = body;
 
     if (!productId || !plan) {
-      return NextResponse.json({ success: false, error: "Product ID and plan required" }, { status: 400 });
+      return json(req, { success: false, error: "Product ID and plan required" }, { status: 400 });
     }
 
     // Check product exists
     const product = await prisma.product.findUnique({ where: { id: productId } });
-    if (!product) return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
+    if (!product) return json(req, { success: false, error: "Product not found" }, { status: 404 });
 
     // Check price exists for plan
     const priceExists = await prisma.productPrice.findUnique({
       where: { productId_plan: { productId, plan } },
     });
-    if (!priceExists) return NextResponse.json({ success: false, error: "Plan not available" }, { status: 400 });
+    if (!priceExists) return json(req, { success: false, error: "Plan not available" }, { status: 400 });
 
     // Upsert cart item
     const item = await prisma.cartItem.upsert({
@@ -76,9 +91,9 @@ export async function POST(req: NextRequest) {
       include: { product: { select: { name: true } } },
     });
 
-    return NextResponse.json({ success: true, data: item });
+    return json(req, { success: true, data: item });
   } catch (error) {
-    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
+    return json(req, { success: false, error: "Server error" }, { status: 500 });
   }
 }
 
@@ -86,16 +101,16 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const token = getCustomerTokenFromRequest(req);
-    if (!token) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    if (!token) return json(req, { success: false, error: "Unauthorized" }, { status: 401 });
 
     const payload = verifyCustomerToken(token);
-    if (!payload) return NextResponse.json({ success: false, error: "Invalid token" }, { status: 401 });
+    if (!payload) return json(req, { success: false, error: "Invalid token" }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
     const itemId = searchParams.get("id");
 
     if (!itemId) {
-      return NextResponse.json({ success: false, error: "Item ID required" }, { status: 400 });
+      return json(req, { success: false, error: "Item ID required" }, { status: 400 });
     }
 
     // Make sure the item belongs to this customer
@@ -103,12 +118,12 @@ export async function DELETE(req: NextRequest) {
       where: { id: itemId, customerId: payload.id },
     });
 
-    if (!item) return NextResponse.json({ success: false, error: "Item not found" }, { status: 404 });
+    if (!item) return json(req, { success: false, error: "Item not found" }, { status: 404 });
 
     await prisma.cartItem.delete({ where: { id: itemId } });
 
-    return NextResponse.json({ success: true });
+    return json(req, { success: true });
   } catch (error) {
-    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
+    return json(req, { success: false, error: "Server error" }, { status: 500 });
   }
 }

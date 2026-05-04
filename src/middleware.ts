@@ -1,6 +1,7 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { attachPublicCors, corsPreflight, getAllowedCorsOrigin } from "@/lib/cors";
 
 // ━━━ In-memory rate limiting for middleware ━━━
 const rateLimitMap = new Map<string, { count: number; windowStart: number }>();
@@ -13,6 +14,24 @@ const GLOBAL_WINDOW_MS = 60_000;
 const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL;
 const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 const ADMIN_API_ROLES = new Set(["FOUNDER", "ADMIN", "EDITOR", "MODERATOR", "SUPPORT", "ANALYST", "MEDIA"]);
+const PUBLIC_FRONTEND_API_PREFIXES = [
+  "/api/products",
+  "/api/categories",
+  "/api/settings",
+  "/api/status",
+  "/api/changelog",
+  "/api/blog",
+  "/api/reviews",
+  "/api/videos",
+  "/api/weekly-report",
+  "/api/track",
+  "/api/auth/customer",
+  "/api/licenses/resolve",
+  "/api/notifications",
+  "/api/orders",
+  "/api/support",
+  "/api/topup/request",
+];
 
 function checkRate(key: string, limit: number, windowMs: number): boolean {
   const now = Date.now();
@@ -118,6 +137,10 @@ function isBadUserAgent(req: NextRequest): boolean {
   return BAD_USER_AGENTS.some((p) => p.test(ua));
 }
 
+function isPublicFrontendApi(pathname: string): boolean {
+  return PUBLIC_FRONTEND_API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
 function isSameOriginRequest(req: NextRequest): boolean {
   const origin = req.headers.get("origin");
   if (!origin) return true;
@@ -137,6 +160,18 @@ export default withAuth(
     const token = req.nextauth.token;
     const pathname = req.nextUrl.pathname;
     const ip = getIp(req);
+    const publicFrontendApi = isPublicFrontendApi(pathname);
+
+    if (publicFrontendApi && req.headers.get("origin") && !getAllowedCorsOrigin(req.headers.get("origin"))) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden origin" },
+        { status: 403, headers: { "Vary": "Origin" } }
+      );
+    }
+
+    if (publicFrontendApi && req.method === "OPTIONS") {
+      return corsPreflight(req);
+    }
 
     if (pathname.startsWith("/api/admin/") && !isSameOriginRequest(req)) {
       return new NextResponse(
@@ -283,6 +318,10 @@ export default withAuth(
     response.headers.set("X-Request-Id", crypto.randomUUID());
     response.headers.set("X-Content-Type-Options", "nosniff");
 
+    if (publicFrontendApi) {
+      attachPublicCors(req, response);
+    }
+
     return response;
   },
   {
@@ -293,13 +332,8 @@ export default withAuth(
         if (req.nextUrl.pathname.startsWith("/api/admin/") && req.method === "OPTIONS") return true;
         // Allow public API routes without auth
         if (
-          req.nextUrl.pathname.startsWith("/api/products") ||
-          req.nextUrl.pathname.startsWith("/api/changelog") ||
-          req.nextUrl.pathname.startsWith("/api/settings") ||
+          isPublicFrontendApi(req.nextUrl.pathname) ||
           req.nextUrl.pathname.startsWith("/api/auth") ||
-          req.nextUrl.pathname.startsWith("/api/status") ||
-          req.nextUrl.pathname.startsWith("/api/track") ||
-          req.nextUrl.pathname.startsWith("/api/categories") ||
           req.nextUrl.pathname.startsWith("/api/performance")
         ) {
           return true;
@@ -311,5 +345,30 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*", "/api/auth/:path*"],
+  matcher: [
+    "/admin/:path*",
+    "/api/admin/:path*",
+    "/api/auth/:path*",
+    "/api/products",
+    "/api/products/:path*",
+    "/api/categories",
+    "/api/settings",
+    "/api/status",
+    "/api/changelog",
+    "/api/blog",
+    "/api/blog/:path*",
+    "/api/reviews",
+    "/api/videos",
+    "/api/videos/:path*",
+    "/api/weekly-report",
+    "/api/track",
+    "/api/licenses/resolve",
+    "/api/notifications",
+    "/api/notifications/:path*",
+    "/api/orders",
+    "/api/orders/:path*",
+    "/api/support",
+    "/api/support/:path*",
+    "/api/topup/request",
+  ],
 };

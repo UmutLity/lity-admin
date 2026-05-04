@@ -1,5 +1,4 @@
 /** @type {import('next').NextConfig} */
-const publicSiteOrigin = process.env.PUBLIC_SITE_ORIGIN || "https://litysoftware.com";
 
 const nextConfig = {
   productionBrowserSourceMaps: false,
@@ -57,31 +56,6 @@ const nextConfig = {
           },
         ],
       },
-
-      // 🌍 PUBLIC API CORS (STATIC SITE için)
-      // 🔐 ADMIN API ekstra koruma
-      ...[
-        "/api/products",
-        "/api/products/:path*",
-        "/api/categories",
-        "/api/settings",
-        "/api/status",
-        "/api/changelog",
-        "/api/blog",
-        "/api/blog/:path*",
-        "/api/reviews",
-        "/api/videos",
-        "/api/videos/:path*",
-        "/api/weekly-report",
-      ].map((source) => ({
-        source,
-        headers: [
-          { key: "Access-Control-Allow-Origin", value: publicSiteOrigin },
-          { key: "Access-Control-Allow-Methods", value: "GET, OPTIONS" },
-          { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization" },
-          { key: "Vary", value: "Origin" },
-        ],
-      })),
 
       {
         source: "/api/admin/:path*",

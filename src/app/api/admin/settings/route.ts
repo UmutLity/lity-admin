@@ -92,7 +92,7 @@ const SETTING_DEFAULTS: Record<string, { value: string; type: string; group: str
     label: "Referral Reward (Referrer)",
   },
   site_public_url: {
-    value: "https://litysoftware.com",
+    value: "https://www.litysoftware.com",
     type: "string",
     group: "general",
     label: "Public Site URL",

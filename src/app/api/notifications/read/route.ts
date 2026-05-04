@@ -12,7 +12,7 @@ function corsHeaders(req?: NextRequest) {
     "http://localhost:8080",
     "http://127.0.0.1:8080",
   ]);
-  const allowOrigin = allowed.has(origin) ? origin : "https://litysoftware.com";
+  const allowOrigin = allowed.has(origin) ? origin : "https://www.litysoftware.com";
 
   return {
     "Access-Control-Allow-Origin": allowOrigin,

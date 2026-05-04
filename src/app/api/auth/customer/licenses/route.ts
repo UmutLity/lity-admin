@@ -11,12 +11,13 @@ const claimSchema = z.object({
 
 function buildCorsHeaders(origin: string | null) {
   const allowedOrigins = new Set([
+    "https://www.litysoftware.com",
     "https://litysoftware.com",
     "http://localhost:8080",
     "http://127.0.0.1:8080",
   ]);
 
-  const value = origin && allowedOrigins.has(origin) ? origin : "https://litysoftware.com";
+  const value = origin && allowedOrigins.has(origin) ? origin : "https://www.litysoftware.com";
   return {
     "Access-Control-Allow-Origin": value,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",

@@ -1,19 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { verifyCustomerToken, getCustomerTokenFromRequest } from "@/lib/customer-auth";
+import { corsPreflight, publicCorsHeaders } from "@/lib/cors";
 
 export const dynamic = "force-dynamic";
+
+function json(req: NextRequest, body: unknown, init: ResponseInit = {}) {
+  return NextResponse.json(body, {
+    ...init,
+    headers: {
+      ...(publicCorsHeaders(req) || {}),
+      ...(init.headers || {}),
+    },
+  });
+}
+
+export async function OPTIONS(req: NextRequest) {
+  return corsPreflight(req);
+}
 
 export async function GET(req: NextRequest) {
   try {
     const token = getCustomerTokenFromRequest(req);
     if (!token) {
-      return NextResponse.json({ success: false, error: "Token required" }, { status: 401 });
+      return json(req, { success: false, error: "Token required" }, { status: 401 });
     }
 
     const payload = verifyCustomerToken(token);
     if (!payload) {
-      return NextResponse.json({ success: false, error: "Invalid or expired token" }, { status: 401 });
+      return json(req, { success: false, error: "Invalid or expired token" }, { status: 401 });
     }
 
     const customer = await prisma.customer.findUnique({
@@ -33,16 +48,16 @@ export async function GET(req: NextRequest) {
     });
 
     if (!customer) {
-      return NextResponse.json({ success: false, error: "Account not found" }, { status: 404 });
+      return json(req, { success: false, error: "Account not found" }, { status: 404 });
     }
 
     // Check if banned
     if (customer.role === "BANNED") {
-      return NextResponse.json({ success: false, error: "Your account has been suspended" }, { status: 403 });
+      return json(req, { success: false, error: "Your account has been suspended" }, { status: 403 });
     }
 
     if (!customer.isActive) {
-      return NextResponse.json({ success: false, error: "Your account has been deactivated" }, { status: 403 });
+      return json(req, { success: false, error: "Your account has been deactivated" }, { status: 403 });
     }
 
     let balance = 0;
@@ -100,7 +115,7 @@ export async function GET(req: NextRequest) {
       }).catch(() => []),
     ]);
 
-    return NextResponse.json({
+    return json(req, {
       success: true,
       data: {
         ...customer,
@@ -119,6 +134,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("Customer me error:", error);
-    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
+    return json(req, { success: false, error: "Server error" }, { status: 500 });
   }
 }
