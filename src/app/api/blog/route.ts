@@ -51,6 +51,7 @@ export async function GET(req: NextRequest) {
           title: true,
           slug: true,
           excerpt: true,
+          content: true,
           coverImageUrl: true,
           authorName: true,
           publishedAt: true,

@@ -437,6 +437,14 @@ export function Sidebar() {
                     <Search className="h-3.5 w-3.5 text-zinc-500" />
                     <span>Use the top search to jump fast</span>
                   </div>
+                  <div className="mt-2 grid grid-cols-3 gap-1.5">
+                    {filteredGroups.map((group) => (
+                      <div key={group.title} className="rounded-lg border border-white/[0.05] bg-white/[0.025] px-2 py-1">
+                        <p className="truncate text-[9px] font-semibold uppercase tracking-[0.14em] text-zinc-500">{group.title}</p>
+                        <p className="mt-0.5 text-sm font-semibold text-zinc-200">{group.items.length}</p>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             ) : null}

@@ -7,9 +7,13 @@ import {
   Bell,
   ChevronDown,
   Command,
+  FilePlus2,
   LogOut,
+  PackagePlus,
   Search,
   Settings,
+  TicketCheck,
+  Truck,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,6 +80,15 @@ export function AdminHeader() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const quickActions = useMemo(
+    () => [
+      { label: "New Product", path: "/admin/products/new", icon: PackagePlus },
+      { label: "New Blog", path: "/admin/blog/new", icon: FilePlus2 },
+      { label: "Tickets", path: "/admin/tickets", icon: TicketCheck },
+      { label: "Deliveries", path: "/admin/pending-deliveries", icon: Truck },
+    ],
+    []
+  );
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -184,6 +197,21 @@ export function AdminHeader() {
               </CardContent>
             </Card>
           ) : null}
+        </div>
+
+        <div className="hidden items-center gap-1 lg:flex">
+          {quickActions.map((action) => (
+            <Button
+              key={action.path}
+              variant="ghost"
+              className="h-9 rounded-xl border border-white/[0.06] bg-white/[0.025] px-2.5 text-xs text-zinc-400 hover:bg-white/[0.05] hover:text-white"
+              onClick={() => router.push(action.path)}
+              title={action.label}
+            >
+              <action.icon className="h-3.5 w-3.5" />
+              <span className="hidden xl:inline">{action.label}</span>
+            </Button>
+          ))}
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2">
