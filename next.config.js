@@ -61,13 +61,16 @@ const nextConfig = {
       // 🌍 PUBLIC API CORS (STATIC SITE için)
       // 🔐 ADMIN API ekstra koruma
       ...[
+        "/api/products",
         "/api/products/:path*",
         "/api/categories",
         "/api/settings",
         "/api/status",
         "/api/changelog",
+        "/api/blog",
         "/api/blog/:path*",
         "/api/reviews",
+        "/api/videos",
         "/api/videos/:path*",
         "/api/weekly-report",
       ].map((source) => ({

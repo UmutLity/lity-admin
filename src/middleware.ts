@@ -12,6 +12,7 @@ const GLOBAL_RATE_LIMIT = 120;        // all requests per IP per window
 const GLOBAL_WINDOW_MS = 60_000;
 const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL;
 const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+const ADMIN_API_ROLES = new Set(["FOUNDER", "ADMIN", "EDITOR", "MODERATOR", "SUPPORT", "ANALYST", "MEDIA"]);
 
 function checkRate(key: string, limit: number, windowMs: number): boolean {
   const now = Date.now();
@@ -159,6 +160,22 @@ export default withAuth(
     }
 
     // ── Block suspicious requests ──
+    if (pathname.startsWith("/api/admin/")) {
+      if (!token) {
+        return new NextResponse(
+          JSON.stringify({ success: false, error: "Unauthorized" }),
+          { status: 401, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      if (!ADMIN_API_ROLES.has(String(token.role || ""))) {
+        return new NextResponse(
+          JSON.stringify({ success: false, error: "Forbidden" }),
+          { status: 403, headers: { "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     if (isSuspiciousRequest(req)) {
       return new NextResponse(
         JSON.stringify({ error: "Forbidden" }),
