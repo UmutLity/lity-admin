@@ -3,11 +3,26 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { createCustomerToken } from "@/lib/customer-auth";
 import { checkRateLimit, recordStrike, isIpBanned } from "@/lib/rate-limit";
+import { corsPreflight, publicCorsHeaders } from "@/lib/cors";
 
 export const dynamic = "force-dynamic";
 
 // Generic error to prevent user enumeration
 const GENERIC_ERROR = "Invalid email or password";
+
+function json(req: NextRequest, body: unknown, init: ResponseInit = {}) {
+  return NextResponse.json(body, {
+    ...init,
+    headers: {
+      ...(publicCorsHeaders(req) || {}),
+      ...(init.headers || {}),
+    },
+  });
+}
+
+export async function OPTIONS(req: NextRequest) {
+  return corsPreflight(req);
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     // Check if IP is banned
     if (isIpBanned(ip)) {
-      return NextResponse.json(
+      return json(req,
         { success: false, error: "Too many failed attempts. Please try again later." },
         { status: 429 }
       );
@@ -26,7 +41,7 @@ export async function POST(req: NextRequest) {
     const rl = checkRateLimit(ip, "login");
     if (!rl.success) {
       recordStrike(ip);
-      return NextResponse.json(
+      return json(req,
         { success: false, error: "Too many login attempts. Please wait before trying again." },
         { status: 429, headers: { "Retry-After": String(rl.retryAfter || 60) } }
       );
@@ -36,7 +51,7 @@ export async function POST(req: NextRequest) {
     const { email, password } = body;
 
     if (!email || !password) {
-      return NextResponse.json({ success: false, error: "Email and password are required" }, { status: 400 });
+      return json(req, { success: false, error: "Email and password are required" }, { status: 400 });
     }
 
     // Find customer — use same error for not found & wrong password (prevent enumeration)
@@ -59,13 +74,13 @@ export async function POST(req: NextRequest) {
       // Perform dummy hash to prevent timing attacks
       await bcrypt.compare(password, "$2a$12$000000000000000000000000000000000000000000000000000000");
       recordStrike(ip);
-      return NextResponse.json({ success: false, error: GENERIC_ERROR }, { status: 401 });
+      return json(req, { success: false, error: GENERIC_ERROR }, { status: 401 });
     }
 
     // Check if account is suspended / banned / inactive
     if (customer.role === "BANNED" || !customer.isActive) {
       // Same generic error to prevent enumeration of banned accounts
-      return NextResponse.json(
+      return json(req,
         { success: false, error: "Your account has been suspended. Contact support." },
         { status: 403 }
       );
@@ -75,7 +90,7 @@ export async function POST(req: NextRequest) {
     const isValid = await bcrypt.compare(password, customer.password);
     if (!isValid) {
       recordStrike(ip);
-      return NextResponse.json({ success: false, error: GENERIC_ERROR }, { status: 401 });
+      return json(req, { success: false, error: GENERIC_ERROR }, { status: 401 });
     }
 
     // Login should not fail if this metadata update fails.
@@ -111,7 +126,7 @@ export async function POST(req: NextRequest) {
       username: customer.username,
     });
 
-    return NextResponse.json({
+    return json(req, {
       success: true,
       data: {
         token,
@@ -130,6 +145,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("Customer login error:", error);
-    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
+    return json(req, { success: false, error: "Server error" }, { status: 500 });
   }
 }

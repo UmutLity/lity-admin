@@ -4,11 +4,26 @@ import bcrypt from "bcryptjs";
 import { createCustomerToken } from "@/lib/customer-auth";
 import { checkRateLimit, recordStrike, isIpBanned } from "@/lib/rate-limit";
 import { appendReferrerToNotes, decodeReferralCode } from "@/lib/referrals";
+import { corsPreflight, publicCorsHeaders } from "@/lib/cors";
 
 export const dynamic = "force-dynamic";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERNAME_REGEX = /^[a-zA-Z0-9_.-]{3,30}$/;
+
+function json(req: NextRequest, body: unknown, init: ResponseInit = {}) {
+  return NextResponse.json(body, {
+    ...init,
+    headers: {
+      ...(publicCorsHeaders(req) || {}),
+      ...(init.headers || {}),
+    },
+  });
+}
+
+export async function OPTIONS(req: NextRequest) {
+  return corsPreflight(req);
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +31,7 @@ export async function POST(req: NextRequest) {
       || req.headers.get("x-real-ip") || "127.0.0.1";
 
     if (isIpBanned(ip)) {
-      return NextResponse.json(
+      return json(req,
         { success: false, error: "Too many failed attempts. Please try again later." },
         { status: 429 }
       );
@@ -25,7 +40,7 @@ export async function POST(req: NextRequest) {
     const rl = checkRateLimit(ip, "login");
     if (!rl.success) {
       recordStrike(ip);
-      return NextResponse.json(
+      return json(req,
         { success: false, error: "Too many registration attempts. Please wait before trying again." },
         { status: 429, headers: { "Retry-After": String(rl.retryAfter || 60) } }
       );
@@ -46,19 +61,19 @@ export async function POST(req: NextRequest) {
     ).trim();
 
     if (!email || !username || !password) {
-      return NextResponse.json({ success: false, error: "Email, username and password are required." }, { status: 400 });
+      return json(req, { success: false, error: "Email, username and password are required." }, { status: 400 });
     }
 
     if (!EMAIL_REGEX.test(email)) {
-      return NextResponse.json({ success: false, error: "Please enter a valid email address." }, { status: 400 });
+      return json(req, { success: false, error: "Please enter a valid email address." }, { status: 400 });
     }
 
     if (!USERNAME_REGEX.test(username)) {
-      return NextResponse.json({ success: false, error: "Username must be 3-30 chars and only contain letters, numbers, _ . -" }, { status: 400 });
+      return json(req, { success: false, error: "Username must be 3-30 chars and only contain letters, numbers, _ . -" }, { status: 400 });
     }
 
     if (password.length < 6) {
-      return NextResponse.json({ success: false, error: "Password must be at least 6 characters." }, { status: 400 });
+      return json(req, { success: false, error: "Password must be at least 6 characters." }, { status: 400 });
     }
 
     const [existingEmail, existingUsername] = await Promise.all([
@@ -67,11 +82,11 @@ export async function POST(req: NextRequest) {
     ]);
 
     if (existingEmail) {
-      return NextResponse.json({ success: false, error: "This email is already registered." }, { status: 409 });
+      return json(req, { success: false, error: "This email is already registered." }, { status: 409 });
     }
 
     if (existingUsername) {
-      return NextResponse.json({ success: false, error: "This username is already taken." }, { status: 409 });
+      return json(req, { success: false, error: "This username is already taken." }, { status: 409 });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
@@ -174,7 +189,7 @@ export async function POST(req: NextRequest) {
       username: customer.username,
     });
 
-    return NextResponse.json({
+    return json(req, {
       success: true,
       data: {
         token,
@@ -184,6 +199,6 @@ export async function POST(req: NextRequest) {
     }, { status: 201 });
   } catch (error: any) {
     console.error("Customer register error:", error);
-    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
+    return json(req, { success: false, error: "Server error" }, { status: 500 });
   }
 }
