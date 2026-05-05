@@ -17,14 +17,14 @@ export function DataTable<T>({
   emptyText?: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/[0.08]">
-      <table className="w-full border-collapse text-left">
-        <thead className="bg-white/[0.03]">
+    <div className="admin-table-scroll overflow-hidden rounded-2xl border border-white/[0.08] bg-black/10">
+      <table className="premium-table w-full border-separate border-spacing-0 text-left">
+        <thead>
           <tr>
             {columns.map((column) => (
               <th
                 key={column.key}
-                className={`px-3 py-2 text-[10px] uppercase tracking-wide text-zinc-500 ${column.className || ""}`}
+                className={`px-4 py-3 text-[10px] uppercase tracking-wide text-zinc-500 ${column.className || ""}`}
               >
                 {column.header}
               </th>
@@ -34,15 +34,15 @@ export function DataTable<T>({
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="px-3 py-6 text-center text-xs text-zinc-500">
+              <td colSpan={columns.length} className="px-4 py-8 text-center text-xs text-zinc-500">
                 {emptyText}
               </td>
             </tr>
           ) : (
             rows.map((row, index) => (
-              <tr key={index} className="border-t border-white/[0.06] text-xs text-zinc-300 hover:bg-white/[0.02]">
+              <tr key={index} className="text-xs text-zinc-300 transition-colors hover:bg-white/[0.035]">
                 {columns.map((column) => (
-                  <td key={`${column.key}-${index}`} className={`px-3 py-2.5 ${column.className || ""}`}>
+                  <td key={`${column.key}-${index}`} className={`px-4 py-3 ${column.className || ""}`}>
                     {column.render(row)}
                   </td>
                 ))}
@@ -54,4 +54,3 @@ export function DataTable<T>({
     </div>
   );
 }
-

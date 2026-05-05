@@ -463,3 +463,76 @@ select:focus-visible {
   color: #0f172a;
   background-color: #ffffff;
 }
+
+/* Admin dark polish */
+.admin-shell {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(168, 85, 247, 0.09), transparent 30%),
+    radial-gradient(circle at 86% 8%, rgba(99, 102, 241, 0.07), transparent 32%),
+    linear-gradient(180deg, #090a0f 0%, #05060a 100%);
+}
+
+.admin-shell .premium-card,
+.admin-shell .kpi-card,
+.admin-shell .admin-card,
+.admin-shell [class*="rounded-2xl"][class*="border-white"] {
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.admin-table-scroll {
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.admin-table-scroll::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+
+.admin-table-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.admin-table-scroll::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.25);
+  border-radius: 999px;
+  border: 2px solid rgba(7, 8, 12, 0.9);
+}
+
+.premium-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.premium-table thead th {
+  background: linear-gradient(180deg, rgba(15, 16, 22, 0.98), rgba(11, 12, 17, 0.98));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(212, 212, 216, 0.62);
+}
+
+.premium-table thead th:first-child {
+  border-top-left-radius: 1rem;
+}
+
+.premium-table thead th:last-child {
+  border-top-right-radius: 1rem;
+}
+
+.premium-table tbody td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+}
+
+.premium-table tbody tr {
+  background: rgba(255, 255, 255, 0.006);
+}
+
+.premium-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.014);
+}
+
+.premium-table tbody tr:hover {
+  background: rgba(168, 85, 247, 0.055);
+}
+
+.premium-table tbody tr:last-child td {
+  border-bottom: 0;
+}
