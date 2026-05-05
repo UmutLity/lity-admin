@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select-native";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/toast";
 
 interface ChangelogFormProps {
@@ -119,9 +120,15 @@ export function ChangelogForm({ initialData, isEditing }: ChangelogFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
+    <form onSubmit={handleSubmit} className="mx-auto max-w-5xl space-y-6">
+      <Tabs defaultValue="content" className="space-y-5">
+        <TabsList className="admin-form-tabs">
+          <TabsTrigger value="content">Content</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="products">Products</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="content">
           <Card>
             <CardHeader><CardTitle>Changelog Content</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -137,9 +144,9 @@ export function ChangelogForm({ initialData, isEditing }: ChangelogFormProps) {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </TabsContent>
 
-        <div className="space-y-6">
+        <TabsContent value="settings">
           <Card>
             <CardHeader><CardTitle>Settings</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -167,7 +174,9 @@ export function ChangelogForm({ initialData, isEditing }: ChangelogFormProps) {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
 
+        <TabsContent value="products">
           <Card>
             <CardHeader><CardTitle>Related Products</CardTitle></CardHeader>
             <CardContent>
@@ -190,18 +199,17 @@ export function ChangelogForm({ initialData, isEditing }: ChangelogFormProps) {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+      </Tabs>
 
-          <div className="flex gap-2">
-            <Button type="submit" className="flex-1" loading={loading}>
-              {isEditing ? "Update" : "Create"}
-            </Button>
-            <Button type="button" variant="outline" onClick={() => router.back()}>
-              Cancel
-            </Button>
-          </div>
-        </div>
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={() => router.back()}>
+          Cancel
+        </Button>
+        <Button type="submit" loading={loading}>
+          {isEditing ? "Update" : "Create"}
+        </Button>
       </div>
     </form>
   );
 }
-

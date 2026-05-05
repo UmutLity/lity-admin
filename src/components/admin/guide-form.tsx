@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/toast";
 
 interface GuideFormProps {
@@ -77,9 +78,14 @@ export function GuideForm({ initialData, isEditing }: GuideFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
+    <form onSubmit={handleSubmit} className="mx-auto max-w-5xl space-y-6">
+      <Tabs defaultValue="content" className="space-y-5">
+        <TabsList className="admin-form-tabs">
+          <TabsTrigger value="content">Content</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="content">
           <Card>
             <CardHeader>
               <CardTitle>Guide Content</CardTitle>
@@ -104,9 +110,9 @@ export function GuideForm({ initialData, isEditing }: GuideFormProps) {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </TabsContent>
 
-        <div className="space-y-6">
+        <TabsContent value="settings">
           <Card>
             <CardHeader>
               <CardTitle>Settings</CardTitle>
@@ -134,16 +140,16 @@ export function GuideForm({ initialData, isEditing }: GuideFormProps) {
               {!form.isDraft && <p className="text-xs text-muted-foreground">This guide will be visible to customers with this product.</p>}
             </CardContent>
           </Card>
+        </TabsContent>
+      </Tabs>
 
-          <div className="flex gap-2">
-            <Button type="submit" className="flex-1" loading={loading}>
-              {isEditing ? "Update" : "Create"}
-            </Button>
-            <Button type="button" variant="outline" onClick={() => router.back()}>
-              Cancel
-            </Button>
-          </div>
-        </div>
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={() => router.back()}>
+          Cancel
+        </Button>
+        <Button type="submit" loading={loading}>
+          {isEditing ? "Update" : "Create"}
+        </Button>
       </div>
     </form>
   );

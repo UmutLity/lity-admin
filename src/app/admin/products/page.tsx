@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Topbar } from "@/components/admin/topbar";
 import { StatusBadge } from "@/components/admin/status-badge";
-import { EmptyState } from "@/components/admin/empty-state";
+import { EmptyState, ErrorState } from "@/components/admin/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select-native";
@@ -42,6 +42,7 @@ export default function ProductsPage() {
   const { addToast } = useToast();
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -54,6 +55,7 @@ export default function ProductsPage() {
   const [quickStatusNote, setQuickStatusNote] = useState("");
 
   const loadProducts = async () => {
+    setLoadError("");
     try {
       const params = new URLSearchParams();
       if (search) params.set("search", search);
@@ -69,6 +71,7 @@ export default function ProductsPage() {
     } catch (error) {
       console.error(error);
       setProducts([]);
+      setLoadError("Admin product list could not be fetched.");
       addToast({ type: "error", title: "Products failed to load", description: "Admin product list could not be fetched." });
     } finally {
       setLoading(false);
@@ -171,6 +174,12 @@ export default function ProductsPage() {
       {/* Table */}
       {loading ? (
         <Card><CardContent className="p-8"><div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-12 bg-muted animate-pulse rounded" />)}</div></CardContent></Card>
+      ) : loadError ? (
+        <Card>
+          <ErrorState title="Products failed to load" description={loadError}>
+            <Button type="button" onClick={loadProducts}>Try Again</Button>
+          </ErrorState>
+        </Card>
       ) : products.length === 0 ? (
         <Card>
           <EmptyState icon={Package} title="No products yet" description="Get started by adding your first product">

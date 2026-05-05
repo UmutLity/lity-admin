@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { EmptyState } from "@/components/admin/empty-state";
 
 type Column<T> = {
   key: string;
@@ -34,8 +35,8 @@ export function DataTable<T>({
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="px-4 py-8 text-center text-xs text-zinc-500">
-                {emptyText}
+              <td colSpan={columns.length} className="p-4">
+                <EmptyState title={emptyText} description="There is nothing to show here yet." className="border-0 py-10 shadow-none" />
               </td>
             </tr>
           ) : (

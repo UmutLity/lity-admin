@@ -536,3 +536,30 @@ select:focus-visible {
 .premium-table tbody tr:last-child td {
   border-bottom: 0;
 }
+
+.admin-form-tabs {
+  display: inline-flex;
+  height: auto;
+  min-height: 2.75rem;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.028);
+  padding: 0.35rem;
+  color: rgba(212, 212, 216, 0.62);
+}
+
+.admin-form-tabs [role="tab"] {
+  min-height: 2rem;
+  border: 1px solid transparent;
+  border-radius: 0.65rem;
+  padding-inline: 0.9rem;
+  color: rgba(212, 212, 216, 0.66);
+}
+
+.admin-form-tabs [role="tab"][data-state="active"] {
+  border-color: rgba(196, 181, 253, 0.28);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.22), rgba(168, 85, 247, 0.14));
+  color: #ffffff;
+  box-shadow: 0 10px 28px rgba(124, 58, 237, 0.16);
+}
