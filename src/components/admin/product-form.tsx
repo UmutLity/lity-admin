@@ -107,6 +107,11 @@ function statusChipClass(value: string, active: boolean) {
   return "border-sky-400/50 bg-sky-500/15 text-sky-300";
 }
 
+function getPlanLabel(value: string, customLabel?: string) {
+  if (value === CUSTOM_PLAN_VALUE) return customLabel?.trim() || "Custom";
+  return planOptions.find((item) => item.value === value)?.label || value;
+}
+
 const labelClass = "admin-label";
 const fieldClass = "admin-input";
 const selectClass = "admin-select";
@@ -195,6 +200,10 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
   const [featureTabs, setFeatureTabs] = useState<FeatureTab[]>(initialFeatureTabs);
 
   const computedSlug = useMemo(() => (autoSlug ? slugify(form.name || "") : form.slug), [form.name, form.slug, autoSlug]);
+  const previewPriceLabel = `${form.currency} ${Number(basePrice || 0).toFixed(2)}`;
+  const previewPlanLabel = getPlanLabel(basePlan, baseCustomPlan);
+  const previewStatusLabel = statusOptions.find((item) => item.value === form.status)?.label || "Status";
+  const previewImage = mainImageUrl.trim();
 
   const updateField = (key: string, value: any) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -550,7 +559,8 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto max-w-5xl">
+    <form onSubmit={handleSubmit} className="mx-auto max-w-7xl">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
       <div className="overflow-hidden rounded-3xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(22,22,30,0.96),rgba(12,12,17,0.98))] shadow-[0_28px_70px_rgba(0,0,0,0.35)]">
         <div className="border-b border-white/[0.06] px-6 py-5">
           <h2 className="text-2xl font-semibold text-white">{isEditing ? "Edit Product" : "New Product"}</h2>
@@ -1032,6 +1042,50 @@ export function ProductForm({ initialData, isEditing }: ProductFormProps) {
             {loading ? "Saving..." : isEditing ? "Update" : "Create"}
           </button>
         </div>
+      </div>
+      <aside className="h-fit rounded-3xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(22,22,30,0.94),rgba(9,10,15,0.98))] p-4 shadow-[0_24px_64px_rgba(0,0,0,0.32)] xl:sticky xl:top-20">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Live preview</p>
+            <h3 className="mt-1 text-sm font-semibold text-white">Store card</h3>
+          </div>
+          <span className="rounded-full border border-[#b9accf]/25 bg-[#a996c4]/10 px-2 py-1 text-[10px] font-semibold text-[#e0d7ef]">
+            {previewStatusLabel}
+          </span>
+        </div>
+        <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-black/20">
+          <div className="flex h-40 items-center justify-center bg-[radial-gradient(circle_at_50%_0%,rgba(169,150,196,0.18),transparent_48%),linear-gradient(180deg,rgba(18,19,26,0.98),rgba(8,9,13,1))]">
+            {previewImage ? (
+              <img src={previewImage} alt="Product preview" className="h-full w-full object-cover" />
+            ) : (
+              <ImageIcon className="h-9 w-9 text-zinc-600" />
+            )}
+          </div>
+          <div className="space-y-3 p-4">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">{form.category || "Product"}</p>
+              <h4 className="mt-1 line-clamp-2 text-lg font-semibold leading-tight text-white">{form.name || "Untitled product"}</h4>
+              <p className="mt-2 line-clamp-2 text-xs leading-5 text-zinc-500">{form.shortDescription || form.description || "Short product description appears here."}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <span className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-2 py-1 text-[10px] text-zinc-400">{previewPlanLabel}</span>
+              <span className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-2 py-1 text-[10px] text-zinc-400">{form.stockStatus.replace(/_/g, " ")}</span>
+              {form.isFeatured ? <span className="rounded-lg border border-[#b9accf]/25 bg-[#a996c4]/10 px-2 py-1 text-[10px] text-[#e0d7ef]">Featured</span> : null}
+            </div>
+            <div className="flex items-end justify-between border-t border-white/[0.07] pt-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-600">From</p>
+                <p className="text-lg font-bold text-white">{previewPriceLabel}</p>
+              </div>
+              <span className="rounded-xl bg-[#a996c4] px-3 py-2 text-xs font-bold text-white">View</span>
+            </div>
+          </div>
+        </div>
+        <div className="mt-3 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">Page URL</p>
+          <p className="mt-1 truncate text-xs text-zinc-300">/products/{computedSlug || "product-slug"}</p>
+        </div>
+      </aside>
       </div>
     </form>
   );

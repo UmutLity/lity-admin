@@ -76,6 +76,7 @@ export function AdminHeader() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
@@ -100,6 +101,22 @@ export function AdminHeader() {
     fetchNotifs();
     const interval = setInterval(fetchNotifs, 30000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearchOpen(true);
+        searchInputRef.current?.focus();
+      }
+      if (event.key === "Escape") {
+        setSearchOpen(false);
+        searchInputRef.current?.blur();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, []);
 
   const searchRoutes = useMemo(
@@ -138,7 +155,7 @@ export function AdminHeader() {
         const q = searchQuery.toLowerCase();
         return route.label.toLowerCase().includes(q) || route.keywords.includes(q);
       })
-    : [];
+    : searchRoutes.slice(0, 8);
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#111214]/95 backdrop-blur-xl">
@@ -147,6 +164,7 @@ export function AdminHeader() {
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
             <Input
+              ref={searchInputRef}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -154,7 +172,7 @@ export function AdminHeader() {
               }}
               onFocus={() => setSearchOpen(true)}
               onBlur={() => setTimeout(() => setSearchOpen(false), 200)}
-              placeholder="Search pages, tools, and admin sections..."
+              placeholder="Command palette: search pages, tools, and admin sections..."
               className="h-10 rounded-2xl border-white/[0.08] bg-white/[0.03] pl-10 pr-10 text-sm text-zinc-200 placeholder:text-zinc-500 focus-visible:ring-0 sm:h-11 sm:pr-14"
             />
             <div className="absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2 py-1 text-[10px] text-zinc-500 sm:flex">
@@ -163,23 +181,37 @@ export function AdminHeader() {
             </div>
           </div>
 
-          {searchOpen && filteredRoutes.length ? (
+          {searchOpen ? (
             <Card className="ui-fade-in absolute left-0 right-0 top-full mt-2 border-white/[0.08] bg-[#11131a]/95 shadow-2xl shadow-black/30">
               <CardContent className="p-2">
-                {filteredRoutes.map((route) => (
-                  <Button
-                    key={route.path}
-                    variant="ghost"
-                    className="h-10 w-full justify-start rounded-xl px-3 text-sm text-zinc-300 hover:bg-white/[0.05] hover:text-white"
-                    onMouseDown={() => {
-                      router.push(route.path);
-                      setSearchQuery("");
-                    }}
-                  >
-                    <Search className="mr-2 h-4 w-4 text-zinc-500" />
-                    {route.label}
-                  </Button>
-                ))}
+                <div className="mb-1 flex items-center justify-between px-2 py-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                    {searchQuery.trim() ? "Results" : "Quick jump"}
+                  </span>
+                  <span className="text-[10px] text-zinc-600">Esc to close</span>
+                </div>
+                {filteredRoutes.length ? (
+                  filteredRoutes.map((route) => (
+                    <Button
+                      key={route.path}
+                      variant="ghost"
+                      className="h-10 w-full justify-start rounded-xl px-3 text-sm text-zinc-300 hover:bg-white/[0.05] hover:text-white"
+                      onMouseDown={() => {
+                        router.push(route.path);
+                        setSearchQuery("");
+                        setSearchOpen(false);
+                      }}
+                    >
+                      <Search className="mr-2 h-4 w-4 text-zinc-500" />
+                      <span className="min-w-0 flex-1 text-left">{route.label}</span>
+                      <span className="text-[10px] text-zinc-600">{route.path.replace("/admin", "") || "/"}</span>
+                    </Button>
+                  ))
+                ) : (
+                  <div className="rounded-xl border border-white/[0.06] px-3 py-8 text-center text-sm text-zinc-500">
+                    No matching admin section.
+                  </div>
+                )}
               </CardContent>
             </Card>
           ) : null}
