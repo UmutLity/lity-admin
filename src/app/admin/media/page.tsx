@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { parseVideoUrl } from "@/lib/media-embed";
-import { Film, Pencil, Plus, Trash2, Tv2 } from "lucide-react";
+import { Copy, ExternalLink, Film, Pencil, Plus, Search, Trash2, Tv2 } from "lucide-react";
 
 type VideoItem = {
   id: string;
@@ -52,8 +52,28 @@ export default function AdminMediaPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState<VideoItem | null>(null);
   const [form, setForm] = useState<FormState>(defaultForm);
+  const [search, setSearch] = useState("");
+  const [providerFilter, setProviderFilter] = useState("ALL");
 
   const preview = useMemo(() => parseVideoUrl(form.videoUrl), [form.videoUrl]);
+  const mediaStats = useMemo(() => {
+    const providers = items.reduce<Record<string, number>>((acc, item) => {
+      const provider = parseVideoUrl(item.videoUrl)?.provider || "Other";
+      acc[provider] = (acc[provider] || 0) + 1;
+      return acc;
+    }, {});
+    const views = items.reduce((acc, item) => acc + Number(item.viewCount || 0), 0);
+    return { providers, views };
+  }, [items]);
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return items.filter((item) => {
+      const provider = parseVideoUrl(item.videoUrl)?.provider || "Other";
+      if (providerFilter !== "ALL" && provider !== providerFilter) return false;
+      if (q && !`${item.title} ${item.owner?.name || ""} ${provider}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [items, providerFilter, search]);
 
   async function loadItems() {
     setLoading(true);
@@ -146,6 +166,15 @@ export default function AdminMediaPage() {
     }
   }
 
+  async function copyText(value: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      addToast({ type: "success", title: "Copied", description: `${label} copied to clipboard.` });
+    } catch {
+      addToast({ type: "error", title: "Copy failed", description: "Clipboard access was not available." });
+    }
+  }
+
   if (!canManage) {
     return (
       <Card className="border-white/10 bg-[#16161d]">
@@ -160,6 +189,27 @@ export default function AdminMediaPage() {
   return (
     <div className="space-y-5">
       <Topbar title="Media System" description="Upload links from YouTube, Streamable, or Vimeo and manage showcase videos." />
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <Card className="border-white/10 bg-[#14141b]">
+          <CardContent className="p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Videos</p>
+            <p className="mt-2 text-2xl font-bold text-white">{items.length}</p>
+          </CardContent>
+        </Card>
+        <Card className="border-white/10 bg-[#14141b]">
+          <CardContent className="p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Total views</p>
+            <p className="mt-2 text-2xl font-bold text-white">{mediaStats.views}</p>
+          </CardContent>
+        </Card>
+        <Card className="border-white/10 bg-[#14141b]">
+          <CardContent className="p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Sources</p>
+            <p className="mt-2 text-sm font-semibold text-zinc-200">{Object.keys(mediaStats.providers).join(", ") || "No sources"}</p>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card className="overflow-hidden border-white/10 bg-[linear-gradient(180deg,#171720,#12121a)]">
         <CardContent className="p-5 sm:p-6">
@@ -245,8 +295,29 @@ export default function AdminMediaPage() {
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-base font-semibold text-white">Published videos</h3>
             <span className="rounded-full border border-fuchsia-400/30 bg-fuchsia-500/10 px-3 py-1 text-xs font-semibold text-fuchsia-200">
-              {items.length} total
+              {filteredItems.length} shown
             </span>
+          </div>
+          <div className="mb-4 grid gap-3 md:grid-cols-[1fr_220px]">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search videos, owner or provider..."
+                className="border-white/10 bg-[#0f0f15] pl-10 text-white placeholder:text-zinc-500"
+              />
+            </div>
+            <select
+              value={providerFilter}
+              onChange={(e) => setProviderFilter(e.target.value)}
+              className="h-11 rounded-xl border border-white/10 bg-[#0f0f15] px-3 text-sm text-zinc-200 outline-none"
+            >
+              <option value="ALL">All providers</option>
+              {Object.keys(mediaStats.providers).map((provider) => (
+                <option key={provider} value={provider}>{provider}</option>
+              ))}
+            </select>
           </div>
 
           {loading ? (
@@ -255,14 +326,14 @@ export default function AdminMediaPage() {
                 <div key={n} className="h-56 animate-pulse rounded-xl border border-white/10 bg-[#0f0f15]" />
               ))}
             </div>
-          ) : items.length === 0 ? (
+          ) : filteredItems.length === 0 ? (
             <div className="rounded-xl border border-dashed border-white/15 bg-[#111118] p-10 text-center">
               <Film className="mx-auto h-8 w-8 text-zinc-500" />
-              <p className="mt-3 text-sm text-zinc-400">No videos yet. Publish your first media post above.</p>
+              <p className="mt-3 text-sm text-zinc-400">{items.length ? "No videos match this filter." : "No videos yet. Publish your first media post above."}</p>
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {items.map((item) => {
+              {filteredItems.map((item) => {
                 const parsed = parseVideoUrl(item.videoUrl);
                 return (
                   <div
@@ -296,6 +367,22 @@ export default function AdminMediaPage() {
                         <span>{item.viewCount} views</span>
                       </div>
                       <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-white/15 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white"
+                          onClick={() => copyText(item.videoUrl, "Video URL")}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-white/15 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white"
+                          onClick={() => window.open(item.videoUrl, "_blank", "noopener,noreferrer")}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -354,4 +441,3 @@ export default function AdminMediaPage() {
     </div>
   );
 }
-

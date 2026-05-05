@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  AlertTriangle,
   Boxes,
+  Clock,
   CreditCard,
   DollarSign,
   ShoppingCart,
@@ -25,6 +25,16 @@ import { LiveStatusCard, type LiveStatusSnapshot } from "@/components/admin/dash
 import { PublishingScheduleCard, type PublishingEvent } from "@/components/admin/dashboard/publishing-schedule-card";
 
 type AnyJson = Record<string, any>;
+
+type ActivityEvent = {
+  id: string;
+  type: "ORDER" | "ALERT" | "PUBLISH";
+  title: string;
+  detail: string;
+  time: string;
+  href: string;
+  tone: "green" | "red" | "purple" | "yellow";
+};
 
 interface DashboardData {
   totalUsers: number;
@@ -65,6 +75,7 @@ interface DashboardData {
   }>;
   liveStatus: LiveStatusSnapshot;
   publishingSchedule: PublishingEvent[];
+  activity: ActivityEvent[];
 }
 
 const EMPTY: DashboardData = {
@@ -102,6 +113,7 @@ const EMPTY: DashboardData = {
     checkedAt: new Date(0).toISOString(),
   },
   publishingSchedule: [],
+  activity: [],
 };
 
 function safeArray<T = any>(value: any): T[] {
@@ -307,6 +319,37 @@ export default function DashboardPage() {
 
       const publishingSchedule = [...changelogEvents, ...guideEvents, ...blogEvents]
         .sort((a, b) => new Date(a.when).getTime() - new Date(b.when).getTime());
+      const activity: ActivityEvent[] = [
+        ...recentOrders.slice(0, 5).map((order): ActivityEvent => ({
+          id: `order-${order.id}`,
+          type: "ORDER",
+          title: `Order ${order.status}`,
+          detail: `${order.user} purchased ${order.product} for $${order.amount.toFixed(2)}`,
+          time: order.createdAt,
+          href: "/admin/orders",
+          tone: "green",
+        })),
+        ...criticalAlerts.slice(0, 4).map((alert): ActivityEvent => ({
+          id: `alert-${alert.id}`,
+          type: "ALERT",
+          title: alert.title,
+          detail: alert.message || "Critical notification",
+          time: alert.createdAt,
+          href: "/admin/notifications?filter=critical",
+          tone: "red",
+        })),
+        ...publishingSchedule.slice(0, 5).map((event): ActivityEvent => ({
+          id: `publish-${event.id}`,
+          type: "PUBLISH",
+          title: `${event.type} ${event.state}`,
+          detail: event.title,
+          time: event.when,
+          href: event.href,
+          tone: event.state === "scheduled" ? "yellow" : "purple",
+        })),
+      ]
+        .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+        .slice(0, 10);
 
       if (!active) return;
 
@@ -337,6 +380,7 @@ export default function DashboardPage() {
         recentOrders,
         liveStatus,
         publishingSchedule,
+        activity,
       });
       setLoading(false);
     }
@@ -445,6 +489,42 @@ export default function DashboardPage() {
               users: data.monthUsers,
             }}
           />
+
+          <div className="admin-card rounded-2xl p-4">
+            <SectionHeader title="Activity Timeline" description="Orders, alerts and publishing events in one stream" />
+            <div className="mt-4 space-y-3">
+              {loading ? (
+                <div className="h-24 animate-pulse rounded-xl border border-white/[0.06] bg-white/[0.02]" />
+              ) : data.activity.length === 0 ? (
+                <p className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-3 text-xs text-zinc-500">No activity yet.</p>
+              ) : (
+                data.activity.map((event) => (
+                  <Link
+                    key={event.id}
+                    href={event.href}
+                    className="group grid grid-cols-[34px_1fr_auto] items-start gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.018] p-3 transition hover:border-[#b9accf]/25 hover:bg-[#a996c4]/[0.04]"
+                  >
+                    <span
+                      className={cn(
+                        "mt-0.5 flex h-8 w-8 items-center justify-center rounded-xl border",
+                        event.tone === "green" && "border-emerald-400/25 bg-emerald-500/10 text-emerald-200",
+                        event.tone === "red" && "border-red-400/25 bg-red-500/10 text-red-200",
+                        event.tone === "yellow" && "border-amber-400/25 bg-amber-500/10 text-amber-200",
+                        event.tone === "purple" && "border-[#b9accf]/25 bg-[#a996c4]/10 text-[#e0d7ef]"
+                      )}
+                    >
+                      <Clock className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold text-zinc-100">{event.title}</span>
+                      <span className="mt-1 block truncate text-xs text-zinc-500">{event.detail}</span>
+                    </span>
+                    <span className="text-xs text-zinc-600 group-hover:text-zinc-400">{timeAgo(event.time)}</span>
+                  </Link>
+                ))
+              )}
+            </div>
+          </div>
 
           <div className="admin-card rounded-2xl p-4">
             <SectionHeader title="Recent Orders" description="Latest transactions and delivery state" />
