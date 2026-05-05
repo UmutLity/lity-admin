@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Topbar } from "@/components/admin/topbar";
-import { Check, CheckCircle2, Clock3, MessageSquare, Search, Star, X } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, Clock3, MessageSquare, Search, Star, X } from "lucide-react";
 
 type ReviewRow = {
   id: string;
@@ -80,7 +80,14 @@ export default function AdminReviewsPage() {
     return haystack.includes(search.trim().toLowerCase());
   });
 
-  const pendingCount = rows.filter((row) => getModerationStatus(row) === "PENDING").length;
+  const pendingRows = rows
+    .filter((row) => getModerationStatus(row) === "PENDING")
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  const queueRows = pendingRows.slice(0, 3);
+  const oldestPendingHours = pendingRows.length
+    ? Math.max(0, Math.floor((Date.now() - new Date(pendingRows[0].createdAt).getTime()) / 3600000))
+    : 0;
+  const pendingCount = pendingRows.length;
   const approvedCount = rows.filter((row) => getModerationStatus(row) === "APPROVED").length;
   const rejectedCount = rows.filter((row) => getModerationStatus(row) === "REJECTED").length;
   const productOptions = Array.from(
@@ -125,6 +132,90 @@ export default function AdminReviewsPage() {
   return (
     <div className="space-y-6">
       <Topbar title="Reviews" description="Moderate incoming customer reviews and publish approved feedback." />
+
+      <section className="overflow-hidden rounded-3xl border border-violet-500/20 bg-[radial-gradient(circle_at_top_left,rgba(139,92,246,0.16),transparent_34%),linear-gradient(135deg,#121218,#0c0c10)] p-5 shadow-2xl shadow-black/20">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-violet-500/25 bg-violet-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-violet-200">
+              <MessageSquare className="h-3.5 w-3.5" />
+              Review moderation queue
+            </div>
+            <div>
+              <h2 className="text-2xl font-semibold text-white">{pendingCount} reviews waiting for action</h2>
+              <p className="mt-1 max-w-2xl text-sm text-zinc-400">
+                Prioritize pending customer feedback, approve clean reviews quickly, and reject noisy entries with a reason.
+              </p>
+            </div>
+          </div>
+          <div className="grid min-w-[180px] gap-2 rounded-2xl border border-white/10 bg-black/20 p-3">
+            <div className="flex items-center justify-between gap-3 text-sm text-zinc-400">
+              <span>Oldest pending</span>
+              <span className="font-semibold text-white">{pendingCount ? `${oldestPendingHours}h` : "clear"}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setTab("PENDING");
+                setProductFilter("ALL");
+                setSearch("");
+              }}
+              className="rounded-xl border border-violet-500/30 bg-violet-500/15 px-4 py-2 text-sm font-semibold text-violet-100 transition hover:bg-violet-500/20"
+            >
+              Open pending queue
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-3 lg:grid-cols-3">
+          {queueRows.length ? (
+            queueRows.map((row) => {
+              const isBusy = busyId === row.id;
+              return (
+                <div key={`queue-${row.id}`} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-white">{row.authorName || "Unknown customer"}</div>
+                      <div className="mt-1 truncate text-xs text-zinc-500">{row.productName || "General Review"}</div>
+                    </div>
+                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-1 text-xs font-semibold text-amber-300">
+                      <AlertTriangle className="h-3 w-3" />
+                      Pending
+                    </span>
+                  </div>
+                  <div className="mt-3 flex items-center gap-1">{renderStars(row.rating)}</div>
+                  <p className="mt-3 max-h-[72px] overflow-hidden text-sm leading-6 text-zinc-300">{row.content}</p>
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      disabled={isBusy}
+                      onClick={() => moderateReview(row, "APPROVED")}
+                      className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/15 disabled:opacity-50"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isBusy}
+                      onClick={() => {
+                        setTab("PENDING");
+                        setRejectingId(row.id);
+                        setRejectReason("");
+                      }}
+                      className="rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-500/15 disabled:opacity-50"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 p-5 text-sm text-zinc-400 lg:col-span-3">
+              Queue is clear. New customer reviews will appear here before they go public.
+            </div>
+          )}
+        </div>
+      </section>
 
       <div className="grid gap-4 md:grid-cols-[1fr_auto]">
         <div className="grid gap-4 sm:grid-cols-4">
